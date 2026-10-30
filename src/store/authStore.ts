@@ -27,6 +27,14 @@ const initialStaff: Profile[] = [
     created_at: '2026-01-01T00:00:00Z',
   },
   {
+    id: 'staff-manager',
+    email: 'manager@uskistore.id',
+    full_name: 'Hj. Siti Fatimah (Manajer Toko USKI)',
+    phone_number: '0812-8899-7766',
+    role: 'manager',
+    created_at: '2026-01-10T00:00:00Z',
+  },
+  {
     id: 'staff-2',
     email: 'gudang@uskistore.id',
     full_name: 'Ridwan Kamil (Staf Inventaris & Gudang)',
@@ -105,15 +113,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     let name = 'Pelanggan USKI';
     let email = 'customer@example.com';
 
-    if (role === 'super_admin' || role === 'admin') {
-      name = 'Super Admin USKI';
+    if (role === 'super_admin') {
+      name = 'Ustadz Ahmad Farhan (Super Admin)';
       email = 'admin@uskistore.id';
+    } else if (role === 'manager') {
+      name = 'Hj. Siti Fatimah (Manajer Toko)';
+      email = 'manager@uskistore.id';
+    } else if (role === 'admin') {
+      name = 'Siti Nurhaliza (Kasir & Layanan CS)';
+      email = 'cs@uskistore.id';
     } else if (role === 'staff') {
-      name = 'Staf Operasional Toko';
-      email = 'staff@uskistore.id';
+      name = 'Ridwan Kamil (Staf Gudang & Inventaris)';
+      email = 'gudang@uskistore.id';
     } else if (role === 'courier') {
-      name = 'Kurir Toko USKI';
-      email = 'courier@uskistore.id';
+      name = 'Bambang Supriyadi (Kurir Toko)';
+      email = 'kurir@uskistore.id';
     }
 
     set({

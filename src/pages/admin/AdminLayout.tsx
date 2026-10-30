@@ -21,7 +21,22 @@ export const AdminLayout: React.FC = () => {
 
   // Authorization check
   const isAuthorized =
-    user && (user.role === 'super_admin' || user.role === 'admin' || user.role === 'staff');
+    user && (user.role === 'super_admin' || user.role === 'admin' || user.role === 'manager' || user.role === 'staff');
+
+  // Role-based route authorization
+  const currentPath = location.pathname;
+  const isStaffRestricted =
+    user?.role === 'staff' &&
+    (currentPath.startsWith('/admin/reports') ||
+      currentPath.startsWith('/admin/settings') ||
+      currentPath.startsWith('/admin/staff') ||
+      currentPath.startsWith('/admin/payments') ||
+      currentPath.startsWith('/admin/promos') ||
+      currentPath.startsWith('/admin/categories'));
+
+  const isManagerRestricted =
+    user?.role === 'manager' &&
+    (currentPath.startsWith('/admin/settings') || currentPath.startsWith('/admin/staff'));
 
   if (!isAuthorized) {
     return (
@@ -99,7 +114,13 @@ export const AdminLayout: React.FC = () => {
                   {user?.full_name || 'Administrator'}
                 </span>
                 <span className="text-[9px] font-bold text-primary uppercase mt-0.5">
-                  {user?.role === 'super_admin' ? 'Super Admin' : user?.role === 'admin' ? 'Admin / CS' : 'Staf Gudang'}
+                  {user?.role === 'super_admin'
+                    ? 'Super Admin'
+                    : user?.role === 'manager'
+                    ? 'Manajer Toko'
+                    : user?.role === 'admin'
+                    ? 'Kasir / Layanan CS'
+                    : 'Staf Gudang & Logistik'}
                 </span>
               </div>
             </div>
@@ -116,12 +137,42 @@ export const AdminLayout: React.FC = () => {
           </div>
         </header>
 
-        {/* Content Body with 100% Fluid Natural Scroll */}
+        {/* Content Body with 100% Fluid Natural Scroll & Route Guard */}
         <main
           ref={mainScrollRef}
           className="flex-1 p-4 sm:p-6 pb-[calc(4rem+env(safe-area-inset-bottom,0px))]"
         >
-          <Outlet />
+          {isStaffRestricted ? (
+            <div className="bg-white border border-hairline rounded-3xl p-8 max-w-lg mx-auto text-center space-y-4 my-8 shadow-sm">
+              <ShieldAlert className="w-12 h-12 text-amber-500 mx-auto" />
+              <h2 className="text-lg font-extrabold text-[#101519]">Akses Khusus Manajer & Admin</h2>
+              <p className="text-xs text-body leading-relaxed">
+                Halaman ini memuat data finansial & pengaturan manajerial yang hanya dapat dikelola oleh Manajer atau Super Admin Toko.
+              </p>
+              <Link
+                to="/admin"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-bold text-xs rounded-xl hover:bg-primary-dark transition-all"
+              >
+                <span>Kembali ke Dashboard Tugas Staf</span>
+              </Link>
+            </div>
+          ) : isManagerRestricted ? (
+            <div className="bg-white border border-hairline rounded-3xl p-8 max-w-lg mx-auto text-center space-y-4 my-8 shadow-sm">
+              <ShieldAlert className="w-12 h-12 text-purple-600 mx-auto" />
+              <h2 className="text-lg font-extrabold text-[#101519]">Akses Khusus Super Admin</h2>
+              <p className="text-xs text-body leading-relaxed">
+                Pengaturan sistem master, rekening bank toko, dan hak akses akun staf hanya dapat diubah oleh Super Admin.
+              </p>
+              <Link
+                to="/admin"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-bold text-xs rounded-xl hover:bg-primary-dark transition-all"
+              >
+                <span>Kembali ke Dashboard Manajer</span>
+              </Link>
+            </div>
+          ) : (
+            <Outlet />
+          )}
         </main>
       </div>
     </div>

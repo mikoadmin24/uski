@@ -24,7 +24,7 @@ export const AccountPage: React.FC = () => {
   // Redirect admin directly to /admin dashboard, courier to /courier
   // Only regular buyers (customers) use the storefront account page
   useEffect(() => {
-    if (user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'staff') {
+    if (user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'manager' || user?.role === 'staff') {
       navigate('/admin', { replace: true });
     } else if (user?.role === 'courier') {
       navigate('/courier', { replace: true });

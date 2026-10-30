@@ -1,6 +1,6 @@
 // Core Types for USKI STORE
 
-export type UserRole = 'super_admin' | 'admin' | 'staff' | 'courier' | 'customer';
+export type UserRole = 'super_admin' | 'admin' | 'manager' | 'staff' | 'courier' | 'customer';
 
 export interface Profile {
   id: string;

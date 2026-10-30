@@ -28,6 +28,19 @@ interface AdminSidebarProps {
   onClose?: () => void;
 }
 
+interface NavItem {
+  label: string;
+  path: string;
+  icon: React.ElementType;
+  badge?: string;
+  badgeColor?: string;
+}
+
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
   const location = useLocation();
   const { user } = useAuthStore();
@@ -35,6 +48,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
   const { products } = useProductStore();
   const { requests } = useCustomOrderStore();
   const { couriers } = useCourierStore();
+
+  const userRole = user?.role || 'staff';
+  const isSuperAdmin = userRole === 'super_admin';
+  const isAdminOrManager = userRole === 'super_admin' || userRole === 'admin' || userRole === 'manager';
+  const isStaff = userRole === 'staff';
 
   // Dynamic real-time badge counters
   const activeCouriersCount = couriers.filter((c) => c.status === 'delivering').length;
@@ -51,49 +69,129 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
     (p) => p.stock_quantity <= p.min_stock_alert
   ).length;
 
-  const navLinks = [
-    { label: 'Ringkasan Dashboard', path: '/admin', icon: LayoutDashboard },
+  // Role-filtered structured navigation sections
+  const navSections: NavSection[] = [
     {
-      label: 'Katalog & Inventaris Stok',
-      path: '/admin/products',
-      icon: Package,
-      badge: lowStockCount > 0 ? `${lowStockCount} Peringatan` : undefined,
-      badgeColor: 'bg-red-500/20 text-red-300 border border-red-500/30',
-    },
-    { label: 'Kategori & Banner Hero', path: '/admin/categories', icon: Layers },
-    {
-      label: 'Manajemen Pesanan',
-      path: '/admin/orders',
-      icon: ShoppingBag,
-      badge: pendingOrdersCount > 0 ? String(pendingOrdersCount) : undefined,
-      badgeColor: 'bg-amber-500 text-[#101519]',
-    },
-    {
-      label: 'Armada Kurir & GPS',
-      path: '/admin/couriers',
-      icon: Navigation,
-      badge: activeCouriersCount > 0 ? `${activeCouriersCount} Live GPS` : undefined,
-      badgeColor: 'bg-green-400 text-black',
-    },
-    {
-      label: 'Verifikasi Pembayaran',
-      path: '/admin/payments',
-      icon: CreditCard,
-      badge: awaitingVerificationCount > 0 ? String(awaitingVerificationCount) : undefined,
-      badgeColor: 'bg-accent-2 text-[#101519]',
+      title: isStaff ? 'OPERASIONAL GUDANG' : 'OPERASIONAL TOKO',
+      items: [
+        {
+          label: isStaff ? 'Dashboard Tugas Staf' : 'Ringkasan Dashboard',
+          path: '/admin',
+          icon: LayoutDashboard,
+        },
+        {
+          label: isStaff ? 'Pesanan & Packing' : 'Manajemen Pesanan',
+          path: '/admin/orders',
+          icon: ShoppingBag,
+          badge: pendingOrdersCount > 0 ? String(pendingOrdersCount) : undefined,
+          badgeColor: 'bg-amber-500 text-[#101519]',
+        },
+        {
+          label: isStaff ? 'Stok & Barcode Scanner' : 'Katalog & Inventaris Stok',
+          path: '/admin/products',
+          icon: Package,
+          badge: lowStockCount > 0 ? `${lowStockCount} Kritis` : undefined,
+          badgeColor: 'bg-red-500/20 text-red-300 border border-red-500/30',
+        },
+      ],
     },
     {
-      label: 'Permintaan Custom & RFQ',
-      path: '/admin/bulk-orders',
-      icon: FileSpreadsheet,
-      badge: pendingRfqCount > 0 ? String(pendingRfqCount) : undefined,
-      badgeColor: 'bg-blue-400 text-[#101519]',
+      title: 'LOGISTIK & PENGADAAN',
+      items: [
+        {
+          label: 'Armada Kurir & Live GPS',
+          path: '/admin/couriers',
+          icon: Navigation,
+          badge: activeCouriersCount > 0 ? `${activeCouriersCount} Live` : undefined,
+          badgeColor: 'bg-green-400 text-black',
+        },
+        ...(isAdminOrManager
+          ? [
+              {
+                label: 'Permintaan Custom & RFQ',
+                path: '/admin/bulk-orders',
+                icon: FileSpreadsheet,
+                badge: pendingRfqCount > 0 ? String(pendingRfqCount) : undefined,
+                badgeColor: 'bg-blue-400 text-[#101519]',
+              },
+            ]
+          : []),
+      ],
     },
-    { label: 'Voucher & Promo Diskon', path: '/admin/promos', icon: Tag },
-    { label: 'Laporan Penjualan & Laba', path: '/admin/reports', icon: BarChart3 },
-    { label: 'Akun Staf & Hak Akses', path: '/admin/staff', icon: Users },
-    { label: 'Pengaturan Toko', path: '/admin/settings', icon: Settings },
+    ...(isAdminOrManager
+      ? [
+          {
+            title: 'KEUANGAN & TRANSAKSI',
+            items: [
+              {
+                label: 'Verifikasi Pembayaran',
+                path: '/admin/payments',
+                icon: CreditCard,
+                badge: awaitingVerificationCount > 0 ? String(awaitingVerificationCount) : undefined,
+                badgeColor: 'bg-accent-2 text-[#101519]',
+              },
+              {
+                label: 'Laporan Penjualan & Laba',
+                path: '/admin/reports',
+                icon: BarChart3,
+              },
+            ],
+          },
+          {
+            title: 'KATALOG & PROMOSI',
+            items: [
+              {
+                label: 'Kategori & Banner Hero',
+                path: '/admin/categories',
+                icon: Layers,
+              },
+              {
+                label: 'Voucher & Promo Diskon',
+                path: '/admin/promos',
+                icon: Tag,
+              },
+            ],
+          },
+        ]
+      : []),
+    ...(isSuperAdmin
+      ? [
+          {
+            title: 'PENGATURAN TOKO',
+            items: [
+              {
+                label: 'Akun Staf & Hak Akses',
+                path: '/admin/staff',
+                icon: Users,
+              },
+              {
+                label: 'Pengaturan Toko & Bank',
+                path: '/admin/settings',
+                icon: Settings,
+              },
+            ],
+          },
+        ]
+      : []),
   ];
+
+  // Helper for role badge display
+  const getRoleBadgeInfo = () => {
+    switch (userRole) {
+      case 'super_admin':
+        return { label: 'SUPER ADMIN', badgeClass: 'bg-purple-500/20 text-purple-300 border-purple-500/40' };
+      case 'manager':
+        return { label: 'MANAJER TOKO', badgeClass: 'bg-blue-500/20 text-blue-300 border-blue-500/40' };
+      case 'admin':
+        return { label: 'KASIR / LAYANAN CS', badgeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' };
+      case 'staff':
+        return { label: 'STAF GUDANG & INVENTARIS', badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/40' };
+      default:
+        return { label: userRole.toUpperCase(), badgeClass: 'bg-neutral-500/20 text-neutral-300 border-neutral-500/40' };
+    }
+  };
+
+  const roleInfo = getRoleBadgeInfo();
 
   return (
     <>
@@ -137,51 +235,61 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
           </button>
         </div>
 
-        {/* Admin User Info */}
+        {/* Admin / Staff User Info with Distinct Role Badge */}
         <div className="p-4 border-b border-white/10 bg-black/20 flex items-center gap-3 text-xs">
-          <div className="w-9 h-9 rounded-full bg-primary/20 text-accent-2 border border-primary/30 flex items-center justify-center font-bold">
+          <div className="w-9 h-9 rounded-full bg-primary/20 text-accent-2 border border-primary/30 flex items-center justify-center font-bold shrink-0">
             {user?.full_name ? user.full_name[0] : 'A'}
           </div>
           <div className="min-w-0 flex-1">
             <p className="font-bold text-white truncate">{user?.full_name}</p>
-            <span className="text-[10px] font-mono text-accent-2 uppercase block">
-              Role: {user?.role.replace('_', ' ')}
+            <span
+              className={`inline-block px-1.5 py-0.5 mt-0.5 text-[9px] font-extrabold rounded tracking-wider border ${roleInfo.badgeClass}`}
+            >
+              {roleInfo.label}
             </span>
           </div>
         </div>
 
-        {/* Nav Menu */}
-        <nav className="p-3 space-y-1 flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-scroll">
-          {navLinks.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+        {/* Categorized Nav Menu */}
+        <nav className="p-3 space-y-4 flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-scroll">
+          {navSections.map((sec, secIdx) => (
+            <div key={secIdx} className="space-y-1">
+              <div className="px-3 pb-1 text-[10px] font-extrabold tracking-wider text-neutral-1/60 uppercase">
+                {sec.title}
+              </div>
 
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={onClose}
-                className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                  isActive
-                    ? 'bg-primary text-white shadow-sm'
-                    : 'text-neutral-1 hover:bg-white/5 hover:text-white'
-                }`}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <Icon className="w-4 h-4 shrink-0" />
-                  <span className="truncate">{item.label}</span>
-                </div>
+              {sec.items.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.path;
 
-                {item.badge && (
-                  <span
-                    className={`ml-2 px-1.5 py-0.5 text-[10px] font-bold rounded-full shrink-0 ${item.badgeColor}`}
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={onClose}
+                    className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                      isActive
+                        ? 'bg-primary text-white shadow-sm'
+                        : 'text-neutral-1 hover:bg-white/5 hover:text-white'
+                    }`}
                   >
-                    {item.badge}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Icon className="w-4 h-4 shrink-0" />
+                      <span className="truncate">{item.label}</span>
+                    </div>
+
+                    {item.badge && (
+                      <span
+                        className={`ml-2 px-1.5 py-0.5 text-[10px] font-bold rounded-full shrink-0 ${item.badgeColor}`}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
         {/* Return to Storefront */}

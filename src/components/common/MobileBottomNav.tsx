@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Grid, FileSpreadsheet, ShoppingCart, User, Shield, Navigation } from 'lucide-react';
+import { Home, Grid, FileSpreadsheet, ShoppingCart, User, Shield, Navigation, Package } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
 
@@ -17,7 +17,8 @@ export const MobileBottomNav: React.FC = () => {
   const itemCount = useCartStore((state) => state.getItemCount());
   const { user } = useAuthStore();
 
-  const isAdmin = user && (user.role === 'super_admin' || user.role === 'admin' || user.role === 'staff');
+  const isSuperAdminOrManager = user && (user.role === 'super_admin' || user.role === 'manager' || user.role === 'admin');
+  const isStaff = user && user.role === 'staff';
   const isCourier = user && user.role === 'courier';
 
   // Hide generic mobile bottom nav on product detail page to make way for sticky buy/cart bar
@@ -28,8 +29,10 @@ export const MobileBottomNav: React.FC = () => {
     return null;
   }
 
-  const accountItem: NavItem = isAdmin
-    ? { label: 'Admin', path: '/admin', icon: Shield, highlight: true }
+  const accountItem: NavItem = isSuperAdminOrManager
+    ? { label: user?.role === 'manager' ? 'Manajer' : 'Admin', path: '/admin', icon: Shield, highlight: true }
+    : isStaff
+    ? { label: 'Gudang', path: '/admin', icon: Package, highlight: true }
     : isCourier
     ? { label: 'Kurir', path: '/courier', icon: Navigation, highlight: true }
     : { label: 'Akun', path: '/account', icon: User };
@@ -37,7 +40,7 @@ export const MobileBottomNav: React.FC = () => {
   const navItems: NavItem[] = [
     { label: 'Beranda', path: '/', icon: Home },
     { label: 'Kategori', path: '/products', icon: Grid },
-    { label: 'Custom', path: '/bulk-order', icon: FileSpreadsheet, highlight: !isAdmin && !isCourier },
+    { label: 'Custom', path: '/bulk-order', icon: FileSpreadsheet, highlight: !isSuperAdminOrManager && !isStaff && !isCourier },
     { label: 'Keranjang', path: '/cart', icon: ShoppingCart, badge: itemCount },
     accountItem,
   ];

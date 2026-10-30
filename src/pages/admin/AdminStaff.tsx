@@ -52,10 +52,16 @@ export const AdminStaff: React.FC = () => {
           bg: 'bg-purple-100 text-purple-800 border-purple-200',
           desc: 'Akses penuh seluruh sistem, pengaturan, laporan laba, & staf',
         };
+      case 'manager':
+        return {
+          label: 'Manajer Operasional Toko',
+          bg: 'bg-blue-100 text-blue-800 border-blue-200',
+          desc: 'Analisis omset & laba rugi, persetujuan RFQ kustom, & monitoring toko',
+        };
       case 'admin':
         return {
-          label: 'Admin / Layanan CS',
-          bg: 'bg-blue-100 text-blue-800 border-blue-200',
+          label: 'Kasir & Layanan CS',
+          bg: 'bg-emerald-100 text-emerald-800 border-emerald-200',
           desc: 'Verifikasi bayar, proses pesanan, & tangani RFQ pelanggan',
         };
       case 'staff':
@@ -191,7 +197,8 @@ export const AdminStaff: React.FC = () => {
                         className="h-8 px-2 bg-neutral-2 border border-hairline rounded-lg text-xs font-semibold focus:outline-none focus:border-primary"
                       >
                         <option value="super_admin">Super Admin</option>
-                        <option value="admin">Admin / CS</option>
+                        <option value="manager">Manajer Toko</option>
+                        <option value="admin">Kasir / CS</option>
                         <option value="staff">Staf Gudang</option>
                         <option value="courier">Kurir Toko</option>
                       </select>
@@ -282,7 +289,8 @@ export const AdminStaff: React.FC = () => {
                   className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
                 >
                   <option value="staff">Staf Gudang & Logistik</option>
-                  <option value="admin">Admin / Kasir CS</option>
+                  <option value="admin">Kasir & Layanan CS</option>
+                  <option value="manager">Manajer Operasional Toko</option>
                   <option value="courier">Kurir Toko USKI</option>
                   <option value="super_admin">Super Admin</option>
                 </select>

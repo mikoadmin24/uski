@@ -62,6 +62,45 @@ export const AdminOrders: React.FC = () => {
         </div>
       </div>
 
+      {/* Quick Status Pill Filter Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+        {[
+          { id: 'all', label: `Semua Pesanan (${orders.length})` },
+          {
+            id: 'processing',
+            label: `📦 Perlu Dikemas / Packing (${orders.filter((o) => o.status === 'processing').length})`,
+            highlight: true,
+          },
+          {
+            id: 'awaiting_payment',
+            label: `⏳ Menunggu Bayar (${orders.filter((o) => o.status === 'awaiting_payment').length})`,
+          },
+          {
+            id: 'shipped',
+            label: `🚚 Sedang Dikirim (${orders.filter((o) => o.status === 'shipped').length})`,
+          },
+          {
+            id: 'delivered',
+            label: `✅ Selesai (${orders.filter((o) => o.status === 'delivered').length})`,
+          },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setStatusFilter(tab.id)}
+            className={`px-3.5 py-2 rounded-xl font-bold whitespace-nowrap transition-all ${
+              statusFilter === tab.id
+                ? 'bg-primary text-white shadow-xs'
+                : tab.highlight && statusFilter !== tab.id
+                ? 'bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200'
+                : 'bg-white text-body border border-hairline hover:bg-neutral-2'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {/* Filter and Search Bar */}
       <div className="bg-white border border-hairline rounded-2xl p-4 flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">

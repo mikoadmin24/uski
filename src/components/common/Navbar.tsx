@@ -16,6 +16,7 @@ import {
   ChevronRight,
   CheckCircle2,
   Lock,
+  Package,
 } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
@@ -210,7 +211,7 @@ export const Navbar: React.FC = () => {
           {/* User Account / Profile Menu */}
           <div className="relative shrink-0">
             {user ? (
-              (user.role === 'super_admin' || user.role === 'admin' || user.role === 'staff') ? (
+              (user.role === 'super_admin' || user.role === 'admin') ? (
                 <div className="flex items-center gap-1.5 sm:gap-2">
                   <Link
                     to="/admin"
@@ -229,6 +230,50 @@ export const Navbar: React.FC = () => {
                   >
                     <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs shrink-0">
                       {user.full_name ? user.full_name[0] : 'A'}
+                    </div>
+                  </button>
+                </div>
+              ) : user.role === 'manager' ? (
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <Link
+                    to="/admin"
+                    className="flex items-center gap-1.5 px-3 sm:px-4 h-9 sm:h-11 bg-blue-600 text-white hover:bg-blue-700 rounded-full text-xs font-bold transition-all shadow-xs"
+                    title="Buka Dashboard Manajer"
+                  >
+                    <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Dashboard Manajer</span>
+                    <span className="sm:hidden">Manajer</span>
+                  </Link>
+
+                  <button
+                    onClick={() => setRoleSwitcherOpen(!roleSwitcherOpen)}
+                    className="flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 border border-blue-500/30 bg-blue-50 hover:bg-blue-100 rounded-full text-xs font-bold text-blue-700 transition-all"
+                    title="Menu Akun Manajer"
+                  >
+                    <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                      {user.full_name ? user.full_name[0] : 'M'}
+                    </div>
+                  </button>
+                </div>
+              ) : user.role === 'staff' ? (
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <Link
+                    to="/admin"
+                    className="flex items-center gap-1.5 px-3 sm:px-4 h-9 sm:h-11 bg-amber-600 text-white hover:bg-amber-700 rounded-full text-xs font-bold transition-all shadow-xs"
+                    title="Buka Operasional Gudang"
+                  >
+                    <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Operasional Gudang</span>
+                    <span className="sm:hidden">Gudang</span>
+                  </Link>
+
+                  <button
+                    onClick={() => setRoleSwitcherOpen(!roleSwitcherOpen)}
+                    className="flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 border border-amber-500/30 bg-amber-50 hover:bg-amber-100 rounded-full text-xs font-bold text-amber-700 transition-all"
+                    title="Menu Staf Gudang"
+                  >
+                    <div className="w-6 h-6 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                      {user.full_name ? user.full_name[0] : 'S'}
                     </div>
                   </button>
                 </div>
@@ -307,6 +352,10 @@ export const Navbar: React.FC = () => {
                           ? 'Kurir Toko'
                           : user.role === 'super_admin'
                           ? 'Super Admin'
+                          : user.role === 'manager'
+                          ? 'Manajer Toko'
+                          : user.role === 'admin'
+                          ? 'Kasir / CS'
                           : user.role === 'staff'
                           ? 'Staf Gudang'
                           : 'Pelanggan'}
@@ -331,7 +380,7 @@ export const Navbar: React.FC = () => {
                     </Link>
                   )}
 
-                  {(user.role === 'super_admin' || user.role === 'admin' || user.role === 'staff') && (
+                  {(user.role === 'super_admin' || user.role === 'admin' || user.role === 'manager' || user.role === 'staff') && (
                     <Link
                       to="/admin"
                       onClick={() => setRoleSwitcherOpen(false)}
@@ -339,36 +388,105 @@ export const Navbar: React.FC = () => {
                     >
                       <span className="flex items-center gap-2">
                         <Shield className="w-4 h-4" />
-                        <span>Panel Backoffice Admin</span>
+                        <span>
+                          {user.role === 'staff' ? 'Portal Operasional Gudang' : user.role === 'manager' ? 'Panel Manajer Toko' : 'Panel Backoffice Admin'}
+                        </span>
                       </span>
                       <ChevronRight className="w-4 h-4" />
                     </Link>
                   )}
 
-                  <Link
-                    to="/account"
-                    onClick={() => setRoleSwitcherOpen(false)}
-                    className="flex items-center justify-between p-2.5 rounded-xl hover:bg-neutral-2 text-body font-semibold transition-colors"
-                  >
-                    <span className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-body" />
-                      <span>Profil & Alamat Saya</span>
-                    </span>
-                    <ChevronRight className="w-4 h-4" />
-                  </Link>
+                  {user.role === 'customer' && (
+                    <>
+                      <Link
+                        to="/account"
+                        onClick={() => setRoleSwitcherOpen(false)}
+                        className="flex items-center justify-between p-2.5 rounded-xl hover:bg-neutral-2 text-body font-semibold transition-colors"
+                      >
+                        <span className="flex items-center gap-2">
+                          <User className="w-4 h-4 text-body" />
+                          <span>Profil & Alamat Saya</span>
+                        </span>
+                        <ChevronRight className="w-4 h-4" />
+                      </Link>
 
-                  <Link
-                    to="/account?tab=orders"
-                    onClick={() => setRoleSwitcherOpen(false)}
-                    className="flex items-center justify-between p-2.5 rounded-xl hover:bg-neutral-2 text-body font-semibold transition-colors"
-                  >
-                    <span className="flex items-center gap-2">
-                      <ShoppingCart className="w-4 h-4 text-body" />
-                      <span>Riwayat Pesanan</span>
-                    </span>
-                    <ChevronRight className="w-4 h-4" />
-                  </Link>
+                      <Link
+                        to="/account?tab=orders"
+                        onClick={() => setRoleSwitcherOpen(false)}
+                        className="flex items-center justify-between p-2.5 rounded-xl hover:bg-neutral-2 text-body font-semibold transition-colors"
+                      >
+                        <span className="flex items-center gap-2">
+                          <ShoppingCart className="w-4 h-4 text-body" />
+                          <span>Riwayat Pesanan</span>
+                        </span>
+                        <ChevronRight className="w-4 h-4" />
+                      </Link>
+                    </>
+                  )}
                 </div>
+
+                {/* Quick Staff Role Switcher for Store Management Testing */}
+                {(user.role === 'super_admin' || user.role === 'manager' || user.role === 'admin' || user.role === 'staff' || user.role === 'courier') && (
+                  <div className="pt-2 border-t border-hairline space-y-1.5">
+                    <p className="text-[10px] font-extrabold text-body uppercase tracking-wider px-1">
+                      Ganti Mode Profil Toko:
+                    </p>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          loginAs('super_admin');
+                          setRoleSwitcherOpen(false);
+                          navigate('/admin');
+                        }}
+                        className={`px-2 py-1.5 rounded-lg text-[10px] font-bold text-left transition-colors ${
+                          user.role === 'super_admin' ? 'bg-purple-600 text-white' : 'bg-neutral-2 hover:bg-neutral-1/30 text-body'
+                        }`}
+                      >
+                        🛡️ Super Admin
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          loginAs('manager');
+                          setRoleSwitcherOpen(false);
+                          navigate('/admin');
+                        }}
+                        className={`px-2 py-1.5 rounded-lg text-[10px] font-bold text-left transition-colors ${
+                          user.role === 'manager' ? 'bg-blue-600 text-white' : 'bg-neutral-2 hover:bg-neutral-1/30 text-body'
+                        }`}
+                      >
+                        📊 Manajer Toko
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          loginAs('staff');
+                          setRoleSwitcherOpen(false);
+                          navigate('/admin');
+                        }}
+                        className={`px-2 py-1.5 rounded-lg text-[10px] font-bold text-left transition-colors ${
+                          user.role === 'staff' ? 'bg-amber-600 text-white' : 'bg-neutral-2 hover:bg-neutral-1/30 text-body'
+                        }`}
+                      >
+                        📦 Staf Gudang
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          loginAs('courier');
+                          setRoleSwitcherOpen(false);
+                          navigate('/courier');
+                        }}
+                        className={`px-2 py-1.5 rounded-lg text-[10px] font-bold text-left transition-colors ${
+                          user.role === 'courier' ? 'bg-green-600 text-white' : 'bg-neutral-2 hover:bg-neutral-1/30 text-body'
+                        }`}
+                      >
+                        🚚 Kurir Toko
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Logout button */}
                 <div className="pt-2 border-t border-hairline">
