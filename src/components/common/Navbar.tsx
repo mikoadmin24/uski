@@ -10,9 +10,6 @@ import {
   FileSpreadsheet,
   ChevronDown,
   Shield,
-  Truck,
-  Phone,
-  PackageCheck,
 } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
@@ -55,35 +52,6 @@ export const Navbar: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-hairline shadow-sm">
-      {/* Top Utility Bar */}
-      <div className="bg-[#2D3033] text-white text-xs py-1.5 px-4">
-        <div className="max-w-site mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1">
-              <Phone className="w-3.5 h-3.5 text-accent-2" />
-              CS WhatsApp: 0812-3456-7890
-            </span>
-            <span className="hidden md:inline text-neutral-1">|</span>
-            <span className="hidden md:flex items-center gap-1 text-neutral-1">
-              <Truck className="w-3.5 h-3.5 text-primary-light" />
-              Melayani Retail, Pengadaan Sekolah & Instansi (B2B)
-            </span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Link to="/track-order" className="hover:text-accent-2 transition-colors flex items-center gap-1">
-              <PackageCheck className="w-3.5 h-3.5" />
-              Lacak Pesanan
-            </Link>
-            <span>•</span>
-            <Link to="/bulk-order" className="hover:text-accent-2 transition-colors flex items-center gap-1 font-semibold text-accent-2">
-              <FileSpreadsheet className="w-3.5 h-3.5" />
-              Ajukan Custom / Grosir
-            </Link>
-          </div>
-        </div>
-      </div>
-
       {/* Main Header */}
       <div className="max-w-site mx-auto px-4 py-3 flex items-center justify-between gap-4">
         {/* Brand Logo */}
