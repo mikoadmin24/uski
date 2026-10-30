@@ -1,34 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Navigation,
-  Compass,
   MapPin,
   Phone,
   MessageSquare,
   CheckCircle2,
   Clock,
   Camera,
-  UploadCloud,
   X,
-  ExternalLink,
-  Battery,
-  ShieldCheck,
   Truck,
-  RotateCw,
-  LogOut,
-  AlertTriangle,
   PackageCheck,
   XCircle,
   FileText,
-  Route,
-  Activity,
+  User,
+  ShoppingBag,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useCourierStore } from '@/store/courierStore';
 import { useOrderStore } from '@/store/orderStore';
 import { uploadFileToStorage } from '@/lib/supabase';
-import { formatRupiah, formatDate } from '@/lib/utils';
 import { DigitalSignaturePad } from '@/components/courier/DigitalSignaturePad';
 
 const FAILED_REASONS = [
@@ -42,33 +33,20 @@ const FAILED_REASONS = [
 ];
 
 export const CourierPortalPage: React.FC = () => {
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
   const {
     couriers,
     completeDelivery,
-    updateLocation,
     updateDeliveryStatus,
     failDelivery,
-    gpsTrackingIntervalSeconds,
   } = useCourierStore();
   const { orders } = useOrderStore();
   const navigate = useNavigate();
 
-  // Find courier profile matching logged-in user
+  // Find courier profile matching logged-in user or default to first courier
   const currentCourier =
     couriers.find((c) => c.email === user?.email || c.name.includes(user?.full_name || '')) ||
     couriers[0];
-
-  // GPS State
-  const [gpsStatus, setGpsStatus] = useState<'requesting' | 'active' | 'denied'>('requesting');
-  const [gpsCoords, setGpsCoords] = useState<{
-    lat: number;
-    lng: number;
-    accuracy: number;
-    speed: number;
-    lastPingText: string;
-  } | null>(null);
-  const [batteryLevel, setBatteryLevel] = useState<number>(85);
 
   // Complete delivery modal / form
   const [showCompleteModal, setShowCompleteModal] = useState(false);
@@ -84,67 +62,6 @@ export const CourierPortalPage: React.FC = () => {
   const [failedReason, setFailedReason] = useState(FAILED_REASONS[0]);
   const [failedNotes, setFailedNotes] = useState('');
   const [isSubmittingFailed, setIsSubmittingFailed] = useState(false);
-
-  // 1. AUTOMATIC GPS WATCHER on mount
-  useEffect(() => {
-    if (!('geolocation' in navigator)) {
-      setGpsStatus('denied');
-      return;
-    }
-
-    // Try reading battery
-    if ('getBattery' in navigator) {
-      (navigator as any)
-        .getBattery()
-        .then((bat: any) => {
-          setBatteryLevel(Math.round(bat.level * 100));
-          bat.onlevelchange = () => setBatteryLevel(Math.round(bat.level * 100));
-        })
-        .catch(() => {});
-    }
-
-    const watchId = navigator.geolocation.watchPosition(
-      (pos) => {
-        const { latitude, longitude, accuracy, speed } = pos.coords;
-        const currentSpeedKmh = speed ? Math.round(speed * 3.6) : 0;
-
-        const timeStr = new Date().toLocaleTimeString('id-ID');
-
-        setGpsStatus('active');
-        setGpsCoords({
-          lat: Number(latitude.toFixed(5)),
-          lng: Number(longitude.toFixed(5)),
-          accuracy: Math.round(accuracy),
-          speed: currentSpeedKmh,
-          lastPingText: timeStr,
-        });
-
-        // Broadcast to store so Admin sees it in real-time
-        updateLocation(currentCourier.id, {
-          lat: Number(latitude.toFixed(5)),
-          lng: Number(longitude.toFixed(5)),
-          accuracy_meters: Math.round(accuracy),
-          speed_kmh: currentSpeedKmh,
-          battery_level: batteryLevel,
-          address_approx: `Posisi Nyata HP Kurir (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`,
-        });
-      },
-      (err) => {
-        if (err.code === err.PERMISSION_DENIED) {
-          setGpsStatus('denied');
-        }
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: (gpsTrackingIntervalSeconds || 15) * 1000,
-        timeout: 12000,
-      }
-    );
-
-    return () => {
-      navigator.geolocation.clearWatch(watchId);
-    };
-  }, [currentCourier.id, updateLocation, batteryLevel, currentCourier.status, gpsTrackingIntervalSeconds]);
 
   const handleProofFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -251,46 +168,44 @@ export const CourierPortalPage: React.FC = () => {
   const activeDelivery = currentCourier.active_delivery;
   const deliveryStatus = activeDelivery?.status || 'assigned';
 
-  // Calculate GPS accuracy label
-  const accuracyMeters = gpsCoords?.accuracy || currentCourier.current_location.accuracy_meters || 10;
-  const accuracyBadge =
-    accuracyMeters <= 15
-      ? { label: 'Tinggi (GPS Perangkat Aktif)', color: 'bg-green-100 text-green-800 border-green-200' }
-      : accuracyMeters <= 50
-      ? { label: 'Sedang (Jaringan Seluler)', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' }
-      : { label: 'Rendah (>50m)', color: 'bg-orange-100 text-orange-800 border-orange-200' };
+  // Find matching order in store to get items details
+  const matchingOrder = activeDelivery
+    ? orders.find(
+        (o) =>
+          o.id === activeDelivery.order_id ||
+          o.order_number === activeDelivery.order_number
+      )
+    : null;
 
   return (
-    <div className="min-h-[100dvh] bg-[#F0F4F8] font-urbanist text-[#101519] pb-[calc(3rem+env(safe-area-inset-bottom,0px))] touch-scroll">
-      {/* Mobile Header Bar */}
-      <header className="bg-[#2D3033] text-white p-4 pt-[max(1rem,env(safe-area-inset-top,0px))] sticky top-0 z-30 shadow-md">
+    <div className="min-h-[100dvh] bg-[#F4F6F8] font-urbanist text-[#101519] pb-[calc(3rem+env(safe-area-inset-bottom,0px))] touch-scroll">
+      {/* Mobile Top Header Bar */}
+      <header className="bg-white border-b border-hairline px-4 py-3 sticky top-0 z-30 shadow-xs">
         <div className="max-w-md mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center font-extrabold text-white">
+            <div className="w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center font-extrabold">
               <Truck className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-sm font-extrabold text-white leading-tight">
-                USKI COURIER DRIVER
+              <h1 className="text-sm font-extrabold text-[#101519] leading-tight">
+                PORTAL KURIR TOKO USKI
               </h1>
-              <p className="text-[11px] text-neutral-1">
-                {currentCourier.name} • {currentCourier.vehicle_plate.split('(')[0]}
+              <p className="text-[11px] text-body">
+                {currentCourier.name} • <span className="font-mono font-semibold">{currentCourier.vehicle_plate}</span>
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <Link
-              to="/admin/couriers"
-              className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[10px] font-bold"
-              title="Panel Monitoring Admin"
+              to="/admin/orders"
+              className="px-2.5 py-1 bg-neutral-2 hover:bg-neutral-1 text-[#101519] rounded-lg text-[10px] font-bold border border-hairline"
             >
-              Monitor GPS
+              Admin Pesanan
             </Link>
             <Link
               to="/"
               className="px-2.5 py-1 bg-primary hover:bg-primary-dark text-white rounded-lg text-[10px] font-bold"
-              title="Ke Beranda Toko"
             >
               Ke Toko
             </Link>
@@ -299,106 +214,41 @@ export const CourierPortalPage: React.FC = () => {
       </header>
 
       <main className="max-w-md mx-auto p-4 space-y-4">
-        {/* GPS PERANGKAT AKTIF */}
-        <div
-          className={`rounded-3xl p-5 text-white shadow-lg border transition-all ${
-            gpsStatus === 'active'
-              ? 'bg-gradient-to-br from-[#101519] to-[#2D3033] border-green-500/30'
-              : gpsStatus === 'denied'
-              ? 'bg-red-700 border-red-500'
-              : 'bg-primary border-primary/40'
-          }`}
-        >
+        {/* PROFIL KURIR & STATUS TUGAS (BERSIH TANPA KARTU GPS) */}
+        <div className="bg-white border border-hairline rounded-2xl p-4 shadow-xs space-y-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span
-                className={`w-3 h-3 rounded-full ${
-                  gpsStatus === 'active'
-                    ? 'bg-green-400 animate-ping'
-                    : gpsStatus === 'denied'
-                    ? 'bg-red-300'
-                    : 'bg-yellow-300 animate-pulse'
-                }`}
-              />
-              <span className="font-extrabold text-xs uppercase tracking-wider text-green-400">
-                {gpsStatus === 'active'
-                  ? 'GPS Perangkat Aktif'
-                  : gpsStatus === 'denied'
-                  ? 'Izin GPS Ditolak'
-                  : 'Menghubungkan GPS...'}
-              </span>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+                <Truck className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="font-extrabold text-[#101519] text-sm">{currentCourier.name}</h2>
+                <p className="text-xs text-body font-mono">{currentCourier.vehicle_plate}</p>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 text-[11px] text-white/80 font-mono">
-              <span className="flex items-center gap-1">
-                <Battery className="w-3.5 h-3.5 text-green-400" />
-                {batteryLevel}%
-              </span>
-            </div>
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-bold ${
+                activeDelivery
+                  ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                  : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+              }`}
+            >
+              {activeDelivery ? 'Sedang Mengantar Paket' : 'Standby / Siap Antar'}
+            </span>
           </div>
 
-          {gpsStatus === 'active' && (
-            <div className="mt-3 space-y-2.5">
-              <div className="p-3 bg-white/10 rounded-2xl flex items-center justify-between text-xs font-mono">
-                <div>
-                  <span className="text-white/60 block text-[10px]">KOORDINAT POSISI FISIK</span>
-                  <span className="text-green-300 font-bold text-sm">
-                    {gpsCoords?.lat || currentCourier.current_location.lat},{' '}
-                    {gpsCoords?.lng || currentCourier.current_location.lng}
-                  </span>
-                </div>
-                <div className="text-right">
-                  <span className="text-white/60 block text-[10px]">AKURASI GPS</span>
-                  <span className="text-white font-bold">±{accuracyMeters} meter</span>
-                </div>
-              </div>
-
-              {/* Status Geolocation Perangkat */}
-              <div className="flex items-center justify-between text-[11px] bg-white/5 p-2 rounded-xl text-white/80">
-                <div className="flex items-center gap-1.5">
-                  <Activity className="w-3.5 h-3.5 text-primary" />
-                  <span>
-                    Status Geolocation: <strong>GPS Perangkat Aktif</strong>
-                  </span>
-                </div>
-                <div className="text-[10px] text-green-300 font-mono">
-                  Sinyal: Baik
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-[11px] text-white/70">
-                <span>
-                  Kecepatan:{' '}
-                  <strong className="text-white">
-                    {gpsCoords?.speed || currentCourier.current_location.speed_kmh} km/jam
-                  </strong>
-                </span>
-                <span className="text-green-400 font-bold flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  Update: {currentCourier.current_location.last_updated}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {gpsStatus === 'denied' && (
-            <div className="mt-2 space-y-2 text-xs">
-              <p className="text-white/90 text-[11px]">
-                Izin GPS diblokir di browser. Harap izinkan akses lokasi di pengaturan browser agar pengantaran Anda terlacak otomatis.
-              </p>
-              <button
-                onClick={() => window.location.reload()}
-                className="px-4 py-1.5 bg-white text-red-700 font-bold rounded-xl text-xs"
-              >
-                Muat Ulang & Izinkan Lokasi
-              </button>
-            </div>
-          )}
+          <div className="pt-2 border-t border-hairline flex items-center justify-between text-xs">
+            <span className="text-body">Paket Sukses Hari Ini:</span>
+            <strong className="text-emerald-700 font-bold">
+              {currentCourier.total_delivered_today} Paket Terkirim
+            </strong>
+          </div>
         </div>
 
         {/* ACTIVE DELIVERY CARD WITH STEP-BY-STEP PROGRESSION */}
         {activeDelivery ? (
-          <div className="bg-white border border-hairline rounded-3xl p-5 space-y-4 shadow-sm">
+          <div className="bg-white border border-hairline rounded-3xl p-5 space-y-4 shadow-xs">
             <div className="flex items-center justify-between border-b border-hairline pb-3">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-body">
@@ -431,7 +281,7 @@ export const CourierPortalPage: React.FC = () => {
             {/* Step-by-Step Delivery Tracker UI */}
             <div className="p-3 bg-neutral-2/40 rounded-2xl border border-hairline">
               <span className="text-[10px] font-bold text-body block mb-2 uppercase tracking-wider">
-                Alur Pengantaran (Delivery Flow)
+                Tahapan Pengantaran
               </span>
               <div className="grid grid-cols-3 gap-1.5 text-center text-[10px] font-bold">
                 <div
@@ -455,7 +305,7 @@ export const CourierPortalPage: React.FC = () => {
                 <div
                   className={`p-2 rounded-xl transition-all ${
                     deliveryStatus === 'on_delivery'
-                      ? 'bg-amber-500 text-white shadow-xs animate-pulse'
+                      ? 'bg-emerald-600 text-white shadow-xs'
                       : 'bg-neutral-2 text-body'
                   }`}
                 >
@@ -465,34 +315,45 @@ export const CourierPortalPage: React.FC = () => {
             </div>
 
             {/* Recipient Details */}
-            <div className="space-y-2 text-xs">
+            <div className="space-y-2.5 text-xs bg-neutral-2/30 p-3.5 rounded-2xl border border-hairline">
               <div>
-                <span className="text-body text-[11px]">Nama Penerima:</span>
+                <span className="text-body text-[11px] block">Nama Penerima:</span>
                 <h3 className="text-sm font-extrabold text-[#101519]">
                   {activeDelivery.recipient_name}
                 </h3>
               </div>
 
               <div>
-                <span className="text-body text-[11px]">Alamat Pengantaran:</span>
+                <span className="text-body text-[11px] block">Alamat Tujuan Pengantaran:</span>
                 <p className="font-bold text-[#101519] leading-relaxed">
                   {activeDelivery.destination_address}
                 </p>
               </div>
 
-              {activeDelivery.reassigned_from && (
-                <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl text-blue-900 text-[11px]">
-                  <strong>Catatan Pengalihan:</strong> Dialihkan dari {activeDelivery.reassigned_from}.
-                  {activeDelivery.reassign_reason && ` (${activeDelivery.reassign_reason})`}
-                </div>
-              )}
-
               {activeDelivery.delivery_notes && (
-                <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-[11px]">
-                  <strong>Catatan Toko:</strong> {activeDelivery.delivery_notes}
+                <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-[11px]">
+                  <strong>Catatan Pesanan:</strong> {activeDelivery.delivery_notes}
                 </div>
               )}
             </div>
+
+            {/* Order Items Summary (if available) */}
+            {matchingOrder && matchingOrder.items.length > 0 && (
+              <div className="p-3 bg-neutral-2/30 rounded-2xl border border-hairline text-xs space-y-1.5">
+                <span className="font-bold text-[#101519] flex items-center gap-1.5">
+                  <ShoppingBag className="w-3.5 h-3.5 text-primary" />
+                  <span>Daftar Barang ({matchingOrder.items.length} Item):</span>
+                </span>
+                <ul className="divide-y divide-hairline">
+                  {matchingOrder.items.map((it) => (
+                    <li key={it.id} className="py-1.5 flex justify-between">
+                      <span className="text-[#101519] truncate pr-2">{it.product_name}</span>
+                      <strong className="text-body font-mono shrink-0">{it.quantity}x</strong>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Quick Actions (Maps & WA) */}
             <div className="grid grid-cols-2 gap-2 pt-1">
@@ -502,22 +363,22 @@ export const CourierPortalPage: React.FC = () => {
                 )}`}
                 target="_blank"
                 rel="noreferrer"
-                className="p-2.5 bg-primary text-white rounded-2xl flex items-center justify-center gap-1.5 font-bold text-xs shadow-sm hover:bg-primary-dark transition-all"
+                className="p-3 bg-primary hover:bg-primary-dark text-white rounded-xl flex items-center justify-center gap-1.5 font-bold text-xs shadow-xs transition-all"
               >
                 <Navigation className="w-4 h-4" />
-                <span>Petunjuk Arah</span>
+                <span>Buka Google Maps</span>
               </a>
 
               <a
                 href={`https://wa.me/${activeDelivery.recipient_phone.replace(/[^0-9]/g, '')}?text=Halo%20kak%20${encodeURIComponent(
                   activeDelivery.recipient_name
-                )},%20saya%20kurir%20USKI%20STORE%20sedang%20mengantar%20paket%20Anda.`}
+                )},%20saya%20kurir%20toko%20USKI%20sedang%20mengantar%20paket%20Anda.`}
                 target="_blank"
                 rel="noreferrer"
-                className="p-2.5 bg-green-600 text-white rounded-2xl flex items-center justify-center gap-1.5 font-bold text-xs shadow-sm hover:bg-green-700 transition-all"
+                className="p-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center justify-center gap-1.5 font-bold text-xs shadow-xs transition-all"
               >
                 <MessageSquare className="w-4 h-4" />
-                <span>WhatsApp</span>
+                <span>WhatsApp Pembeli</span>
               </a>
             </div>
 
@@ -527,10 +388,10 @@ export const CourierPortalPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => updateDeliveryStatus(currentCourier.id, 'pickup')}
-                  className="w-full h-12 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2"
+                  className="w-full h-12 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-2"
                 >
                   <PackageCheck className="w-5 h-5" />
-                  <span>Ambil Paket di Toko / Gudang (Pickup)</span>
+                  <span>1. Ambil Paket di Toko (Pickup)</span>
                 </button>
               )}
 
@@ -538,10 +399,10 @@ export const CourierPortalPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => updateDeliveryStatus(currentCourier.id, 'on_delivery')}
-                  className="w-full h-12 bg-primary hover:bg-primary-dark text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2"
+                  className="w-full h-12 bg-primary hover:bg-primary-dark text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-2"
                 >
                   <Truck className="w-5 h-5" />
-                  <span>Mulai Pengantaran ke Alamat (On Delivery)</span>
+                  <span>2. Mulai Pengantaran ke Alamat</span>
                 </button>
               )}
 
@@ -550,93 +411,51 @@ export const CourierPortalPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowCompleteModal(true)}
-                    className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2"
+                    className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-2"
                   >
                     <CheckCircle2 className="w-5 h-5" />
-                    <span>Selesaikan Pengantaran (Delivered)</span>
+                    <span>3. Selesaikan & Foto Serah Terima</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setShowFailedModal(true)}
-                    className="w-full h-10 bg-red-50 hover:bg-red-100 text-red-700 font-bold text-xs rounded-xl border border-red-200 transition-all flex items-center justify-center gap-1.5"
+                    className="w-full h-10 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl border border-rose-200 transition-all flex items-center justify-center gap-1.5"
                   >
-                    <XCircle className="w-4 h-4 text-red-600" />
-                    <span>Laporkan Gagal Antar (Failed)</span>
+                    <XCircle className="w-4 h-4 text-rose-600" />
+                    <span>Laporkan Gagal Antar / Jadwal Ulang</span>
                   </button>
                 </div>
               )}
             </div>
           </div>
         ) : (
-          <div className="bg-white border border-hairline rounded-3xl p-8 text-center space-y-3 shadow-sm">
-            <div className="w-16 h-16 rounded-full bg-green-100 text-green-700 flex items-center justify-center mx-auto">
+          <div className="bg-white border border-hairline rounded-3xl p-8 text-center space-y-3 shadow-xs">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-8 h-8" />
             </div>
             <h3 className="font-extrabold text-base text-[#101519]">
               Semua Pengantaran Selesai!
             </h3>
             <p className="text-xs text-body">
-              Anda sedang standby di pangkalan gudang utama. Tugas baru akan otomatis muncul di layar ini begitu ditugaskan oleh admin.
+              Anda sedang standby di toko. Tugas pengantaran baru akan otomatis muncul di layar ini begitu ditugaskan oleh admin.
             </p>
           </div>
         )}
 
-        {/* TRIP BREADCRUMB HISTORY AUDIT TRAIL */}
-        {currentCourier.trip_history && currentCourier.trip_history.length > 0 && (
-          <div className="bg-white border border-hairline rounded-3xl p-5 space-y-3 shadow-sm text-xs">
-            <div className="flex items-center justify-between border-b border-hairline pb-2.5">
-              <div className="flex items-center gap-1.5">
-                <Route className="w-4 h-4 text-primary" />
-                <h4 className="font-extrabold text-[#101519]">
-                  Histori Titik Perjalanan Hari Ini
-                </h4>
-              </div>
-              <span className="text-[10px] font-bold text-body">
-                {currentCourier.trip_history.length} Titik Rekam
-              </span>
-            </div>
-
-            <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
-              {[...currentCourier.trip_history].reverse().map((point, idx) => (
-                <div
-                  key={idx}
-                  className="p-2.5 bg-neutral-2/40 border border-hairline rounded-xl flex items-start justify-between gap-2"
-                >
-                  <div className="min-w-0">
-                    <p className="font-bold text-[#101519] truncate">{point.address || 'Koordinat Perjalanan'}</p>
-                    <p className="text-[10px] text-body font-mono">
-                      {point.lat.toFixed(5)}, {point.lng.toFixed(5)} • {point.speed_kmh} km/jam
-                    </p>
-                  </div>
-                  <span className="text-[10px] font-bold text-primary shrink-0 font-mono">
-                    {point.timestamp}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Courier Summary Card */}
-        <div className="bg-white border border-hairline rounded-3xl p-5 space-y-3 shadow-sm text-xs">
-          <h4 className="font-extrabold text-[#101519] border-b border-hairline pb-2 flex items-center justify-between">
-            <span>Performa Pengantaran Hari Ini</span>
-            <span className="text-primary font-bold">{currentCourier.total_delivered_today} Paket Berhasil</span>
-          </h4>
-          <div className="grid grid-cols-2 gap-3 text-center">
-            <div className="p-3 bg-neutral-2/50 rounded-2xl">
-              <span className="text-body text-[10px] block">TOTAL DIANTAR</span>
-              <span className="text-lg font-extrabold text-[#101519]">
-                {currentCourier.total_delivered_today} Paket
-              </span>
-            </div>
-            <div className="p-3 bg-neutral-2/50 rounded-2xl">
-              <span className="text-body text-[10px] block">STATUS OPERASIONAL</span>
-              <span className="text-lg font-extrabold text-green-700">
-                {currentCourier.status === 'delivering' ? 'Mengantar' : 'Siap Tugas'}
-              </span>
-            </div>
+        <div className="bg-white border border-hairline rounded-2xl p-4 shadow-xs text-xs space-y-2">
+          <div className="flex justify-between items-center text-body">
+            <span>Status Kurir:</span>
+            <strong className="text-[#101519]">
+              {activeDelivery ? 'Sedang Bertugas' : 'Siap Bertugas'}
+            </strong>
+          </div>
+          <div className="flex justify-between items-center text-body">
+            <span>Selesai Diantar Hari Ini:</span>
+            <strong className="text-emerald-700">
+              {currentCourier.total_delivered_today} Paket
+            </strong>
           </div>
         </div>
       </main>
@@ -747,17 +566,14 @@ export const CourierPortalPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmittingDelivery}
-                  className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5"
+                  className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold rounded-xl transition-all shadow-xs flex items-center justify-center gap-1.5"
                 >
                   {isSubmittingDelivery ? (
-                    <>
-                      <RotateCw className="w-4 h-4 animate-spin" />
-                      <span>Menyimpan Bukti...</span>
-                    </>
+                    <span>Menyimpan Bukti...</span>
                   ) : (
                     <>
                       <CheckCircle2 className="w-4 h-4" />
-                      <span>Kirim & Selesaikan</span>
+                      <span>Kirim Bukti Serah Terima</span>
                     </>
                   )}
                 </button>
@@ -767,21 +583,16 @@ export const CourierPortalPage: React.FC = () => {
         </div>
       )}
 
-      {/* FAILED DELIVERY REPORT MODAL */}
+      {/* FAILED DELIVERY MODAL */}
       {showFailedModal && activeDelivery && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl max-h-[90dvh] overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom,0px)] touch-scroll">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-hairline pb-3">
-              <div className="flex items-center gap-2">
-                <XCircle className="w-5 h-5 text-red-600" />
-                <div>
-                  <h3 className="text-base font-extrabold text-[#101519]">
-                    Laporan Gagal Antar
-                  </h3>
-                  <p className="text-[11px] text-body">
-                    Order #{activeDelivery.order_number} • {activeDelivery.recipient_name}
-                  </p>
-                </div>
+              <div className="flex items-center gap-2 text-rose-600">
+                <XCircle className="w-5 h-5" />
+                <h3 className="text-base font-extrabold text-[#101519]">
+                  Laporan Gagal Antar
+                </h3>
               </div>
               <button onClick={() => setShowFailedModal(false)}>
                 <X className="w-5 h-5 text-body" />
@@ -791,16 +602,16 @@ export const CourierPortalPage: React.FC = () => {
             <form onSubmit={handleFailDeliverySubmit} className="space-y-4 text-xs">
               <div>
                 <label className="font-bold text-body block mb-1">
-                  Pilih Alasan Gagal Antar *
+                  Pilih Alasan Kendala Pengantaran:
                 </label>
                 <select
                   value={failedReason}
                   onChange={(e) => setFailedReason(e.target.value)}
-                  className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary text-xs"
+                  className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
                 >
-                  {FAILED_REASONS.map((reason, i) => (
-                    <option key={i} value={reason}>
-                      {reason}
+                  {FAILED_REASONS.map((r, i) => (
+                    <option key={i} value={r}>
+                      {r}
                     </option>
                   ))}
                 </select>
@@ -808,24 +619,18 @@ export const CourierPortalPage: React.FC = () => {
 
               <div>
                 <label className="font-bold text-body block mb-1">
-                  Keterangan Kendala Lapangan (Opsional)
+                  Catatan Tambahan untuk Admin Toko:
                 </label>
                 <textarea
                   rows={3}
                   value={failedNotes}
                   onChange={(e) => setFailedNotes(e.target.value)}
-                  placeholder="Contoh: Sudah mengetuk pagar 3 kali dan menelpon nomor pembeli namun tidak aktif."
+                  placeholder="Contoh: Sudah ditelepon 3x tidak diangkat, pagar rumah terkunci rapat."
                   className="w-full p-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
                 />
               </div>
 
-              <div className="p-3 bg-red-50 text-red-800 rounded-xl border border-red-200 text-[11px]">
-                <p>
-                  <strong>Perhatian:</strong> Paket akan dikembalikan ke gudang toko atau dijadwalkan ulang oleh admin toko.
-                </p>
-              </div>
-
-              <div className="pt-3 border-t border-hairline flex gap-2">
+              <div className="pt-2 border-t border-hairline flex gap-2">
                 <button
                   type="button"
                   onClick={() => setShowFailedModal(false)}
@@ -836,19 +641,9 @@ export const CourierPortalPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmittingFailed}
-                  className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5"
+                  className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold rounded-xl transition-all shadow-xs flex items-center justify-center gap-1.5"
                 >
-                  {isSubmittingFailed ? (
-                    <>
-                      <RotateCw className="w-4 h-4 animate-spin" />
-                      <span>Menyimpan Laporan...</span>
-                    </>
-                  ) : (
-                    <>
-                      <XCircle className="w-4 h-4" />
-                      <span>Laporkan Gagal Antar</span>
-                    </>
-                  )}
+                  {isSubmittingFailed ? 'Menyimpan...' : 'Kirim Laporan Gagal'}
                 </button>
               </div>
             </form>
