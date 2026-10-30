@@ -11,6 +11,11 @@ import {
   ChevronDown,
   Shield,
   Navigation,
+  LogOut,
+  KeyRound,
+  ChevronRight,
+  CheckCircle2,
+  Lock,
 } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
@@ -30,6 +35,9 @@ export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
   const [roleSwitcherOpen, setRoleSwitcherOpen] = useState(false);
+  const [showManualLoginModal, setShowManualLoginModal] = useState(false);
+  const [manualEmail, setManualEmail] = useState('');
+  const [manualPassword, setManualPassword] = useState('');
 
   // Auto-suggest products
   const suggestedProducts = searchQuery.trim()
@@ -191,122 +199,250 @@ export const Navbar: React.FC = () => {
             )}
           </Link>
 
-          {/* User Account & Role Switcher */}
+          {/* User Account & Direct Login Button */}
           <div className="relative">
             <button
               onClick={() => setRoleSwitcherOpen(!roleSwitcherOpen)}
-              className="flex items-center gap-1.5 px-3 h-11 border border-hairline rounded-full hover:border-primary text-sm font-semibold text-[#2D3033] transition-colors"
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 h-10 sm:h-11 border border-primary/40 bg-primary/5 hover:bg-primary/10 rounded-full text-xs font-bold text-[#101519] transition-all shadow-xs"
+              title="Menu Akun & Login Cepat"
             >
-              <User className="w-4 h-4 text-primary" />
-              <span className="hidden md:inline max-w-[100px] truncate">
-                {user ? user.full_name : 'Masuk'}
-              </span>
-              <ChevronDown className="w-3.5 h-3.5 text-body" />
+              <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center font-bold text-[11px] shrink-0">
+                {user ? user.full_name[0] : <User className="w-3.5 h-3.5" />}
+              </div>
+              <div className="text-left leading-tight hidden xs:block">
+                <span className="block text-[9px] sm:text-[10px] text-body font-semibold">
+                  {user ? 'Akun Aktif' : 'Akses'}
+                </span>
+                <span className="block text-[11px] sm:text-xs font-extrabold text-primary truncate max-w-[100px]">
+                  {user
+                    ? user.role === 'super_admin'
+                      ? 'Admin'
+                      : user.role === 'courier'
+                      ? 'Kurir'
+                      : user.role === 'staff'
+                      ? 'Staf'
+                      : user.full_name.split(' ')[0]
+                    : 'Masuk'}
+                </span>
+              </div>
+              <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-body shrink-0" />
             </button>
 
-            {/* Account / Role Dropdown */}
+            {/* Quick 1-Click Direct Login & Account Dropdown */}
             {roleSwitcherOpen && (
               <div
-                className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-hairline py-2 z-50"
+                className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-3xl shadow-2xl border border-hairline p-4 z-50 animate-slide-up space-y-3"
                 onMouseLeave={() => setRoleSwitcherOpen(false)}
               >
-                <div className="px-4 py-2 border-b border-hairline">
-                  <p className="text-xs font-semibold text-body">Sedang Aktif Sebagai:</p>
-                  <p className="text-sm font-bold text-[#101519]">{user?.full_name}</p>
-                  <span className="inline-block mt-1 px-2 py-0.5 text-[10px] font-extrabold uppercase rounded bg-primary/10 text-primary">
-                    Peran: {user?.role.replace('_', ' ')}
-                  </span>
-                </div>
-
-                <div className="py-1">
-                  <Link
-                    to="/account"
-                    onClick={() => setRoleSwitcherOpen(false)}
-                    className="block px-4 py-2 text-sm text-[#2D3033] hover:bg-neutral-2"
-                  >
-                    Dashboard Akun
-                  </Link>
-
-                  {/* Admin Direct Links if Admin */}
-                  {(user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'staff') && (
-                    <Link
-                      to="/admin"
-                      onClick={() => setRoleSwitcherOpen(false)}
-                      className="block px-4 py-2 text-sm font-bold text-primary hover:bg-primary/5 flex items-center gap-1.5"
-                    >
-                      <Shield className="w-4 h-4" />
-                      Panel Admin / Backoffice
-                    </Link>
-                  )}
-
-                  {user?.role === 'courier' && (
-                    <Link
-                      to="/courier"
-                      onClick={() => setRoleSwitcherOpen(false)}
-                      className="block px-4 py-2 text-sm font-bold text-green-700 hover:bg-green-50 flex items-center gap-1.5"
-                    >
-                      <Navigation className="w-4 h-4 text-green-600 animate-spin-slow" />
-                      Portal Kurir (Auto GPS Aktif)
-                    </Link>
-                  )}
-                </div>
-
-                {/* Role Switcher Demo Bar */}
-                <div className="px-4 pt-2 pb-1 border-t border-hairline bg-neutral-2/50">
-                  <p className="text-[11px] font-bold text-body uppercase tracking-wider mb-1.5">
-                    Mode Pengujian Role:
-                  </p>
-                  <div className="grid grid-cols-2 gap-1 text-xs">
+                {/* Active user recap if logged in */}
+                {user ? (
+                  <div className="p-3 bg-neutral-2/60 rounded-2xl flex items-center justify-between border border-hairline">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-9 h-9 rounded-full bg-primary text-white font-bold flex items-center justify-center text-sm shrink-0">
+                        {user.full_name[0]}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-extrabold text-xs text-[#101519] truncate">{user.full_name}</p>
+                        <span className="inline-block px-2 py-0.2 text-[9px] font-extrabold uppercase rounded bg-primary/15 text-primary">
+                          {user.role === 'courier'
+                            ? '🏍️ Kurir Toko (Auto GPS)'
+                            : user.role === 'super_admin'
+                            ? '👑 Super Admin'
+                            : user.role === 'staff'
+                            ? '📦 Staf Gudang'
+                            : '🛍️ Pelanggan'}
+                        </span>
+                      </div>
+                    </div>
                     <button
                       onClick={() => {
-                        loginAs('customer');
+                        logout();
                         setRoleSwitcherOpen(false);
                       }}
-                      className={`px-2 py-1 rounded text-left ${user?.role === 'customer' ? 'bg-primary text-white font-bold' : 'hover:bg-white'}`}
+                      className="p-1.5 rounded-lg text-badge-text hover:bg-red-50 text-xs font-bold transition-colors"
+                      title="Keluar / Logout"
                     >
-                      Pelanggan
+                      <LogOut className="w-4 h-4" />
                     </button>
+                  </div>
+                ) : (
+                  <div className="text-left pb-1 border-b border-hairline">
+                    <h3 className="font-extrabold text-sm text-[#101519]">Masuk ke USKI STORE</h3>
+                    <p className="text-[11px] text-body">Pilih peran di bawah untuk langsung masuk 1-klik:</p>
+                  </div>
+                )}
+
+                {/* 1-Click Direct Login Card Options */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-body">
+                      ⚡ Langsung Masuk (1-Klik)
+                    </span>
+                    <span className="text-[10px] text-green-600 font-bold">Tanpa Password</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Super Admin Card */}
                     <button
                       onClick={() => {
                         loginAs('super_admin');
                         setRoleSwitcherOpen(false);
+                        navigate('/admin');
                       }}
-                      className={`px-2 py-1 rounded text-left ${user?.role === 'super_admin' ? 'bg-primary text-white font-bold' : 'hover:bg-white'}`}
+                      className="p-2.5 rounded-2xl border border-purple-200 bg-purple-50/70 hover:bg-purple-100 hover:border-purple-400 text-left transition-all group flex flex-col justify-between"
                     >
-                      Admin
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-base">👑</span>
+                        <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-purple-200 text-purple-900">
+                          Admin
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-extrabold text-xs text-[#101519] block group-hover:text-purple-900">
+                          Super Admin
+                        </span>
+                        <span className="text-[10px] text-body line-clamp-1">Kelola toko & produk</span>
+                      </div>
                     </button>
-                    <button
-                      onClick={() => {
-                        loginAs('staff');
-                        setRoleSwitcherOpen(false);
-                      }}
-                      className={`px-2 py-1 rounded text-left ${user?.role === 'staff' ? 'bg-primary text-white font-bold' : 'hover:bg-white'}`}
-                    >
-                      Staf Toko
-                    </button>
+
+                    {/* Kurir Toko Card */}
                     <button
                       onClick={() => {
                         loginAs('courier');
                         setRoleSwitcherOpen(false);
                         navigate('/courier');
                       }}
-                      className={`px-2 py-1 rounded text-left ${user?.role === 'courier' ? 'bg-primary text-white font-bold' : 'hover:bg-white'}`}
+                      className="p-2.5 rounded-2xl border border-green-200 bg-green-50/70 hover:bg-green-100 hover:border-green-400 text-left transition-all group flex flex-col justify-between"
                     >
-                      Kurir (Auto GPS)
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-base">🏍️</span>
+                        <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-green-200 text-green-900 animate-pulse">
+                          Auto GPS
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-extrabold text-xs text-[#101519] block group-hover:text-green-900">
+                          Kurir Toko
+                        </span>
+                        <span className="text-[10px] text-body line-clamp-1">Antar paket & live GPS</span>
+                      </div>
+                    </button>
+
+                    {/* Staf Gudang Card */}
+                    <button
+                      onClick={() => {
+                        loginAs('staff');
+                        setRoleSwitcherOpen(false);
+                        navigate('/admin/inventory');
+                      }}
+                      className="p-2.5 rounded-2xl border border-amber-200 bg-amber-50/70 hover:bg-amber-100 hover:border-amber-400 text-left transition-all group flex flex-col justify-between"
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-base">📦</span>
+                        <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-amber-200 text-amber-900">
+                          Gudang
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-extrabold text-xs text-[#101519] block group-hover:text-amber-900">
+                          Staf Gudang
+                        </span>
+                        <span className="text-[10px] text-body line-clamp-1">Inventaris & barcode</span>
+                      </div>
+                    </button>
+
+                    {/* Pelanggan Card */}
+                    <button
+                      onClick={() => {
+                        loginAs('customer');
+                        setRoleSwitcherOpen(false);
+                        navigate('/account');
+                      }}
+                      className="p-2.5 rounded-2xl border border-blue-200 bg-blue-50/70 hover:bg-blue-100 hover:border-blue-400 text-left transition-all group flex flex-col justify-between"
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-base">🛍️</span>
+                        <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-blue-200 text-blue-900">
+                          Pembeli
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-extrabold text-xs text-[#101519] block group-hover:text-blue-900">
+                          Pelanggan
+                        </span>
+                        <span className="text-[10px] text-body line-clamp-1">Riwayat belanja & alamat</span>
+                      </div>
                     </button>
                   </div>
                 </div>
 
-                <div className="pt-1 border-t border-hairline">
+                {/* Direct quick links */}
+                <div className="pt-2 border-t border-hairline space-y-1 text-xs">
+                  {user?.role === 'courier' && (
+                    <Link
+                      to="/courier"
+                      onClick={() => setRoleSwitcherOpen(false)}
+                      className="flex items-center justify-between p-2 rounded-xl bg-green-100/70 text-green-900 font-bold hover:bg-green-100 transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Navigation className="w-4 h-4 text-green-700 animate-spin-slow" />
+                        <span>Buka Layar Portal Kurir (Auto GPS)</span>
+                      </span>
+                      <ChevronRight className="w-4 h-4" />
+                    </Link>
+                  )}
+
+                  {(user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'staff') && (
+                    <Link
+                      to="/admin"
+                      onClick={() => setRoleSwitcherOpen(false)}
+                      className="flex items-center justify-between p-2 rounded-xl bg-primary/10 text-primary font-bold hover:bg-primary/15 transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Shield className="w-4 h-4" />
+                        <span>Buka Panel Admin Backoffice</span>
+                      </span>
+                      <ChevronRight className="w-4 h-4" />
+                    </Link>
+                  )}
+
+                  <Link
+                    to="/account"
+                    onClick={() => setRoleSwitcherOpen(false)}
+                    className="flex items-center justify-between p-2 rounded-xl hover:bg-neutral-2 text-body font-semibold transition-colors"
+                  >
+                    <span className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-body" />
+                      <span>Dashboard & Profil Akun</span>
+                    </span>
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
+                </div>
+
+                {/* Manual login prompt trigger */}
+                <div className="pt-2 border-t border-hairline flex items-center justify-between text-[11px] text-body">
                   <button
                     onClick={() => {
-                      logout();
                       setRoleSwitcherOpen(false);
+                      setShowManualLoginModal(true);
                     }}
-                    className="w-full text-left px-4 py-2 text-sm text-badge-text hover:bg-badge-bg font-semibold"
+                    className="text-primary hover:underline font-bold flex items-center gap-1"
                   >
-                    Keluar / Logout
+                    <KeyRound className="w-3.5 h-3.5" />
+                    <span>Ketik Email & Sandi</span>
                   </button>
+
+                  {user && (
+                    <button
+                      onClick={() => {
+                        logout();
+                        setRoleSwitcherOpen(false);
+                      }}
+                      className="text-badge-text hover:underline font-bold"
+                    >
+                      Keluar / Logout
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -365,6 +501,83 @@ export const Navbar: React.FC = () => {
                 </Link>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Manual Email & Password Login Modal */}
+      {showManualLoginModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-hairline pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-[#101519]">Masuk ke Akun</h3>
+                  <p className="text-[11px] text-body">Gunakan email & kata sandi</p>
+                </div>
+              </div>
+              <button onClick={() => setShowManualLoginModal(false)}>
+                <X className="w-5 h-5 text-body" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const em = manualEmail.trim().toLowerCase();
+                if (em.includes('admin')) {
+                  loginAs('super_admin');
+                  navigate('/admin');
+                } else if (em.includes('kurir') || em.includes('courier')) {
+                  loginAs('courier');
+                  navigate('/courier');
+                } else if (em.includes('gudang') || em.includes('staff')) {
+                  loginAs('staff');
+                  navigate('/admin/inventory');
+                } else {
+                  loginAs('customer');
+                  navigate('/account');
+                }
+                setShowManualLoginModal(false);
+              }}
+              className="space-y-3 text-xs"
+            >
+              <div>
+                <label className="font-bold text-body block mb-1">Email Toko / Akun</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="admin@uskistore.id / kurir@... / user@..."
+                  value={manualEmail}
+                  onChange={(e) => setManualEmail(e.target.value)}
+                  className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-body block mb-1">Kata Sandi</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={manualPassword}
+                  onChange={(e) => setManualPassword(e.target.value)}
+                  className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary text-xs"
+                />
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  className="w-full h-11 bg-primary hover:bg-primary-dark text-white font-extrabold text-xs rounded-xl shadow-sm transition-all"
+                >
+                  Masuk Sekarang
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
