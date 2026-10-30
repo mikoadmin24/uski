@@ -2,12 +2,14 @@ import React, { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Filter, X, SlidersHorizontal } from 'lucide-react';
 import { useProductStore } from '@/store/productStore';
-import { mockCategories, mockBrands } from '@/data/mockData';
+import { useCategoryStore } from '@/store/categoryStore';
+import { mockBrands } from '@/data/mockData';
 import { ProductCard } from '@/components/common/ProductCard';
 
 export const CatalogPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { products } = useProductStore();
+  const { categories } = useCategoryStore();
 
   const querySearch = searchParams.get('q') || '';
   const queryCategory = searchParams.get('category') || '';
@@ -44,7 +46,7 @@ export const CatalogPage: React.FC = () => {
 
         // Category filter
         if (selectedCategory) {
-          const cat = mockCategories.find((c) => c.slug === selectedCategory);
+          const cat = categories.find((c) => c.slug === selectedCategory);
           if (cat && p.category_id !== cat.id) return false;
         }
 
@@ -119,7 +121,7 @@ export const CatalogPage: React.FC = () => {
             {querySearch
               ? `Hasil Pencarian: "${querySearch}"`
               : selectedCategory
-              ? mockCategories.find((c) => c.slug === selectedCategory)?.name || 'Katalog Produk'
+              ? categories.find((c) => c.slug === selectedCategory)?.name || 'Katalog Produk'
               : 'Semua Produk'}
           </h1>
           <p className="text-xs sm:text-sm text-body mt-1">
@@ -186,7 +188,7 @@ export const CatalogPage: React.FC = () => {
                 >
                   Semua Kategori
                 </button>
-                {mockCategories.map((cat) => (
+                {categories.map((cat) => (
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.slug)}
@@ -356,7 +358,7 @@ export const CatalogPage: React.FC = () => {
                 >
                   Semua Kategori
                 </button>
-                {mockCategories.map((c) => (
+                {categories.map((c) => (
                   <button
                     key={c.id}
                     onClick={() => {

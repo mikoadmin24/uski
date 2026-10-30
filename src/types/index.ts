@@ -268,7 +268,7 @@ export interface Voucher {
   discount_value: number;
   min_spend: number;
   max_discount?: number;
-  usage_limit: number;
+  usage_limit?: number;
   usage_count: number;
   start_date: string;
   end_date: string;

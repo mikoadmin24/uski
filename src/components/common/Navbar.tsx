@@ -14,7 +14,7 @@ import {
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
 import { useProductStore } from '@/store/productStore';
-import { mockCategories } from '@/data/mockData';
+import { useCategoryStore } from '@/store/categoryStore';
 import { formatRupiah } from '@/lib/utils';
 
 export const Navbar: React.FC = () => {
@@ -22,6 +22,7 @@ export const Navbar: React.FC = () => {
   const itemCount = useCartStore((state) => state.getItemCount());
   const { user, loginAs, logout } = useAuthStore();
   const { products } = useProductStore();
+  const { categories } = useCategoryStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -90,7 +91,7 @@ export const Navbar: React.FC = () => {
                 Semua Kategori Produk
               </div>
               <div className="max-h-96 overflow-y-auto py-1">
-                {mockCategories.map((cat) => (
+                {categories.map((cat) => (
                   <Link
                     key={cat.id}
                     to={`/products?category=${cat.slug}`}
@@ -340,7 +341,7 @@ export const Navbar: React.FC = () => {
           <div className="pt-2 border-t border-hairline">
             <p className="text-xs font-bold text-body uppercase tracking-wider mb-2">Kategori Pilihan</p>
             <div className="grid grid-cols-2 gap-2">
-              {mockCategories.slice(0, 8).map((cat) => (
+              {categories.slice(0, 8).map((cat) => (
                 <Link
                   key={cat.id}
                   to={`/products?category=${cat.slug}`}

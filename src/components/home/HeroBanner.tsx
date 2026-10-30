@@ -1,24 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
-import { mockBanners } from '@/data/mockData';
+import { useCategoryStore } from '@/store/categoryStore';
 
 export const HeroBanner: React.FC = () => {
+  const { banners } = useCategoryStore();
+  const activeBanners = banners.filter((b) => b.is_active);
   const [currentSlide, setCurrentSlide] = useState(0);
 
+  const bannerCount = activeBanners.length || 1;
+
   useEffect(() => {
+    if (activeBanners.length <= 1) return;
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % mockBanners.length);
+      setCurrentSlide((prev) => (prev + 1) % bannerCount);
     }, 6000);
     return () => clearInterval(timer);
-  }, []);
+  }, [bannerCount, activeBanners.length]);
 
-  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % mockBanners.length);
-  const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + mockBanners.length) % mockBanners.length);
+  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % bannerCount);
+  const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + bannerCount) % bannerCount);
+
+  if (activeBanners.length === 0) return null;
 
   return (
     <div className="relative w-full rounded-2xl overflow-hidden bg-canvas aspect-[21/9] min-h-[220px] max-h-[460px] shadow-sm">
-      {mockBanners.map((banner, index) => (
+      {activeBanners.map((banner, index) => (
         <div
           key={banner.id}
           className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
@@ -32,7 +39,7 @@ export const HeroBanner: React.FC = () => {
             className="w-full h-full object-cover"
           />
 
-          {/* Gradient Overlay as specified in Gramedia Design System */}
+          {/* Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6 md:p-12">
             <div className="max-w-xl text-white space-y-2">
               {banner.badge_text && (
@@ -63,34 +70,38 @@ export const HeroBanner: React.FC = () => {
       ))}
 
       {/* Prev / Next Controls */}
-      <button
-        onClick={prevSlide}
-        className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-canvas flex items-center justify-center transition-all shadow-md backdrop-blur-sm"
-        aria-label="Previous Slide"
-      >
-        <ChevronLeft className="w-5 h-5" />
-      </button>
-      <button
-        onClick={nextSlide}
-        className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-canvas flex items-center justify-center transition-all shadow-md backdrop-blur-sm"
-        aria-label="Next Slide"
-      >
-        <ChevronRight className="w-5 h-5" />
-      </button>
-
-      {/* Slide Indicators */}
-      <div className="absolute bottom-4 right-6 z-20 flex gap-2">
-        {mockBanners.map((_, idx) => (
+      {activeBanners.length > 1 && (
+        <>
           <button
-            key={idx}
-            onClick={() => setCurrentSlide(idx)}
-            className={`h-2 rounded-full transition-all ${
-              idx === currentSlide ? 'w-6 bg-primary' : 'w-2 bg-white/60'
-            }`}
-            aria-label={`Slide ${idx + 1}`}
-          />
-        ))}
-      </div>
+            onClick={prevSlide}
+            className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-canvas flex items-center justify-center transition-all shadow-md backdrop-blur-sm"
+            aria-label="Previous Slide"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button
+            onClick={nextSlide}
+            className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-canvas flex items-center justify-center transition-all shadow-md backdrop-blur-sm"
+            aria-label="Next Slide"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+
+          {/* Slide Indicators */}
+          <div className="absolute bottom-4 right-6 z-20 flex gap-2">
+            {activeBanners.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentSlide(idx)}
+                className={`h-2 rounded-full transition-all ${
+                  idx === currentSlide ? 'w-6 bg-primary' : 'w-2 bg-white/60'
+                }`}
+                aria-label={`Slide ${idx + 1}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 };

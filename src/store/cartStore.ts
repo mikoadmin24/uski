@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { CartItem, Product, ProductVariant, Voucher } from '@/types';
-import { mockVouchers } from '@/data/mockData';
+import { usePromoStore } from '@/store/promoStore';
 
 interface CartState {
   items: CartItem[];
@@ -116,7 +116,8 @@ export const useCartStore = create<CartState>((set, get) => ({
 
   applyVoucher: (code) => {
     const cleanCode = code.trim().toUpperCase();
-    const voucher = mockVouchers.find((v) => v.code === cleanCode && v.is_active);
+    const vouchers = usePromoStore.getState().vouchers;
+    const voucher = vouchers.find((v) => v.code === cleanCode && v.is_active);
 
     if (!voucher) {
       return { success: false, message: 'Kode voucher tidak valid atau sudah kedaluwarsa.' };

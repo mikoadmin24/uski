@@ -5,13 +5,52 @@ interface AuthState {
   user: Profile | null;
   isAuthenticated: boolean;
   addresses: Address[];
+  staffList: Profile[];
   loginAs: (role: UserRole) => void;
   logout: () => void;
   updateProfile: (data: Partial<Profile>) => void;
   addAddress: (address: Omit<Address, 'id' | 'user_id'>) => void;
   deleteAddress: (id: string) => void;
   setPrimaryAddress: (id: string) => void;
+  addStaff: (staff: Omit<Profile, 'id' | 'created_at'>) => void;
+  updateStaffRole: (id: string, role: UserRole) => void;
+  deleteStaff: (id: string) => void;
 }
+
+const initialStaff: Profile[] = [
+  {
+    id: 'staff-1',
+    email: 'admin@uskistore.id',
+    full_name: 'Ustadz Ahmad Farhan (Super Admin)',
+    phone_number: '0812-3456-7890',
+    role: 'super_admin',
+    created_at: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'staff-2',
+    email: 'gudang@uskistore.id',
+    full_name: 'Ridwan Kamil (Staf Inventaris & Gudang)',
+    phone_number: '0813-9876-5432',
+    role: 'staff',
+    created_at: '2026-01-15T00:00:00Z',
+  },
+  {
+    id: 'staff-3',
+    email: 'cs@uskistore.id',
+    full_name: 'Siti Nurhaliza (Kasir & Layanan CS)',
+    phone_number: '0811-2233-4455',
+    role: 'admin',
+    created_at: '2026-02-01T00:00:00Z',
+  },
+  {
+    id: 'staff-4',
+    email: 'kurir@uskistore.id',
+    full_name: 'Bambang Supriyadi (Kurir Toko USKI)',
+    phone_number: '0857-1122-3344',
+    role: 'courier',
+    created_at: '2026-02-10T00:00:00Z',
+  },
+];
 
 const defaultAddresses: Address[] = [
   {
@@ -39,6 +78,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
   isAuthenticated: true,
   addresses: defaultAddresses,
+  staffList: initialStaff,
+
+  addStaff: (data) => {
+    const newStaff: Profile = {
+      ...data,
+      id: `staff-${Date.now()}`,
+      created_at: new Date().toISOString(),
+    };
+    set({ staffList: [...get().staffList, newStaff] });
+  },
+
+  updateStaffRole: (id, role) => {
+    set({
+      staffList: get().staffList.map((s) => (s.id === id ? { ...s, role } : s)),
+    });
+  },
+
+  deleteStaff: (id) => {
+    set({
+      staffList: get().staffList.filter((s) => s.id !== id),
+    });
+  },
 
   loginAs: (role: UserRole) => {
     let name = 'Pelanggan USKI';

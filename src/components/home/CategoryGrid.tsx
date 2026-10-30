@@ -13,7 +13,7 @@ import {
   Palette,
   Scroll,
 } from 'lucide-react';
-import { mockCategories } from '@/data/mockData';
+import { useCategoryStore } from '@/store/categoryStore';
 
 const iconMap: Record<string, React.ElementType> = {
   BookOpen,
@@ -30,6 +30,8 @@ const iconMap: Record<string, React.ElementType> = {
 };
 
 export const CategoryGrid: React.FC = () => {
+  const { categories } = useCategoryStore();
+
   return (
     <div className="py-6">
       <div className="flex items-center justify-between mb-4">
@@ -50,7 +52,7 @@ export const CategoryGrid: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
-        {mockCategories.map((cat) => {
+        {categories.map((cat) => {
           const Icon = (cat.icon && iconMap[cat.icon]) || BookOpen;
 
           return (

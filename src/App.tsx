@@ -27,6 +27,9 @@ import { AdminPayments } from '@/pages/admin/AdminPayments';
 import { AdminBulkOrders } from '@/pages/admin/AdminBulkOrders';
 import { AdminReports } from '@/pages/admin/AdminReports';
 import { AdminSettings } from '@/pages/admin/AdminSettings';
+import { AdminCategories } from '@/pages/admin/AdminCategories';
+import { AdminPromos } from '@/pages/admin/AdminPromos';
+import { AdminStaff } from '@/pages/admin/AdminStaff';
 
 // Scroll to top on route change
 function ScrollToTop() {
@@ -78,11 +81,14 @@ export function App() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
           <Route path="products" element={<AdminProducts />} />
+          <Route path="categories" element={<AdminCategories />} />
           <Route path="inventory" element={<AdminInventory />} />
           <Route path="orders" element={<AdminOrders />} />
           <Route path="payments" element={<AdminPayments />} />
           <Route path="bulk-orders" element={<AdminBulkOrders />} />
+          <Route path="promos" element={<AdminPromos />} />
           <Route path="reports" element={<AdminReports />} />
+          <Route path="staff" element={<AdminStaff />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
       </Routes>
