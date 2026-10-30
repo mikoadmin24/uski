@@ -20,8 +20,8 @@ interface ProductState {
   ) => void;
 }
 
-const STORAGE_KEY = 'uski_products_v1';
-const MOVEMENTS_STORAGE_KEY = 'uski_inventory_movements_v1';
+const STORAGE_KEY = 'uski_products_v2';
+const MOVEMENTS_STORAGE_KEY = 'uski_inventory_movements_v2';
 
 const getInitialProducts = (): Product[] => {
   try {

@@ -47,18 +47,16 @@ USKI STORE is more than a product catalog. It supports the actual retail workflo
 
 ## 1.4 Product Categories
 The catalog supports configurable categories, including:
-- Books and novels (Buku umum & fiksi/non-fiksi).
+- Books and novels (Buku umum & novel/sastra).
+- Al-Qur'an (Mushaf Al-Qur'an, terjemahan, tajwid warna, tafsir, dan mushaf hafalan - kategori mandiri).
+- Kitab (Kitab kuning klasik, syarah pesantren, matan fikih, nahwu & shorof).
 - Educational and academic books (Buku pelajaran & pegangan guru).
-- Children's books.
-- Self-development, history, and general-interest books.
-- Qur'an, tafsir, hadith, and Islamic literature.
-- Classical Islamic texts and kitab kuning.
+- Children's books (Buku cerita & dongeng anak).
 - Notebooks and writing supplies (Buku tulis & kertas).
 - Pens, pencils, markers, erasers, and rulers (ATK esensial).
 - Paper, folders, envelopes, and office supplies.
-- School bags and pencil cases.
-- Art and craft supplies.
-- Islamic learning and worship supplies.
+- Art and craft supplies (Peralatan seni & kreativitas).
+- Islamic learning and worship supplies (Perlengkapan ibadah Islami).
 - Other products created by administrators.
 
 Categories are manageable from the admin dashboard without modifying source code.

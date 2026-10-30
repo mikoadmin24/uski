@@ -87,11 +87,11 @@ export const Footer: React.FC = () => {
             <h4 className="text-sm font-bold text-[#101519] mb-3 uppercase tracking-wider">Kategori Pilihan</h4>
             <ul className="space-y-2 text-sm text-body">
               <li><Link to="/products?category=buku-novel" className="hover:text-primary transition-colors">Buku & Novel</Link></li>
-              <li><Link to="/products?category=alquran-kitab" className="hover:text-primary transition-colors">Al-Qur'an & Kitab</Link></li>
+              <li><Link to="/products?category=alquran" className="hover:text-primary transition-colors">Al-Qur'an</Link></li>
+              <li><Link to="/products?category=kitab" className="hover:text-primary transition-colors">Kitab Kuning & Pesantren</Link></li>
               <li><Link to="/products?category=atk" className="hover:text-primary transition-colors">Alat Tulis Kantor (ATK)</Link></li>
               <li><Link to="/products?category=buku-pelajaran" className="hover:text-primary transition-colors">Buku Pelajaran Sekolah</Link></li>
               <li><Link to="/products?category=perlengkapan-kantor" className="hover:text-primary transition-colors">Perlengkapan Kantor</Link></li>
-              <li><Link to="/products?category=perlengkapan-islami" className="hover:text-primary transition-colors">Perlengkapan Islami</Link></li>
             </ul>
           </div>
 

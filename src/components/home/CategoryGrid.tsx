@@ -11,6 +11,7 @@ import {
   Folder,
   Compass,
   Palette,
+  Scroll,
 } from 'lucide-react';
 import { mockCategories } from '@/data/mockData';
 
@@ -25,6 +26,7 @@ const iconMap: Record<string, React.ElementType> = {
   Folder,
   Compass,
   Palette,
+  Scroll,
 };
 
 export const CategoryGrid: React.FC = () => {

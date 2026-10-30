@@ -208,7 +208,8 @@ export const BulkOrderPage: React.FC = () => {
                     className="w-full h-11 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
                   >
                     <option value="Buku Pelajaran & Edukasi">Buku Pelajaran & Edukasi</option>
-                    <option value="Al-Qur'an & Kitab">Al-Qur'an & Kitab Pesantren</option>
+                    <option value="Al-Qur'an">Mushaf Al-Qur'an & Tafsir</option>
+                    <option value="Kitab">Kitab Kuning & Literatur Pesantren</option>
                     <option value="Buku Tulis & ATK Custom">Buku Tulis & ATK Berlogo</option>
                     <option value="Perlengkapan Kantor & Filing">Perlengkapan Kantor & Filing</option>
                     <option value="Pencarian Buku Langka / Luar Katalog">Pencarian Buku Langka / Luar Katalog</option>
