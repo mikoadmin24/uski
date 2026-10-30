@@ -112,10 +112,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
       >
         {/* Brand Header */}
         <div className="p-5 border-b border-white/10 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2" onClick={onClose}>
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center font-bold text-white text-base shadow-sm">
-              U
-            </div>
+          <Link to="/" className="flex items-center gap-2.5" onClick={onClose}>
+            <img
+              src="/logo.jpg"
+              alt="USKI BACKOFFICE Logo"
+              className="w-9 h-9 rounded-xl object-cover border border-white/20 shadow-sm"
+            />
             <div>
               <span className="font-extrabold text-sm tracking-wide text-white block">
                 USKI BACKOFFICE

@@ -65,10 +65,12 @@ export const Navbar: React.FC = () => {
       {/* Main Header Row */}
       <div className="max-w-site mx-auto px-4 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-4">
         {/* Brand Logo */}
-        <Link to="/" className="flex items-center gap-2 group shrink-0 min-w-0">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary flex items-center justify-center text-white font-extrabold text-lg sm:text-xl shadow-sm tracking-wider shrink-0">
-            U
-          </div>
+        <Link to="/" className="flex items-center gap-2.5 group shrink-0 min-w-0">
+          <img
+            src="/logo.jpg"
+            alt="USKI STORE Logo"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover border border-hairline shadow-sm shrink-0 group-hover:scale-105 transition-transform"
+          />
           <div className="min-w-0">
             <span className="text-base sm:text-xl font-extrabold tracking-tight text-[#0060AE] block leading-none truncate">
               USKI <span className="text-[#2D3033]">STORE</span>

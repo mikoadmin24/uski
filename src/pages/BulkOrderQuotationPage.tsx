@@ -244,14 +244,21 @@ export const BulkOrderQuotationPage: React.FC = () => {
             </div>
 
             {/* Official Letterhead (Kop Surat) */}
-            <div className="border-b-2 border-black pb-4 text-center space-y-1">
-              <h2 className="text-xl font-extrabold tracking-wider text-primary">USKI STORE OFFICIAL</h2>
-              <p className="text-xs font-semibold text-[#101519]">
-                PUSAT DISTRIBUSI BUKU UMUM, PELAJARAN, AL-QUR'AN, KITAB & ATK INSTANSI
-              </p>
-              <p className="text-[11px] text-body">
-                Jl. Margonda Raya No. 102, Depok, Jawa Barat | WhatsApp: 0812-3456-7890 | Email: cs@uskistore.id
-              </p>
+            <div className="border-b-2 border-black pb-4 flex items-center justify-between gap-4">
+              <img
+                src="/logo.jpg"
+                alt="USKI STORE Logo"
+                className="w-14 h-14 rounded-xl object-cover border border-hairline shadow-xs shrink-0"
+              />
+              <div className="flex-1 text-center space-y-1">
+                <h2 className="text-xl font-extrabold tracking-wider text-primary">USKI STORE OFFICIAL</h2>
+                <p className="text-xs font-semibold text-[#101519]">
+                  PUSAT DISTRIBUSI BUKU UMUM, PELAJARAN, AL-QUR'AN, KITAB & ATK INSTANSI
+                </p>
+                <p className="text-[11px] text-body">
+                  Jl. Margonda Raya No. 102, Depok, Jawa Barat | WhatsApp: 0812-3456-7890 | Email: cs@uskistore.id
+                </p>
+              </div>
             </div>
 
             {/* Meta info */}

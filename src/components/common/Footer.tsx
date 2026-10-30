@@ -55,10 +55,12 @@ export const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Brand Info */}
           <div className="lg:col-span-2 space-y-4">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-white font-extrabold text-lg">
-                U
-              </div>
+            <Link to="/" className="flex items-center gap-2.5">
+              <img
+                src="/logo.jpg"
+                alt="USKI STORE Logo"
+                className="w-9 h-9 rounded-xl object-cover border border-hairline shadow-xs"
+              />
               <span className="text-xl font-extrabold tracking-tight text-[#0060AE]">
                 USKI <span className="text-[#2D3033]">STORE</span>
               </span>
