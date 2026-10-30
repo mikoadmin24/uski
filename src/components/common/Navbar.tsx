@@ -10,6 +10,7 @@ import {
   FileSpreadsheet,
   ChevronDown,
   Shield,
+  Navigation,
 } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
@@ -237,6 +238,17 @@ export const Navbar: React.FC = () => {
                       Panel Admin / Backoffice
                     </Link>
                   )}
+
+                  {user?.role === 'courier' && (
+                    <Link
+                      to="/courier"
+                      onClick={() => setRoleSwitcherOpen(false)}
+                      className="block px-4 py-2 text-sm font-bold text-green-700 hover:bg-green-50 flex items-center gap-1.5"
+                    >
+                      <Navigation className="w-4 h-4 text-green-600 animate-spin-slow" />
+                      Portal Kurir (Auto GPS Aktif)
+                    </Link>
+                  )}
                 </div>
 
                 {/* Role Switcher Demo Bar */}
@@ -276,10 +288,11 @@ export const Navbar: React.FC = () => {
                       onClick={() => {
                         loginAs('courier');
                         setRoleSwitcherOpen(false);
+                        navigate('/courier');
                       }}
                       className={`px-2 py-1 rounded text-left ${user?.role === 'courier' ? 'bg-primary text-white font-bold' : 'hover:bg-white'}`}
                     >
-                      Kurir
+                      Kurir (Auto GPS)
                     </button>
                   </div>
                 </div>

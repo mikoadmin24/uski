@@ -88,12 +88,19 @@ export const AdminLayout: React.FC = () => {
               <span className="text-body font-bold">Role:</span>
               <select
                 value={user?.role}
-                onChange={(e) => loginAs(e.target.value as UserRole)}
+                onChange={(e) => {
+                  const newRole = e.target.value as UserRole;
+                  loginAs(newRole);
+                  if (newRole === 'courier') {
+                    navigate('/courier');
+                  }
+                }}
                 className="bg-transparent font-bold text-primary focus:outline-none cursor-pointer"
               >
                 <option value="super_admin">Super Admin</option>
                 <option value="admin">Admin / CS</option>
                 <option value="staff">Staf Gudang</option>
+                <option value="courier">Kurir Toko (Auto GPS)</option>
               </select>
             </div>
 

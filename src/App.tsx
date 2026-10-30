@@ -31,6 +31,8 @@ import { AdminCategories } from '@/pages/admin/AdminCategories';
 import { AdminPromos } from '@/pages/admin/AdminPromos';
 import { AdminStaff } from '@/pages/admin/AdminStaff';
 import { AdminCouriers } from '@/pages/admin/AdminCouriers';
+import { CourierPortalPage } from '@/pages/CourierPortalPage';
+import { CourierGpsWatcher } from '@/components/courier/CourierGpsWatcher';
 
 // Scroll to top on route change
 function ScrollToTop() {
@@ -59,6 +61,7 @@ export function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
+      <CourierGpsWatcher />
       <Routes>
         {/* Public Storefront Routes */}
         <Route element={<StorefrontLayout />}>
@@ -77,6 +80,9 @@ export function App() {
           <Route path="/about" element={<StaticPolicyPage />} />
           <Route path="*" element={<HomePage />} />
         </Route>
+
+        {/* Dedicated Courier Mobile Driver Portal */}
+        <Route path="/courier" element={<CourierPortalPage />} />
 
         {/* Admin Backoffice Routes */}
         <Route path="/admin" element={<AdminLayout />}>
