@@ -10,9 +10,9 @@ interface ProductState {
   getProductBySlug: (slug: string) => Product | undefined;
   getProductById: (id: string) => Product | undefined;
   getProductByBarcodeOrSku: (query: string) => Product | undefined;
-  addProduct: (product: Omit<Product, 'id' | 'created_at' | 'rating' | 'reviews_count' | 'sales_count'>) => Product;
-  updateProduct: (id: string, updates: Partial<Product>) => void;
-  deleteProduct: (id: string) => void;
+  addProduct: (product: Omit<Product, 'id' | 'created_at' | 'rating' | 'reviews_count' | 'sales_count'>) => Promise<Product>;
+  updateProduct: (id: string, updates: Partial<Product>) => Promise<void>;
+  deleteProduct: (id: string) => Promise<void>;
   adjustStock: (
     productId: string,
     variantId: string | undefined,
@@ -104,7 +104,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
     );
   },
 
-  addProduct: (productData) => {
+  addProduct: async (productData) => {
     const newProduct: Product = {
       ...productData,
       id: `prod-${Date.now()}`,
@@ -124,15 +124,13 @@ export const useProductStore = create<ProductState>((set, get) => ({
     set({ products: updated });
 
     if (isSupabaseConfigured) {
-      dbService.products.upsert(newProduct).catch((err) =>
-        console.error('Failed to sync new product to Supabase:', err)
-      );
+      await dbService.products.upsert(newProduct);
     }
 
     return newProduct;
   },
 
-  updateProduct: (id, updates) => {
+  updateProduct: async (id, updates) => {
     const updated = get().products.map((p) => (p.id === id ? { ...p, ...updates } : p));
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
@@ -142,13 +140,11 @@ export const useProductStore = create<ProductState>((set, get) => ({
     set({ products: updated });
 
     if (isSupabaseConfigured) {
-      dbService.products.upsert({ id, ...updates }).catch((err) =>
-        console.error('Failed to sync updated product to Supabase:', err)
-      );
+      await dbService.products.upsert({ id, ...updates });
     }
   },
 
-  deleteProduct: (id) => {
+  deleteProduct: async (id) => {
     const updated = get().products.filter((p) => p.id !== id);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
@@ -158,9 +154,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
     set({ products: updated });
 
     if (isSupabaseConfigured) {
-      dbService.products.delete(id).catch((err) =>
-        console.error('Failed to delete product from Supabase:', err)
-      );
+      await dbService.products.delete(id);
     }
   },
 

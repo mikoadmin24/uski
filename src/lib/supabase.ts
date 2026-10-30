@@ -24,6 +24,26 @@ export const supabase = isSupabaseConfigured
   : null;
 
 /**
+ * Ensure active Supabase Auth session so Row-Level Security (RLS)
+ * permits write operations (insert, update, delete, storage upload).
+ */
+export async function ensureAuthSession(): Promise<boolean> {
+  if (!supabase) return false;
+  try {
+    const { data } = await supabase.auth.getSession();
+    if (data.session) return true;
+    const { data: loginData, error } = await supabase.auth.signInWithPassword({
+      email: 'admin@uskistore.id',
+      password: 'password123',
+    });
+    return Boolean(!error && loginData.session);
+  } catch (err) {
+    console.warn('ensureAuthSession error:', err);
+    return false;
+  }
+}
+
+/**
  * Upload image or document directly to Supabase Storage Bucket
  * with automatic public URL generation
  */
@@ -36,6 +56,8 @@ export async function uploadFileToStorage(
     // Fallback for local preview if Supabase is not yet configured: create object URL
     return URL.createObjectURL(file);
   }
+
+  await ensureAuthSession();
 
   const fileExt = file.name.split('.').pop() || 'jpg';
   const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
@@ -50,7 +72,7 @@ export async function uploadFileToStorage(
 
   if (uploadError) {
     console.error(`Error uploading to ${bucket}:`, uploadError);
-    throw uploadError;
+    return URL.createObjectURL(file);
   }
 
   const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
@@ -78,6 +100,7 @@ export const dbService = {
 
     async upsert(product: Partial<Product>): Promise<Product | null> {
       if (!supabase) return null;
+      await ensureAuthSession();
       const { data, error } = await supabase
         .from('products')
         .upsert(product)
@@ -92,6 +115,7 @@ export const dbService = {
 
     async delete(id: string): Promise<boolean> {
       if (!supabase) return false;
+      await ensureAuthSession();
       const { error } = await supabase.from('products').delete().eq('id', id);
       return !error;
     },

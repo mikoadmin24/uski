@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { supabase, isSupabaseConfigured, dbService } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured, dbService, ensureAuthSession } from '@/lib/supabase';
 import { useProductStore } from '@/store/productStore';
 import { useOrderStore } from '@/store/orderStore';
 import { useCourierStore } from '@/store/courierStore';
@@ -24,9 +24,10 @@ export function useSupabaseSync() {
 
     let isMounted = true;
 
-    // 1. Initial Load from Supabase Cloud
+    // 1. Initial Load from Supabase Cloud with verified session
     async function loadInitialData() {
       try {
+        await ensureAuthSession();
         const [products, orders, couriers, categories, banners, vouchers] = await Promise.all([
           dbService.products.getAll(),
           dbService.orders.getAll(),

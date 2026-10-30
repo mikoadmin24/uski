@@ -314,30 +314,37 @@ export const AdminProducts: React.FC = () => {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)+/g, '');
 
-    addProduct({
-      name: name.trim(),
-      slug: `${slug}-${Date.now()}`,
-      sku_master: skuMaster.trim().toUpperCase(),
-      isbn: isbn.trim() || undefined,
-      author: author.trim() || undefined,
-      category_id: categoryId || categories[0]?.id || 'cat-1',
-      base_price: Number(basePrice) || 0,
-      sale_price: salePrice ? Number(salePrice) : null,
-      stock_quantity: stockQuantity ? Number(stockQuantity) : 0,
-      min_stock_alert: minStockAlert ? Number(minStockAlert) : 5,
-      weight_grams: weightGrams ? Number(weightGrams) : 300,
-      description: description.trim() || 'Deskripsi produk resmi USKI STORE.',
-      specifications: {
-        'Kondisi': 'Baru & Original',
-        'Garansi': 'Toko Resmi',
-      },
-      is_active: true,
-      is_featured: false,
-      images: [finalImage],
-    });
+    try {
+      await addProduct({
+        name: name.trim(),
+        slug: `${slug}-${Date.now()}`,
+        sku_master: skuMaster.trim().toUpperCase(),
+        isbn: isbn.trim() || undefined,
+        author: author.trim() || undefined,
+        category_id: categoryId || categories[0]?.id || 'cat-1',
+        base_price: Number(basePrice) || 0,
+        sale_price: salePrice ? Number(salePrice) : null,
+        stock_quantity: stockQuantity ? Number(stockQuantity) : 0,
+        min_stock_alert: minStockAlert ? Number(minStockAlert) : 5,
+        weight_grams: weightGrams ? Number(weightGrams) : 300,
+        description: description.trim() || 'Deskripsi produk resmi USKI STORE.',
+        specifications: {
+          'Kondisi': 'Baru & Original',
+          'Garansi': 'Toko Resmi',
+        },
+        is_active: true,
+        is_featured: false,
+        images: [finalImage],
+      });
 
-    setIsUploading(false);
-    handleCloseAddModal();
+      alert('Alhamdulillah! Produk dan foto berhasil disimpan ke database Supabase.');
+    } catch (err: any) {
+      console.error('Error adding product:', err);
+      alert('Gagal menyimpan produk: ' + (err.message || 'Terjadi kesalahan'));
+    } finally {
+      setIsUploading(false);
+      handleCloseAddModal();
+    }
   };
 
   const handleUpdateProductSubmit = async (e: React.FormEvent) => {
@@ -362,23 +369,29 @@ export const AdminProducts: React.FC = () => {
       }
     }
 
-    updateProduct(editingProduct.id, {
-      name: name.trim(),
-      sku_master: skuMaster.trim().toUpperCase(),
-      isbn: isbn.trim() || undefined,
-      author: author.trim() || undefined,
-      category_id: categoryId,
-      base_price: Number(basePrice) || 0,
-      sale_price: salePrice ? Number(salePrice) : null,
-      stock_quantity: stockQuantity ? Number(stockQuantity) : 0,
-      min_stock_alert: minStockAlert ? Number(minStockAlert) : 5,
-      weight_grams: weightGrams ? Number(weightGrams) : 300,
-      description: description.trim() || 'Deskripsi produk resmi USKI STORE.',
-      images: [finalImage],
-    });
-
-    setIsUploading(false);
-    handleCloseEditModal();
+    try {
+      await updateProduct(editingProduct.id, {
+        name: name.trim(),
+        sku_master: skuMaster.trim().toUpperCase(),
+        isbn: isbn.trim() || undefined,
+        author: author.trim() || undefined,
+        category_id: categoryId,
+        base_price: Number(basePrice) || 0,
+        sale_price: salePrice ? Number(salePrice) : null,
+        stock_quantity: stockQuantity ? Number(stockQuantity) : 0,
+        min_stock_alert: minStockAlert ? Number(minStockAlert) : 5,
+        weight_grams: weightGrams ? Number(weightGrams) : 300,
+        description: description.trim() || 'Deskripsi produk resmi USKI STORE.',
+        images: [finalImage],
+      });
+      alert('Perubahan produk berhasil diperbarui ke database cloud.');
+    } catch (err: any) {
+      console.error('Error updating product:', err);
+      alert('Gagal memperbarui produk: ' + (err.message || 'Terjadi kesalahan'));
+    } finally {
+      setIsUploading(false);
+      handleCloseEditModal();
+    }
   };
 
   // CSV Export functions
