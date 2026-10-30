@@ -20,11 +20,12 @@ import { formatRupiah } from '@/lib/utils';
 import { Product } from '@/types';
 
 export const AdminProducts: React.FC = () => {
-  const { products, addProduct, updateProduct } = useProductStore();
+  const { products, addProduct, updateProduct, deleteProduct } = useProductStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<{ id: string; name: string } | null>(null);
 
   // New Product Form States (Empty strings by default so no leading '0' gets stuck!)
   const [name, setName] = useState('');
@@ -250,7 +251,7 @@ export const AdminProducts: React.FC = () => {
                     </button>
                   </td>
                   <td className="py-3.5 px-4 text-center">
-                    <div className="flex items-center justify-center gap-1">
+                    <div className="flex items-center justify-center gap-1.5">
                       <button
                         title="Edit Cepat Harga"
                         onClick={() => {
@@ -259,9 +260,17 @@ export const AdminProducts: React.FC = () => {
                             updateProduct(p.id, { base_price: Number(newPrice) });
                           }
                         }}
-                        className="p-1 hover:text-primary text-body"
+                        className="p-1.5 hover:text-primary text-body hover:bg-neutral-2 rounded-lg transition-colors"
                       >
                         <Edit className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        title="Hapus Produk"
+                        onClick={() => setProductToDelete({ id: p.id, name: p.name })}
+                        className="p-1.5 hover:text-badge-text text-body hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </td>
@@ -556,6 +565,44 @@ export const AdminProducts: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {productToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl text-center">
+            <div className="w-12 h-12 rounded-2xl bg-red-100 text-badge-text flex items-center justify-center mx-auto">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-base font-extrabold text-[#101519]">Hapus Produk?</h3>
+              <p className="text-xs text-body mt-1 leading-relaxed">
+                Apakah Anda yakin ingin menghapus produk{' '}
+                <span className="font-bold text-[#101519]">"{productToDelete.name}"</span>?
+                Produk ini akan dihapus permanen dari katalog toko.
+              </p>
+            </div>
+            <div className="flex gap-3 justify-center pt-2">
+              <button
+                type="button"
+                onClick={() => setProductToDelete(null)}
+                className="px-5 py-2.5 bg-neutral-2 text-body font-bold text-xs rounded-xl hover:bg-neutral-2/80 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteProduct(productToDelete.id);
+                  setProductToDelete(null);
+                }}
+                className="px-5 py-2.5 bg-badge-text text-white font-bold text-xs rounded-xl hover:bg-red-700 transition-colors shadow-sm"
+              >
+                Ya, Hapus Produk
+              </button>
+            </div>
           </div>
         </div>
       )}

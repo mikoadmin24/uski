@@ -10,6 +10,7 @@ interface ProductState {
   getProductByBarcodeOrSku: (query: string) => Product | undefined;
   addProduct: (product: Omit<Product, 'id' | 'created_at' | 'rating' | 'reviews_count' | 'sales_count'>) => Product;
   updateProduct: (id: string, updates: Partial<Product>) => void;
+  deleteProduct: (id: string) => void;
   adjustStock: (
     productId: string,
     variantId: string | undefined,
@@ -114,6 +115,16 @@ export const useProductStore = create<ProductState>((set, get) => ({
 
   updateProduct: (id, updates) => {
     const updated = get().products.map((p) => (p.id === id ? { ...p, ...updates } : p));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+    set({ products: updated });
+  },
+
+  deleteProduct: (id) => {
+    const updated = get().products.filter((p) => p.id !== id);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     } catch {
