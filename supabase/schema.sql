@@ -23,7 +23,7 @@ create table if not exists public.profiles (
   email text unique not null,
   full_name text not null,
   phone_number text,
-  role text not null default 'customer' check (role in ('super_admin', 'admin', 'staff', 'courier', 'customer')),
+  role text not null default 'customer' check (role in ('super_admin', 'admin', 'manager', 'staff', 'courier', 'customer')),
   avatar_url text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
