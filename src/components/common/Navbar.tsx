@@ -135,7 +135,7 @@ export const Navbar: React.FC = () => {
           {/* Live Auto-suggest Dropdown */}
           {showSuggestions && suggestedProducts.length > 0 && (
             <div
-              className="absolute left-0 right-0 top-12 bg-white rounded-2xl shadow-xl border border-hairline p-2 z-50"
+              className="absolute left-0 right-0 top-12 bg-white rounded-2xl shadow-xl border border-hairline p-2 z-50 max-h-[75dvh] overflow-y-auto touch-scroll"
               onMouseLeave={() => setShowSuggestions(false)}
             >
               <div className="text-xs font-semibold text-body px-3 py-1.5 border-b border-hairline">
@@ -231,7 +231,7 @@ export const Navbar: React.FC = () => {
             {/* Quick 1-Click Direct Login & Account Dropdown */}
             {roleSwitcherOpen && (
               <div
-                className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-3xl shadow-2xl border border-hairline p-4 z-50 animate-slide-up space-y-3"
+                className="absolute right-0 mt-2 w-[calc(100vw-2rem)] max-w-sm sm:w-96 bg-white rounded-3xl shadow-2xl border border-hairline p-4 z-50 animate-slide-up space-y-3 max-h-[85dvh] overflow-y-auto touch-scroll"
                 onMouseLeave={() => setRoleSwitcherOpen(false)}
               >
                 {/* Active user recap if logged in */}
@@ -508,7 +508,7 @@ export const Navbar: React.FC = () => {
       {/* Manual Email & Password Login Modal */}
       {showManualLoginModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl max-h-[90dvh] overflow-y-auto touch-scroll">
             <div className="flex items-center justify-between border-b border-hairline pb-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">

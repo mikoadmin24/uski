@@ -46,7 +46,7 @@ function ScrollToTop() {
 // Public Storefront Layout
 function StorefrontLayout() {
   return (
-    <div className="min-h-screen flex flex-col bg-[#F9FBFD] pb-16 lg:pb-0">
+    <div className="min-h-screen flex flex-col bg-[#F9FBFD] pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-0">
       <Navbar />
       <div className="flex-1">
         <Outlet />

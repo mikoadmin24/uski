@@ -528,6 +528,33 @@ export const ProductDetailPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Mobile Native Sticky Action Bar (Gramedia / E-commerce App Style for iPhone & Android) */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-hairline/80 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] shadow-[0_-4px_25px_rgba(0,0,0,0.08)]">
+        <div className="flex items-center gap-3 max-w-lg mx-auto">
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] text-body font-semibold leading-tight">Total Belanja</p>
+            <p className="text-base font-extrabold text-primary truncate leading-tight">
+              {formatRupiah(currentPrice * quantity)}
+            </p>
+          </div>
+          <button
+            onClick={handleAddToCart}
+            disabled={maxStock === 0}
+            className="px-3.5 h-11 border-2 border-primary text-primary hover:bg-primary/5 font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 active:scale-95 transition-transform disabled:opacity-50"
+          >
+            <ShoppingCart className="w-4 h-4" />
+            <span>+ Keranjang</span>
+          </button>
+          <button
+            onClick={handleBuyNow}
+            disabled={maxStock === 0}
+            className="flex-1 h-11 bg-primary hover:bg-primary-dark text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform disabled:opacity-50"
+          >
+            <span>Beli Sekarang</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

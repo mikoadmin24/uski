@@ -558,7 +558,7 @@ export const AdminCouriers: React.FC = () => {
       {/* Driver Mobile View Modal */}
       {showDriverModal && driverModalCourier && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl max-h-[88dvh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] touch-scroll">
             <div className="flex items-center justify-between border-b border-hairline pb-3">
               <div className="flex items-center gap-2">
                 <Smartphone className="w-5 h-5 text-primary" />

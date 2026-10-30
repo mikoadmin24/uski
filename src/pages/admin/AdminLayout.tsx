@@ -117,7 +117,7 @@ export const AdminLayout: React.FC = () => {
         </header>
 
         {/* Content Body */}
-        <main className="flex-1 p-4 sm:p-6 overflow-y-auto">
+        <main className="flex-1 p-4 sm:p-6 overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] touch-scroll">
           <Outlet />
         </main>
       </div>

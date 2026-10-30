@@ -359,7 +359,7 @@ export const AdminCategories: React.FC = () => {
       {/* Category Modal */}
       {showCatModal && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl max-h-[88dvh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] touch-scroll">
             <div className="flex items-center justify-between border-b border-hairline pb-3">
               <h3 className="text-base font-extrabold text-[#101519]">
                 {editingCategory ? 'Edit Kategori' : 'Tambah Kategori Baru'}
@@ -427,7 +427,7 @@ export const AdminCategories: React.FC = () => {
       {/* Banner Modal */}
       {showBannerModal && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-4 shadow-2xl max-h-[88dvh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] touch-scroll">
             <div className="flex items-center justify-between border-b border-hairline pb-3">
               <h3 className="text-base font-extrabold text-[#101519]">
                 {editingBanner ? 'Edit Banner Promo' : 'Tambah Banner Promo'}

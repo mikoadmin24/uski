@@ -91,8 +91,11 @@ export const AdminOrders: React.FC = () => {
 
       {/* Orders Table */}
       <div className="bg-white border border-hairline rounded-3xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
+        <div className="md:hidden px-4 py-2 bg-neutral-2/50 border-b border-hairline text-[10px] text-body flex items-center justify-between font-semibold">
+          <span>👈 Geser tabel ke kanan untuk melihat status & aksi 👉</span>
+        </div>
+        <div className="overflow-x-auto touch-scroll">
+          <table className="w-full text-xs text-left min-w-[720px]">
             <thead className="bg-neutral-2/60 border-b border-hairline text-body font-bold uppercase tracking-wider">
               <tr>
                 <th className="py-3 px-4">No. Pesanan</th>
@@ -190,7 +193,7 @@ export const AdminOrders: React.FC = () => {
       {/* Input Resi Tracking Modal */}
       {selectedOrderForTracking && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl max-h-[88dvh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] touch-scroll">
             <div className="flex items-center justify-between border-b border-hairline pb-3">
               <h3 className="font-extrabold text-sm text-[#101519]">
                 Input Resi: {selectedOrderForTracking.order_number}
@@ -259,7 +262,7 @@ export const AdminOrders: React.FC = () => {
       {/* Printable Invoice Modal */}
       {printInvoiceOrder && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-8 max-h-[90vh] overflow-y-auto space-y-6">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-8 max-h-[88dvh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] space-y-6 shadow-2xl touch-scroll">
             <div className="flex items-center justify-between border-b border-hairline pb-4">
               <div>
                 <span className="text-xl font-extrabold text-primary">USKI STORE</span>
@@ -347,7 +350,7 @@ export const AdminOrders: React.FC = () => {
       {/* Printable Thermal Shipping Label (100x150 mm) Modal */}
       {printShippingLabelOrder && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-6 max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl print:m-0 print:p-0 print:border-none print:shadow-none">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 max-h-[88dvh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] space-y-4 shadow-2xl print:m-0 print:p-0 print:border-none print:shadow-none touch-scroll">
             {/* Header Controls (hidden on print) */}
             <div className="flex items-center justify-between border-b border-hairline pb-2 print:hidden">
               <span className="text-xs font-bold text-body">Label Thermal (100x150 mm)</span>

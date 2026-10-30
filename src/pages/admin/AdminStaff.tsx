@@ -123,8 +123,11 @@ export const AdminStaff: React.FC = () => {
 
       {/* Staff Table */}
       <div className="bg-white border border-hairline rounded-3xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
+        <div className="md:hidden px-4 py-2 bg-neutral-2/50 border-b border-hairline text-[10px] text-body flex items-center justify-between font-semibold">
+          <span>👈 Geser tabel ke kanan untuk melihat rincian staf 👉</span>
+        </div>
+        <div className="overflow-x-auto touch-scroll">
+          <table className="w-full text-xs text-left min-w-[650px]">
             <thead className="bg-neutral-2/60 border-b border-hairline text-body font-bold uppercase tracking-wider">
               <tr>
                 <th className="py-3 px-4">Nama Lengkap & Kontak</th>
@@ -227,7 +230,7 @@ export const AdminStaff: React.FC = () => {
       {/* Add Staff Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl max-h-[88dvh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] touch-scroll">
             <div className="flex items-center justify-between border-b border-hairline pb-3">
               <h3 className="text-base font-extrabold text-[#101519]">Tambah Akun Staf Baru</h3>
               <button onClick={() => setShowModal(false)}>

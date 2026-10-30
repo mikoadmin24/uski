@@ -123,6 +123,11 @@ export const CourierPortalPage: React.FC = () => {
       `${recipientNameInput ? `Diterima oleh: ${recipientNameInput}. ` : ''}${deliveryNotes}`
     );
 
+    // Native haptic feedback for mobile devices (iPhone/Android)
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      navigator.vibrate([100, 50, 100]);
+    }
+
     setShowCompleteModal(false);
     setProofPhotoPreview(null);
     setRecipientNameInput('');
@@ -131,9 +136,9 @@ export const CourierPortalPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F0F4F8] font-urbanist text-[#101519] pb-12">
+    <div className="min-h-[100dvh] bg-[#F0F4F8] font-urbanist text-[#101519] pb-[calc(3rem+env(safe-area-inset-bottom,0px))] touch-scroll">
       {/* Mobile Header Bar */}
-      <header className="bg-[#2D3033] text-white p-4 sticky top-0 z-30 shadow-md">
+      <header className="bg-[#2D3033] text-white p-4 pt-[max(1rem,env(safe-area-inset-top,0px))] sticky top-0 z-30 shadow-md">
         <div className="max-w-md mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center font-extrabold text-white">
@@ -364,7 +369,7 @@ export const CourierPortalPage: React.FC = () => {
       {/* Complete Delivery Modal */}
       {showCompleteModal && currentCourier.active_delivery && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl max-h-[88dvh] overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom,0px)] touch-scroll">
             <div className="flex items-center justify-between border-b border-hairline pb-3">
               <h3 className="text-base font-extrabold text-[#101519]">
                 Konfirmasi Serah Terima Paket

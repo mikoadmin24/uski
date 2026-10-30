@@ -588,8 +588,11 @@ export const AdminProducts: React.FC = () => {
 
           {/* Products Table */}
           <div className="bg-white border border-hairline rounded-3xl overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left">
+            <div className="md:hidden px-4 py-2 bg-neutral-2/50 border-b border-hairline text-[10px] text-body flex items-center justify-between font-semibold">
+              <span>👈 Geser tabel ke kanan untuk melihat stok & aksi 👉</span>
+            </div>
+            <div className="overflow-x-auto touch-scroll">
+              <table className="w-full text-xs text-left min-w-[700px]">
                 <thead className="bg-neutral-2/60 border-b border-hairline text-body font-bold uppercase tracking-wider">
                   <tr>
                     <th className="py-3 px-4">Produk</th>
@@ -730,8 +733,11 @@ export const AdminProducts: React.FC = () => {
             </button>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
+          <div className="md:hidden px-4 py-2 bg-neutral-2/50 border border-hairline rounded-xl text-[10px] text-body flex items-center justify-between font-semibold">
+            <span>👈 Geser tabel riwayat ke kanan untuk melihat rincian 👉</span>
+          </div>
+          <div className="overflow-x-auto touch-scroll">
+            <table className="w-full text-xs text-left min-w-[700px]">
               <thead className="bg-neutral-2/60 border-b border-hairline text-body font-bold uppercase tracking-wider">
                 <tr>
                   <th className="py-2.5 px-3">Waktu</th>
@@ -785,7 +791,7 @@ export const AdminProducts: React.FC = () => {
       {/* QUICK STOCK ADJUSTMENT MODAL */}
       {stockAdjustProduct && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl max-h-[88dvh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] touch-scroll">
             <div className="flex items-center justify-between border-b border-hairline pb-3">
               <div className="flex items-center gap-2">
                 <ArrowUpDown className="w-5 h-5 text-primary" />
@@ -889,7 +895,7 @@ export const AdminProducts: React.FC = () => {
       {/* CAMERA SCANNER MODAL */}
       {showCameraScanner && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl text-center">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl text-center max-h-[88dvh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] touch-scroll">
             <div className="flex items-center justify-between border-b border-hairline pb-3">
               <div className="flex items-center gap-2">
                 <Camera className="w-5 h-5 text-primary" />
@@ -927,7 +933,7 @@ export const AdminProducts: React.FC = () => {
       {/* PRINT BARCODE LABEL STICKER MODAL */}
       {printLabelProduct && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl max-h-[88dvh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] touch-scroll">
             <div className="flex items-center justify-between border-b border-hairline pb-3">
               <div className="flex items-center gap-2">
                 <Printer className="w-5 h-5 text-primary" />
@@ -1034,7 +1040,7 @@ export const AdminProducts: React.FC = () => {
       {/* Add Product Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 max-h-[90vh] overflow-y-auto space-y-6 shadow-2xl">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 max-h-[88dvh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] space-y-6 shadow-2xl touch-scroll">
             <div className="flex items-center justify-between border-b border-hairline pb-4">
               <div>
                 <h3 className="text-lg font-extrabold text-[#101519]">Tambah Produk Baru</h3>
@@ -1292,7 +1298,7 @@ export const AdminProducts: React.FC = () => {
       {/* Full Edit Product Modal */}
       {editingProduct && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 max-h-[90vh] overflow-y-auto space-y-6 shadow-2xl">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 max-h-[88dvh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] space-y-6 shadow-2xl touch-scroll">
             <div className="flex items-center justify-between border-b border-hairline pb-4">
               <div>
                 <h3 className="text-lg font-extrabold text-[#101519]">Edit Data Produk</h3>
@@ -1499,7 +1505,7 @@ export const AdminProducts: React.FC = () => {
       {/* Delete Confirmation Modal */}
       {productToDelete && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl text-center">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl text-center max-h-[88dvh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] touch-scroll">
             <div className="w-12 h-12 rounded-2xl bg-red-100 text-badge-text flex items-center justify-center mx-auto">
               <Trash2 className="w-6 h-6" />
             </div>
