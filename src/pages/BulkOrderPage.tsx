@@ -26,7 +26,7 @@ export const BulkOrderPage: React.FC = () => {
   const [category, setCategory] = useState('Buku Pelajaran & Edukasi');
   const [description, setDescription] = useState('');
   const [specifications, setSpecifications] = useState('');
-  const [quantity, setQuantity] = useState<number>(100);
+  const [quantity, setQuantity] = useState<string>('100');
   const [targetDate, setTargetDate] = useState('');
   const [estimatedBudget, setEstimatedBudget] = useState<string>('');
   const [shippingAddress, setShippingAddress] = useState('');
@@ -59,9 +59,9 @@ export const BulkOrderPage: React.FC = () => {
         category,
         description,
         specifications,
-        quantity: Number(quantity),
+        quantity: Math.max(1, parseInt(quantity, 10) || 1),
         target_date: targetDate,
-        estimated_budget: estimatedBudget ? Number(estimatedBudget) : undefined,
+        estimated_budget: estimatedBudget ? parseInt(estimatedBudget, 10) : undefined,
         shipping_address: shippingAddress,
         attachments,
       });
@@ -220,11 +220,12 @@ export const BulkOrderPage: React.FC = () => {
                 <div>
                   <label className="font-bold text-body block mb-1">Estimasi Jumlah / Kuantitas Total *</label>
                   <input
-                    type="number"
-                    min="1"
+                    type="text"
+                    inputMode="numeric"
                     required
                     value={quantity}
-                    onChange={(e) => setQuantity(Number(e.target.value))}
+                    onChange={(e) => setQuantity(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, ''))}
+                    placeholder="Contoh: 100"
                     className="w-full h-11 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
                   />
                 </div>
@@ -267,9 +268,10 @@ export const BulkOrderPage: React.FC = () => {
                 <div>
                   <label className="font-bold text-body block mb-1">Perkiraan Anggaran / Budget (Rp, Opsional)</label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     value={estimatedBudget}
-                    onChange={(e) => setEstimatedBudget(e.target.value)}
+                    onChange={(e) => setEstimatedBudget(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, ''))}
                     placeholder="Contoh: 5000000"
                     className="w-full h-11 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
                   />

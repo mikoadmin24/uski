@@ -142,12 +142,12 @@ export const AdminInventory: React.FC = () => {
               <div>
                 <label className="font-bold text-body block mb-1">Jumlah Unit *</label>
                 <input
-                  type="number"
-                  min="1"
+                  type="text"
+                  inputMode="numeric"
                   required
                   placeholder="Contoh: 10"
                   value={stockDelta}
-                  onChange={(e) => setStockDelta(e.target.value)}
+                  onChange={(e) => setStockDelta(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, ''))}
                   className="w-full h-10 px-3 bg-white border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
                 />
               </div>

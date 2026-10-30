@@ -167,10 +167,11 @@ export const AdminPromos: React.FC = () => {
             className="h-9 px-3 bg-neutral-2 border border-hairline rounded-xl text-xs font-mono font-bold uppercase focus:outline-none focus:border-primary flex-1"
           />
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
             placeholder="Subtotal Belanja (Rp)"
             value={simSubtotal}
-            onChange={(e) => setSimSubtotal(e.target.value)}
+            onChange={(e) => setSimSubtotal(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, ''))}
             className="h-9 px-3 bg-neutral-2 border border-hairline rounded-xl text-xs font-semibold focus:outline-none focus:border-primary w-44"
           />
           <button
@@ -331,11 +332,11 @@ export const AdminPromos: React.FC = () => {
                     Nilai Diskon ({discountType === 'percentage' ? '%' : 'Rp'}) *
                   </label>
                   <input
-                    type="number"
-                    min="1"
+                    type="text"
+                    inputMode="numeric"
                     required
                     value={discountValue}
-                    onChange={(e) => setDiscountValue(e.target.value)}
+                    onChange={(e) => setDiscountValue(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, ''))}
                     placeholder={discountType === 'percentage' ? 'Contoh: 15' : 'Contoh: 20000'}
                     className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
                   />
@@ -346,10 +347,10 @@ export const AdminPromos: React.FC = () => {
                 <div>
                   <label className="font-bold text-body block mb-1">Minimal Belanja (Rp)</label>
                   <input
-                    type="number"
-                    min="0"
+                    type="text"
+                    inputMode="numeric"
                     value={minSpend}
-                    onChange={(e) => setMinSpend(e.target.value)}
+                    onChange={(e) => setMinSpend(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, ''))}
                     placeholder="Contoh: 50000"
                     className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
                   />
@@ -357,10 +358,10 @@ export const AdminPromos: React.FC = () => {
                 <div>
                   <label className="font-bold text-body block mb-1">Maksimal Diskon (Rp)</label>
                   <input
-                    type="number"
-                    min="0"
+                    type="text"
+                    inputMode="numeric"
                     value={maxDiscount}
-                    onChange={(e) => setMaxDiscount(e.target.value)}
+                    onChange={(e) => setMaxDiscount(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, ''))}
                     placeholder="Contoh: 25000 (Opsional)"
                     className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
                   />

@@ -1,11 +1,24 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Grid, FileSpreadsheet, ShoppingCart, User } from 'lucide-react';
+import { Home, Grid, FileSpreadsheet, ShoppingCart, User, Shield, Navigation } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
+import { useAuthStore } from '@/store/authStore';
+
+interface NavItem {
+  label: string;
+  path: string;
+  icon: React.ComponentType<{ className?: string }>;
+  highlight?: boolean;
+  badge?: number;
+}
 
 export const MobileBottomNav: React.FC = () => {
   const location = useLocation();
   const itemCount = useCartStore((state) => state.getItemCount());
+  const { user } = useAuthStore();
+
+  const isAdmin = user && (user.role === 'super_admin' || user.role === 'admin' || user.role === 'staff');
+  const isCourier = user && user.role === 'courier';
 
   // Hide generic mobile bottom nav on product detail page to make way for sticky buy/cart bar
   const isProductDetailPage =
@@ -15,12 +28,18 @@ export const MobileBottomNav: React.FC = () => {
     return null;
   }
 
-  const navItems = [
+  const accountItem: NavItem = isAdmin
+    ? { label: 'Admin', path: '/admin', icon: Shield, highlight: true }
+    : isCourier
+    ? { label: 'Kurir', path: '/courier', icon: Navigation, highlight: true }
+    : { label: 'Akun', path: '/account', icon: User };
+
+  const navItems: NavItem[] = [
     { label: 'Beranda', path: '/', icon: Home },
     { label: 'Kategori', path: '/products', icon: Grid },
-    { label: 'Custom', path: '/bulk-order', icon: FileSpreadsheet, highlight: true },
+    { label: 'Custom', path: '/bulk-order', icon: FileSpreadsheet, highlight: !isAdmin && !isCourier },
     { label: 'Keranjang', path: '/cart', icon: ShoppingCart, badge: itemCount },
-    { label: 'Akun', path: '/account', icon: User },
+    accountItem,
   ];
 
   return (

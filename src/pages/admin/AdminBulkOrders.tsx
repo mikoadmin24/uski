@@ -28,10 +28,10 @@ export const AdminBulkOrders: React.FC = () => {
     { description: 'Item Barang / Pengadaan', quantity: 100, cogs_price: 15000, unit_price: 20000 },
   ]);
 
-  const [additionalServiceFee, setAdditionalServiceFee] = useState<number>(0);
-  const [shippingFee, setShippingFee] = useState<number>(50000);
-  const [leadTimeDays, setLeadTimeDays] = useState<number>(5);
-  const [expiryDays, setExpiryDays] = useState<number>(7);
+  const [additionalServiceFee, setAdditionalServiceFee] = useState<string>('');
+  const [shippingFee, setShippingFee] = useState<string>('50000');
+  const [leadTimeDays, setLeadTimeDays] = useState<string>('5');
+  const [expiryDays, setExpiryDays] = useState<string>('7');
   const [adminNotes, setAdminNotes] = useState('Stok siap dikirim dari gudang supplier pusat.');
 
   const handleOpenQuoteBuilder = (req: CustomRequest) => {
@@ -249,30 +249,42 @@ export const AdminBulkOrders: React.FC = () => {
                           </td>
                           <td className="p-2">
                             <input
-                              type="number"
-                              min="1"
+                              type="text"
+                              inputMode="numeric"
                               required
-                              value={item.quantity}
-                              onChange={(e) => handleItemChange(idx, 'quantity', Number(e.target.value))}
+                              value={item.quantity || ''}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, '');
+                                handleItemChange(idx, 'quantity', val ? parseInt(val, 10) : 0);
+                              }}
+                              placeholder="1"
                               className="w-full h-9 px-1 text-center bg-neutral-2 border border-hairline rounded-lg font-semibold"
                             />
                           </td>
                           <td className="p-2 bg-amber-50/40">
                             <input
-                              type="number"
-                              min="0"
-                              value={item.cogs_price}
-                              onChange={(e) => handleItemChange(idx, 'cogs_price', Number(e.target.value))}
+                              type="text"
+                              inputMode="numeric"
+                              value={item.cogs_price || ''}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, '');
+                                handleItemChange(idx, 'cogs_price', val ? parseInt(val, 10) : 0);
+                              }}
+                              placeholder="0"
                               className="w-full h-9 px-2 text-right bg-white border border-amber-200 rounded-lg font-semibold text-amber-800"
                             />
                           </td>
                           <td className="p-2">
                             <input
-                              type="number"
-                              min="0"
+                              type="text"
+                              inputMode="numeric"
                               required
-                              value={item.unit_price}
-                              onChange={(e) => handleItemChange(idx, 'unit_price', Number(e.target.value))}
+                              value={item.unit_price || ''}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, '');
+                                handleItemChange(idx, 'unit_price', val ? parseInt(val, 10) : 0);
+                              }}
+                              placeholder="0"
                               className="w-full h-9 px-2 text-right bg-neutral-2 border border-hairline rounded-lg font-bold text-primary"
                             />
                           </td>
@@ -302,36 +314,44 @@ export const AdminBulkOrders: React.FC = () => {
                 <div>
                   <label className="font-bold text-body block mb-1">Biaya Jasa Cetak / Khusus (Rp)</label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     value={additionalServiceFee}
-                    onChange={(e) => setAdditionalServiceFee(Number(e.target.value))}
+                    onChange={(e) => setAdditionalServiceFee(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, ''))}
+                    placeholder="0"
                     className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold"
                   />
                 </div>
                 <div>
                   <label className="font-bold text-body block mb-1">Ongkos Kirim Kargo (Rp)</label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     value={shippingFee}
-                    onChange={(e) => setShippingFee(Number(e.target.value))}
+                    onChange={(e) => setShippingFee(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, ''))}
+                    placeholder="0"
                     className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold"
                   />
                 </div>
                 <div>
                   <label className="font-bold text-body block mb-1">Estimasi Pengerjaan (Hari)</label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     value={leadTimeDays}
-                    onChange={(e) => setLeadTimeDays(Number(e.target.value))}
+                    onChange={(e) => setLeadTimeDays(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, ''))}
+                    placeholder="1"
                     className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold"
                   />
                 </div>
                 <div>
                   <label className="font-bold text-body block mb-1">Masa Berlaku Penawaran (Hari)</label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     value={expiryDays}
-                    onChange={(e) => setExpiryDays(Number(e.target.value))}
+                    onChange={(e) => setExpiryDays(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, ''))}
+                    placeholder="1"
                     className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold"
                   />
                 </div>

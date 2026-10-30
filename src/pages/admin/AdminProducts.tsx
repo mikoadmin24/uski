@@ -880,12 +880,12 @@ export const AdminProducts: React.FC = () => {
                     : 'Jumlah Unit Perubahan *'}
                 </label>
                 <input
-                  type="number"
-                  min="1"
+                  type="text"
+                  inputMode="numeric"
                   required
                   placeholder="Contoh: 20"
                   value={stockDelta}
-                  onChange={(e) => setStockDelta(e.target.value)}
+                  onChange={(e) => setStockDelta(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, ''))}
                   className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
                 />
               </div>
@@ -1038,11 +1038,10 @@ export const AdminProducts: React.FC = () => {
             <div className="flex items-center justify-between text-xs">
               <label className="font-bold text-body">Jumlah Lembar Stiker:</label>
               <input
-                type="number"
-                min="1"
-                max="100"
+                type="text"
+                inputMode="numeric"
                 value={printCopies}
-                onChange={(e) => setPrintCopies(e.target.value)}
+                onChange={(e) => setPrintCopies(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, ''))}
                 className="w-20 h-9 px-2 bg-neutral-2 border border-hairline rounded-xl font-bold text-center focus:outline-none focus:border-primary"
               />
             </div>
@@ -1155,11 +1154,11 @@ export const AdminProducts: React.FC = () => {
                 <div>
                   <label className="font-bold text-body block mb-1">Harga Dasar (Rp) *</label>
                   <input
-                    type="number"
-                    min="0"
+                    type="text"
+                    inputMode="numeric"
                     required
                     value={basePrice}
-                    onChange={(e) => setBasePrice(e.target.value)}
+                    onChange={(e) => setBasePrice(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, ''))}
                     placeholder="Contoh: 50000"
                     className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
                   />
@@ -1167,10 +1166,10 @@ export const AdminProducts: React.FC = () => {
                 <div>
                   <label className="font-bold text-body block mb-1">Harga Diskon (Rp)</label>
                   <input
-                    type="number"
-                    min="0"
+                    type="text"
+                    inputMode="numeric"
                     value={salePrice}
-                    onChange={(e) => setSalePrice(e.target.value)}
+                    onChange={(e) => setSalePrice(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, ''))}
                     placeholder="Opsional"
                     className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
                   />
@@ -1178,11 +1177,11 @@ export const AdminProducts: React.FC = () => {
                 <div>
                   <label className="font-bold text-body block mb-1">Stok Awal *</label>
                   <input
-                    type="number"
-                    min="0"
+                    type="text"
+                    inputMode="numeric"
                     required
                     value={stockQuantity}
-                    onChange={(e) => setStockQuantity(e.target.value)}
+                    onChange={(e) => setStockQuantity(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, ''))}
                     placeholder="Contoh: 20"
                     className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
                   />
@@ -1190,10 +1189,10 @@ export const AdminProducts: React.FC = () => {
                 <div>
                   <label className="font-bold text-body block mb-1">Batas Minimum Stok</label>
                   <input
-                    type="number"
-                    min="0"
+                    type="text"
+                    inputMode="numeric"
                     value={minStockAlert}
-                    onChange={(e) => setMinStockAlert(e.target.value)}
+                    onChange={(e) => setMinStockAlert(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, ''))}
                     placeholder="Contoh: 5"
                     className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
                   />
@@ -1203,10 +1202,10 @@ export const AdminProducts: React.FC = () => {
               <div>
                 <label className="font-bold text-body block mb-1">Berat Produk (Gram)</label>
                 <input
-                  type="number"
-                  min="0"
+                  type="text"
+                  inputMode="numeric"
                   value={weightGrams}
-                  onChange={(e) => setWeightGrams(e.target.value)}
+                  onChange={(e) => setWeightGrams(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, ''))}
                   placeholder="Contoh: 300 (Default: 300g)"
                   className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
                 />
@@ -1412,42 +1411,42 @@ export const AdminProducts: React.FC = () => {
                 <div>
                   <label className="font-bold text-body block mb-1">Harga Dasar (Rp) *</label>
                   <input
-                    type="number"
-                    min="0"
+                    type="text"
+                    inputMode="numeric"
                     required
                     value={basePrice}
-                    onChange={(e) => setBasePrice(e.target.value)}
+                    onChange={(e) => setBasePrice(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, ''))}
                     className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
                   />
                 </div>
                 <div>
                   <label className="font-bold text-body block mb-1">Harga Diskon (Rp)</label>
                   <input
-                    type="number"
-                    min="0"
+                    type="text"
+                    inputMode="numeric"
                     value={salePrice}
-                    onChange={(e) => setSalePrice(e.target.value)}
+                    onChange={(e) => setSalePrice(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, ''))}
                     className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
                   />
                 </div>
                 <div>
                   <label className="font-bold text-body block mb-1">Stok Tersedia *</label>
                   <input
-                    type="number"
-                    min="0"
+                    type="text"
+                    inputMode="numeric"
                     required
                     value={stockQuantity}
-                    onChange={(e) => setStockQuantity(e.target.value)}
+                    onChange={(e) => setStockQuantity(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, ''))}
                     className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
                   />
                 </div>
                 <div>
                   <label className="font-bold text-body block mb-1">Batas Min Stok</label>
                   <input
-                    type="number"
-                    min="0"
+                    type="text"
+                    inputMode="numeric"
                     value={minStockAlert}
-                    onChange={(e) => setMinStockAlert(e.target.value)}
+                    onChange={(e) => setMinStockAlert(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, ''))}
                     className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
                   />
                 </div>
@@ -1456,10 +1455,10 @@ export const AdminProducts: React.FC = () => {
               <div>
                 <label className="font-bold text-body block mb-1">Berat Produk (Gram)</label>
                 <input
-                  type="number"
-                  min="0"
+                  type="text"
+                  inputMode="numeric"
                   value={weightGrams}
-                  onChange={(e) => setWeightGrams(e.target.value)}
+                  onChange={(e) => setWeightGrams(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, ''))}
                   className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
                 />
               </div>

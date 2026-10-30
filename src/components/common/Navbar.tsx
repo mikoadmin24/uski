@@ -210,24 +210,70 @@ export const Navbar: React.FC = () => {
           {/* User Account / Profile Menu */}
           <div className="relative shrink-0">
             {user ? (
-              <button
-                onClick={() => setRoleSwitcherOpen(!roleSwitcherOpen)}
-                className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 h-9 sm:h-11 border border-primary/30 bg-primary/5 hover:bg-primary/10 rounded-full text-xs font-bold text-[#101519] transition-all"
-                title="Menu Akun Saya"
-              >
-                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary text-white flex items-center justify-center font-bold text-[10px] sm:text-[11px] shrink-0">
-                  {user.full_name ? user.full_name[0] : 'U'}
+              (user.role === 'super_admin' || user.role === 'admin' || user.role === 'staff') ? (
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <Link
+                    to="/admin"
+                    className="flex items-center gap-1.5 px-3 sm:px-4 h-9 sm:h-11 bg-primary text-white hover:bg-primary-dark rounded-full text-xs font-bold transition-all shadow-xs"
+                    title="Buka Dashboard Admin"
+                  >
+                    <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Dashboard Admin</span>
+                    <span className="sm:hidden">Admin</span>
+                  </Link>
+
+                  <button
+                    onClick={() => setRoleSwitcherOpen(!roleSwitcherOpen)}
+                    className="flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 border border-primary/30 bg-primary/5 hover:bg-primary/10 rounded-full text-xs font-bold text-primary transition-all"
+                    title="Menu Akun Admin"
+                  >
+                    <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs shrink-0">
+                      {user.full_name ? user.full_name[0] : 'A'}
+                    </div>
+                  </button>
                 </div>
-                <div className="text-left leading-tight hidden sm:block">
-                  <span className="block text-[9px] sm:text-[10px] text-body font-semibold">
-                    Akun Saya
-                  </span>
-                  <span className="block text-[11px] sm:text-xs font-extrabold text-primary truncate max-w-[110px]">
-                    {user.full_name.split(' ')[0]}
-                  </span>
+              ) : user.role === 'courier' ? (
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <Link
+                    to="/courier"
+                    className="flex items-center gap-1.5 px-3 sm:px-4 h-9 sm:h-11 bg-green-600 text-white hover:bg-green-700 rounded-full text-xs font-bold transition-all shadow-xs"
+                    title="Buka Portal Kurir"
+                  >
+                    <Navigation className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Portal Kurir</span>
+                    <span className="sm:hidden">Kurir</span>
+                  </Link>
+
+                  <button
+                    onClick={() => setRoleSwitcherOpen(!roleSwitcherOpen)}
+                    className="flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 border border-green-500/30 bg-green-50 hover:bg-green-100 rounded-full text-xs font-bold text-green-700 transition-all"
+                    title="Menu Akun Kurir"
+                  >
+                    <div className="w-6 h-6 rounded-full bg-green-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                      {user.full_name ? user.full_name[0] : 'K'}
+                    </div>
+                  </button>
                 </div>
-                <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-body shrink-0" />
-              </button>
+              ) : (
+                <button
+                  onClick={() => setRoleSwitcherOpen(!roleSwitcherOpen)}
+                  className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 h-9 sm:h-11 border border-primary/30 bg-primary/5 hover:bg-primary/10 rounded-full text-xs font-bold text-[#101519] transition-all"
+                  title="Menu Akun Saya"
+                >
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary text-white flex items-center justify-center font-bold text-[10px] sm:text-[11px] shrink-0">
+                    {user.full_name ? user.full_name[0] : 'U'}
+                  </div>
+                  <div className="text-left leading-tight hidden sm:block">
+                    <span className="block text-[9px] sm:text-[10px] text-body font-semibold">
+                      Akun Saya
+                    </span>
+                    <span className="block text-[11px] sm:text-xs font-extrabold text-primary truncate max-w-[110px]">
+                      {user.full_name.split(' ')[0]}
+                    </span>
+                  </div>
+                  <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-body shrink-0" />
+                </button>
+              )
             ) : (
               <button
                 onClick={() => {
