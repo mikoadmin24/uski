@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Settings, Save, CheckCircle2, Building, QrCode, Truck, Phone, Mail } from 'lucide-react';
+import { Settings, Save, CheckCircle2, Building, QrCode, Truck, Phone, Mail, Database, AlertCircle, Copy, ExternalLink } from 'lucide-react';
+import { isSupabaseConfigured } from '@/lib/supabase';
 
 export const AdminSettings: React.FC = () => {
   const [storeName, setStoreName] = useState('USKI STORE');
@@ -10,6 +11,9 @@ export const AdminSettings: React.FC = () => {
   const [bsiAccount, setBsiAccount] = useState('7190023412');
   const [qrisUrl, setQrisUrl] = useState('https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=USKI_STORE_QRIS');
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [copiedSql, setCopiedSql] = useState(false);
+
+  const rawSupabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,8 +26,71 @@ export const AdminSettings: React.FC = () => {
       <div>
         <h1 className="text-2xl font-extrabold text-[#101519]">Pengaturan Global Toko</h1>
         <p className="text-xs text-body mt-1">
-          Konfigurasi identitas toko, nomor rekening bank resmi, gambar QRIS, dan kontak layanan
+          Konfigurasi identitas toko, nomor rekening bank resmi, gambar QRIS, dan status database cloud
         </p>
+      </div>
+
+      {/* Supabase Cloud Connection Diagnostics Card */}
+      <div className={`p-6 rounded-3xl border text-xs space-y-3 ${
+        isSupabaseConfigured
+          ? 'bg-emerald-50/60 border-emerald-200 text-emerald-950'
+          : 'bg-amber-50/60 border-amber-200 text-amber-950'
+      }`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <Database className={`w-5 h-5 ${isSupabaseConfigured ? 'text-emerald-700' : 'text-amber-700'}`} />
+            <div>
+              <h3 className="font-extrabold text-sm text-[#101519]">
+                Status Koneksi Database Supabase Cloud
+              </h3>
+              <p className="text-[11px] text-body">
+                Sinkronisasi data real-time antara laptop admin, HP pelanggan, dan HP kurir
+              </p>
+            </div>
+          </div>
+
+          <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide shrink-0 ${
+            isSupabaseConfigured
+              ? 'bg-emerald-200 text-emerald-900 border border-emerald-300'
+              : 'bg-amber-200 text-amber-900 border border-amber-300 animate-pulse'
+          }`}>
+            {isSupabaseConfigured ? '● Cloud Terhubung Aktif' : '▲ Menunggu Kredensial Asli'}
+          </span>
+        </div>
+
+        <div className="p-3 bg-white/80 rounded-2xl border border-hairline space-y-1.5 font-mono text-[11px]">
+          <div className="flex justify-between items-center text-body">
+            <span>Project URL Terbaca:</span>
+            <span className="font-bold text-[#101519] truncate max-w-[280px]">
+              {rawSupabaseUrl || '(Belum diatur)'}
+            </span>
+          </div>
+          <div className="flex justify-between items-center text-body">
+            <span>Mode Operasional:</span>
+            <span className="font-bold text-[#101519]">
+              {isSupabaseConfigured ? 'Live PostgreSQL Cloud' : 'In-Memory Local Cache (Offline)'}
+            </span>
+          </div>
+        </div>
+
+        {!isSupabaseConfigured && (
+          <div className="p-4 bg-white rounded-2xl border border-amber-200 space-y-2 text-xs text-[#2D3033]">
+            <p className="font-bold text-amber-900">
+              💡 Cara Menghubungkan Supabase Project Anda dalam 3 Langkah:
+            </p>
+            <ol className="list-decimal list-inside space-y-1 text-[11px] leading-relaxed text-body">
+              <li>
+                Buka project Anda di <strong>Supabase.com</strong> &gt; menu <strong>SQL Editor</strong> &gt; jalankan file master: <code className="bg-neutral-2 px-1.5 py-0.5 rounded text-[#101519] font-bold">supabase/complete_setup.sql</code>
+              </li>
+              <li>
+                Buka <strong>Project Settings</strong> &gt; <strong>API</strong> &gt; salin <strong>Project URL</strong> dan <strong>anon key</strong>.
+              </li>
+              <li>
+                Tempelkan kredensial tersebut ke file <code className="bg-neutral-2 px-1.5 py-0.5 rounded text-[#101519] font-bold">.env</code> dan di <strong>Cloudflare Dashboard &gt; Settings &gt; Variables and Secrets</strong>.
+              </li>
+            </ol>
+          </div>
+        )}
       </div>
 
       {savedSuccess && (
