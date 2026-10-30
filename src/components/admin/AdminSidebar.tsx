@@ -15,11 +15,13 @@ import {
   ArrowLeft,
   X,
   AlertTriangle,
+  Navigation,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useOrderStore } from '@/store/orderStore';
 import { useProductStore } from '@/store/productStore';
 import { useCustomOrderStore } from '@/store/customOrderStore';
+import { useCourierStore } from '@/store/courierStore';
 
 interface AdminSidebarProps {
   isOpen?: boolean;
@@ -32,8 +34,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
   const { orders } = useOrderStore();
   const { products } = useProductStore();
   const { requests } = useCustomOrderStore();
+  const { couriers } = useCourierStore();
 
   // Dynamic real-time badge counters
+  const activeCouriersCount = couriers.filter((c) => c.status === 'delivering').length;
   const pendingOrdersCount = orders.filter(
     (o) => o.status === 'awaiting_payment' || o.status === 'processing'
   ).length;
@@ -64,6 +68,13 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
       icon: ShoppingBag,
       badge: pendingOrdersCount > 0 ? String(pendingOrdersCount) : undefined,
       badgeColor: 'bg-amber-500 text-[#101519]',
+    },
+    {
+      label: 'Armada Kurir & GPS',
+      path: '/admin/couriers',
+      icon: Navigation,
+      badge: activeCouriersCount > 0 ? `${activeCouriersCount} Live GPS` : undefined,
+      badgeColor: 'bg-green-400 text-black',
     },
     {
       label: 'Verifikasi Pembayaran',

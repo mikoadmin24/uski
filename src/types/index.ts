@@ -310,3 +310,44 @@ export interface InventoryMovement {
   operator_name: string;
   created_at: string;
 }
+
+export interface CourierLocation {
+  lat: number;
+  lng: number;
+  heading?: number;
+  speed_kmh: number;
+  accuracy_meters?: number;
+  address_approx: string;
+  last_updated: string;
+  battery_level?: number;
+}
+
+export interface ActiveDelivery {
+  order_id: string;
+  order_number: string;
+  recipient_name: string;
+  recipient_phone: string;
+  destination_address: string;
+  destination_coords: { lat: number; lng: number };
+  started_at: string;
+  eta_minutes: number;
+  distance_km: number;
+  progress_pct: number;
+  proof_photo?: string;
+  delivery_notes?: string;
+}
+
+export interface Courier {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  avatar_url?: string;
+  vehicle_type: 'motorcycle' | 'van';
+  vehicle_plate: string;
+  status: 'available' | 'delivering' | 'off_duty';
+  current_location: CourierLocation;
+  active_delivery?: ActiveDelivery | null;
+  total_delivered_today: number;
+  is_gps_active: boolean;
+}
