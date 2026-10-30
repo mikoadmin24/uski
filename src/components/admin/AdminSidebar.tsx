@@ -116,7 +116,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
             <img
               src="/logo.jpg"
               alt="USKI BACKOFFICE Logo"
-              className="w-9 h-9 rounded-xl object-cover border border-white/20 shadow-sm"
+              className="w-9 h-9 object-contain shrink-0"
             />
             <div>
               <span className="font-extrabold text-sm tracking-wide text-white block">

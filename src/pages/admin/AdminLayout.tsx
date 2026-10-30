@@ -34,14 +34,12 @@ export const AdminLayout: React.FC = () => {
             kebijakan Supabase RLS.
           </p>
           <div className="pt-2 flex justify-center gap-2">
-            <button
-              onClick={() => {
-                useAuthStore.getState().loginAs('super_admin');
-              }}
+            <Link
+              to="/account"
               className="px-5 py-2.5 bg-primary text-white font-bold text-xs rounded-xl shadow-sm hover:bg-primary-dark transition-all"
             >
-              Aktifkan Akses Demo Admin
-            </button>
+              Masuk Akun Admin
+            </Link>
             <Link
               to="/"
               className="px-5 py-2.5 bg-neutral-2 text-body font-bold text-xs rounded-xl hover:bg-neutral-1/30 transition-all"
@@ -91,26 +89,19 @@ export const AdminLayout: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            {/* Role Demo Switcher */}
-            <div className="hidden sm:flex items-center gap-1.5 bg-neutral-2 px-2.5 py-1 rounded-xl border border-hairline text-[11px]">
-              <UserCheck className="w-3.5 h-3.5 text-primary" />
-              <span className="text-body font-bold">Role:</span>
-              <select
-                value={user?.role}
-                onChange={(e) => {
-                  const newRole = e.target.value as UserRole;
-                  loginAs(newRole);
-                  if (newRole === 'courier') {
-                    navigate('/courier');
-                  }
-                }}
-                className="bg-transparent font-bold text-primary focus:outline-none cursor-pointer"
-              >
-                <option value="super_admin">Super Admin</option>
-                <option value="admin">Admin / CS</option>
-                <option value="staff">Staf Gudang</option>
-                <option value="courier">Kurir Toko (Auto GPS)</option>
-              </select>
+            {/* Authenticated Staff Profile Badge */}
+            <div className="hidden sm:flex items-center gap-2 bg-neutral-2/80 px-3 py-1.5 rounded-xl border border-hairline text-xs">
+              <div className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center font-bold text-[10px] shrink-0">
+                {user?.full_name ? user.full_name[0] : 'A'}
+              </div>
+              <div className="flex flex-col text-left leading-none min-w-0">
+                <span className="font-extrabold text-[#101519] text-[11px] truncate max-w-[130px]">
+                  {user?.full_name || 'Administrator'}
+                </span>
+                <span className="text-[9px] font-bold text-primary uppercase mt-0.5">
+                  {user?.role === 'super_admin' ? 'Super Admin' : user?.role === 'admin' ? 'Admin / CS' : 'Staf Gudang'}
+                </span>
+              </div>
             </div>
 
             <Link

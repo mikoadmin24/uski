@@ -179,16 +179,13 @@ export const CourierPortalPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                loginAs('super_admin');
-                navigate('/admin');
-              }}
+            <Link
+              to="/"
               className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[10px] font-bold"
-              title="Kembali ke Super Admin"
+              title="Ke Beranda Toko"
             >
-              Ke Admin
-            </button>
+              Ke Toko
+            </Link>
           </div>
         </div>
       </header>

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Voucher } from '@/types';
 import { mockVouchers } from '@/data/mockData';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 interface PromoState {
   vouchers: Voucher[];
@@ -52,6 +53,16 @@ export const usePromoStore = create<PromoState>((set, get) => ({
       // ignore
     }
     set({ vouchers: updated });
+
+    if (isSupabaseConfigured && supabase) {
+      supabase
+        .from('vouchers')
+        .insert(newVoucher)
+        .then(({ error }) => {
+          if (error) console.error('Error inserting voucher to Supabase:', error);
+        });
+    }
+
     return newVoucher;
   },
 
@@ -63,6 +74,16 @@ export const usePromoStore = create<PromoState>((set, get) => ({
       // ignore
     }
     set({ vouchers: updated });
+
+    if (isSupabaseConfigured && supabase) {
+      supabase
+        .from('vouchers')
+        .update(updates)
+        .eq('id', id)
+        .then(({ error }) => {
+          if (error) console.error('Error updating voucher in Supabase:', error);
+        });
+    }
   },
 
   deleteVoucher: (id) => {
@@ -73,16 +94,43 @@ export const usePromoStore = create<PromoState>((set, get) => ({
       // ignore
     }
     set({ vouchers: updated });
+
+    if (isSupabaseConfigured && supabase) {
+      supabase
+        .from('vouchers')
+        .delete()
+        .eq('id', id)
+        .then(({ error }) => {
+          if (error) console.error('Error deleting voucher from Supabase:', error);
+        });
+    }
   },
 
   toggleVoucherStatus: (id) => {
-    const updated = get().vouchers.map((v) => (v.id === id ? { ...v, is_active: !v.is_active } : v));
+    let nextStatus = false;
+    const updated = get().vouchers.map((v) => {
+      if (v.id === id) {
+        nextStatus = !v.is_active;
+        return { ...v, is_active: nextStatus };
+      }
+      return v;
+    });
     try {
       localStorage.setItem(VOUCHERS_KEY, JSON.stringify(updated));
     } catch {
       // ignore
     }
     set({ vouchers: updated });
+
+    if (isSupabaseConfigured && supabase) {
+      supabase
+        .from('vouchers')
+        .update({ is_active: nextStatus })
+        .eq('id', id)
+        .then(({ error }) => {
+          if (error) console.error('Error toggling voucher status in Supabase:', error);
+        });
+    }
   },
 
   validateVoucher: (code, subtotal) => {

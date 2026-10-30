@@ -59,7 +59,7 @@ export const Footer: React.FC = () => {
               <img
                 src="/logo.jpg"
                 alt="USKI STORE Logo"
-                className="w-9 h-9 rounded-xl object-cover border border-hairline shadow-xs"
+                className="w-9 h-9 sm:w-10 sm:h-10 object-contain shrink-0"
               />
               <span className="text-xl font-extrabold tracking-tight text-[#0060AE]">
                 USKI <span className="text-[#2D3033]">STORE</span>

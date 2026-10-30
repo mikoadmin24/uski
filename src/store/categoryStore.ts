@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Category, PromoBanner } from '@/types';
 import { mockCategories, mockBanners } from '@/data/mockData';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 interface CategoryState {
   categories: Category[];
@@ -74,6 +75,16 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
       // ignore
     }
     set({ categories: updated });
+
+    if (isSupabaseConfigured && supabase) {
+      supabase
+        .from('categories')
+        .insert(newCategory)
+        .then(({ error }) => {
+          if (error) console.error('Error inserting category to Supabase:', error);
+        });
+    }
+
     return newCategory;
   },
 
@@ -85,6 +96,16 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
       // ignore
     }
     set({ categories: updated });
+
+    if (isSupabaseConfigured && supabase) {
+      supabase
+        .from('categories')
+        .update(updates)
+        .eq('id', id)
+        .then(({ error }) => {
+          if (error) console.error('Error updating category in Supabase:', error);
+        });
+    }
   },
 
   deleteCategory: (id) => {
@@ -95,6 +116,16 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
       // ignore
     }
     set({ categories: updated });
+
+    if (isSupabaseConfigured && supabase) {
+      supabase
+        .from('categories')
+        .delete()
+        .eq('id', id)
+        .then(({ error }) => {
+          if (error) console.error('Error deleting category from Supabase:', error);
+        });
+    }
   },
 
   addBanner: (data) => {
@@ -109,6 +140,16 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
       // ignore
     }
     set({ banners: updated });
+
+    if (isSupabaseConfigured && supabase) {
+      supabase
+        .from('banners')
+        .insert(newBanner)
+        .then(({ error }) => {
+          if (error) console.error('Error inserting banner to Supabase:', error);
+        });
+    }
+
     return newBanner;
   },
 
@@ -120,6 +161,16 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
       // ignore
     }
     set({ banners: updated });
+
+    if (isSupabaseConfigured && supabase) {
+      supabase
+        .from('banners')
+        .update(updates)
+        .eq('id', id)
+        .then(({ error }) => {
+          if (error) console.error('Error updating banner in Supabase:', error);
+        });
+    }
   },
 
   deleteBanner: (id) => {
@@ -130,15 +181,42 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
       // ignore
     }
     set({ banners: updated });
+
+    if (isSupabaseConfigured && supabase) {
+      supabase
+        .from('banners')
+        .delete()
+        .eq('id', id)
+        .then(({ error }) => {
+          if (error) console.error('Error deleting banner from Supabase:', error);
+        });
+    }
   },
 
   toggleBannerStatus: (id) => {
-    const updated = get().banners.map((b) => (b.id === id ? { ...b, is_active: !b.is_active } : b));
+    let nextStatus = false;
+    const updated = get().banners.map((b) => {
+      if (b.id === id) {
+        nextStatus = !b.is_active;
+        return { ...b, is_active: nextStatus };
+      }
+      return b;
+    });
     try {
       localStorage.setItem(BANNERS_KEY, JSON.stringify(updated));
     } catch {
       // ignore
     }
     set({ banners: updated });
+
+    if (isSupabaseConfigured && supabase) {
+      supabase
+        .from('banners')
+        .update({ is_active: nextStatus })
+        .eq('id', id)
+        .then(({ error }) => {
+          if (error) console.error('Error toggling banner status in Supabase:', error);
+        });
+    }
   },
 }));

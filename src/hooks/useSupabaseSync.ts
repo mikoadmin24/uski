@@ -111,6 +111,54 @@ export function useSupabaseSync() {
           }
         }
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'categories' },
+        (payload) => {
+          if (!isMounted) return;
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const cat = payload.new as any;
+            const currentCats = useCategoryStore.getState().categories;
+            const exists = currentCats.some((c) => c.id === cat.id);
+            if (exists) {
+              useCategoryStore.setState({
+                categories: currentCats.map((c) => (c.id === cat.id ? cat : c)),
+              });
+            } else {
+              useCategoryStore.setState({ categories: [...currentCats, cat] });
+            }
+          } else if (payload.eventType === 'DELETE') {
+            const currentCats = useCategoryStore.getState().categories;
+            useCategoryStore.setState({
+              categories: currentCats.filter((c) => c.id !== (payload.old as any).id),
+            });
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'banners' },
+        (payload) => {
+          if (!isMounted) return;
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const banner = payload.new as any;
+            const currentBanners = useCategoryStore.getState().banners;
+            const exists = currentBanners.some((b) => b.id === banner.id);
+            if (exists) {
+              useCategoryStore.setState({
+                banners: currentBanners.map((b) => (b.id === banner.id ? banner : b)),
+              });
+            } else {
+              useCategoryStore.setState({ banners: [...currentBanners, banner] });
+            }
+          } else if (payload.eventType === 'DELETE') {
+            const currentBanners = useCategoryStore.getState().banners;
+            useCategoryStore.setState({
+              banners: currentBanners.filter((b) => b.id !== (payload.old as any).id),
+            });
+          }
+        }
+      )
       .subscribe();
 
     return () => {

@@ -248,7 +248,7 @@ export const BulkOrderQuotationPage: React.FC = () => {
               <img
                 src="/logo.jpg"
                 alt="USKI STORE Logo"
-                className="w-14 h-14 rounded-xl object-cover border border-hairline shadow-xs shrink-0"
+                className="w-14 h-14 object-contain shrink-0"
               />
               <div className="flex-1 text-center space-y-1">
                 <h2 className="text-xl font-extrabold tracking-wider text-primary">USKI STORE OFFICIAL</h2>
