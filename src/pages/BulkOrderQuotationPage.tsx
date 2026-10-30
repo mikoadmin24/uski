@@ -29,10 +29,10 @@ export const BulkOrderQuotationPage: React.FC = () => {
   if (!req) {
     return (
       <div className="max-w-site mx-auto px-4 py-16 text-center space-y-4">
-        <h2 className="text-xl font-extrabold text-[#101519]">Tiket Penawaran Tidak Ditemukan</h2>
-        <p className="text-xs text-body">Periksa kembali nomor referensi RFQ Anda.</p>
+        <h2 className="text-xl font-extrabold text-[#101519]">Tiket Pesan Request Tidak Ditemukan</h2>
+        <p className="text-xs text-body">Periksa kembali nomor referensi request Anda.</p>
         <Link to="/bulk-order" className="inline-block px-6 py-2.5 bg-primary text-white font-bold text-xs rounded-xl">
-          Kembali ke Form Custom
+          Kembali ke Form Request
         </Link>
       </div>
     );
@@ -45,13 +45,13 @@ export const BulkOrderQuotationPage: React.FC = () => {
       const orderNumber = approveQuote(req.id);
       navigate(`/order-confirmation/${orderNumber}`);
     } catch (err: any) {
-      setActionMsg({ text: err.message || 'Gagal memproses penawaran', isError: true });
+      setActionMsg({ text: err.message || 'Gagal memproses pesanan request', isError: true });
     }
   };
 
   const handleReject = () => {
-    rejectQuote(req.id, 'Ditolak oleh pemohon');
-    setActionMsg({ text: 'Penawaran ini telah ditolak.', isError: false });
+    rejectQuote(req.id, 'Dibatalkan oleh pemohon');
+    setActionMsg({ text: 'Pesan request ini telah dibatalkan.', isError: false });
   };
 
   return (
@@ -161,7 +161,7 @@ export const BulkOrderQuotationPage: React.FC = () => {
               <span className="font-bold text-[#101519]">{formatRupiah(quote.shipping_fee)}</span>
             </div>
             <div className="flex justify-between border-t border-hairline pt-2 text-sm">
-              <span className="font-extrabold text-[#101519]">Total Penawaran:</span>
+              <span className="font-extrabold text-[#101519]">Total Tagihan Resmi (Harga Pas):</span>
               <span className="font-extrabold text-primary text-base">{formatRupiah(quote.grand_total)}</span>
             </div>
           </div>
@@ -180,7 +180,7 @@ export const BulkOrderQuotationPage: React.FC = () => {
               className="px-5 py-3.5 bg-neutral-2 hover:bg-neutral-1/40 text-[#101519] font-extrabold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-2 border border-hairline"
             >
               <Printer className="w-4 h-4 text-primary" />
-              <span>Cetak / Simpan PDF Penawaran</span>
+              <span>Cetak / Simpan PDF Faktur Request</span>
             </button>
 
             {req.status === 'quote_sent' && (
@@ -190,13 +190,13 @@ export const BulkOrderQuotationPage: React.FC = () => {
                   className="flex-1 py-3.5 bg-primary hover:bg-primary-dark text-white font-extrabold text-xs sm:text-sm rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Setujui Penawaran & Buat Pesanan Resmi</span>
+                  <span>Setujui & Buat Pesanan Resmi</span>
                 </button>
                 <button
                   onClick={handleReject}
                   className="px-6 py-3.5 bg-neutral-2 hover:bg-red-50 text-body hover:text-red-600 font-bold text-xs sm:text-sm rounded-xl transition-all"
                 >
-                  Tolak Penawaran
+                  Batalkan Request
                 </button>
               </>
             )}
@@ -205,7 +205,7 @@ export const BulkOrderQuotationPage: React.FC = () => {
           {req.status === 'converted_to_order' && (
             <div className="p-4 bg-green-50 border border-green-200 text-green-800 rounded-2xl text-xs font-semibold flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-              <span>Penawaran ini telah disetujui dan telah dikonversi menjadi pesanan resmi.</span>
+              <span>Pesan request ini telah disetujui dan telah dikonversi menjadi pesanan resmi.</span>
             </div>
           )}
         </div>
@@ -213,9 +213,9 @@ export const BulkOrderQuotationPage: React.FC = () => {
         /* If still waiting for admin quote */
         <div className="bg-white border border-hairline rounded-3xl p-8 text-center space-y-3">
           <Clock className="w-12 h-12 text-amber-500 mx-auto animate-pulse" />
-          <h3 className="text-lg font-extrabold text-[#101519]">Sedang Ditinjau Tim Admin</h3>
+          <h3 className="text-lg font-extrabold text-[#101519]">Request Sedang Ditinjau Tim Admin</h3>
           <p className="text-xs text-body max-w-md mx-auto">
-            Daftar pengajuan kebutuhan Anda sedang diperiksa ke supplier penerbit & pabrik ATK. Anda akan menerima notifikasi begitu surat penawaran harga selesai dibuat.
+            Daftar request kebutuhan Anda sedang diperiksa stoknya ke supplier penerbit & pabrik ATK. Anda akan menerima rincian pesanan resmi harga pas dari toko begitu siap.
           </p>
         </div>
       )}
@@ -277,7 +277,7 @@ export const BulkOrderQuotationPage: React.FC = () => {
 
             <div className="text-center py-2">
               <h3 className="font-extrabold text-sm underline tracking-wide">
-                SURAT PENAWARAN HARGA PENGADAAN (QUOTATION)
+                FAKTUR RINCIAN PESANAN REQUEST KHUSUS (RESMI HARGA PAS)
               </h3>
               <p className="text-xs text-body italic mt-0.5">Perihal: {req.title}</p>
             </div>

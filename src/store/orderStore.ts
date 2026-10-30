@@ -19,7 +19,11 @@ const STORAGE_KEY = 'uski_orders_v1';
 const getInitialOrders = (): Order[] => {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : mockOrders;
+    if (!saved) return mockOrders;
+    const parsed: Order[] = JSON.parse(saved);
+    const existingIds = new Set(parsed.map(o => o.id));
+    const missingMocks = mockOrders.filter(m => !existingIds.has(m.id));
+    return [...parsed, ...missingMocks];
   } catch {
     return mockOrders;
   }

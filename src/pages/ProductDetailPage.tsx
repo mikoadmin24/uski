@@ -308,9 +308,9 @@ export const ProductDetailPage: React.FC = () => {
 
             {/* Bulk RFQ prompt */}
             <div className="p-3 bg-neutral-2 rounded-xl text-xs text-body flex items-center justify-between mt-2">
-              <span>Butuh produk ini dalam jumlah puluhan / ratusan untuk sekolah/kantor?</span>
+              <span>Butuh produk ini dalam jumlah banyak atau request edisi khusus?</span>
               <Link to="/bulk-order" className="font-bold text-primary hover:underline shrink-0 ml-2">
-                Minta Penawaran Grosir
+                Pesan Request Kustom
               </Link>
             </div>
           </div>

@@ -21,7 +21,16 @@ const VOUCHERS_KEY = 'uski_vouchers_v1';
 const getInitialVouchers = (): Voucher[] => {
   try {
     const saved = localStorage.getItem(VOUCHERS_KEY);
-    return saved ? JSON.parse(saved) : mockVouchers;
+    if (!saved) return mockVouchers;
+    const parsed: Voucher[] = JSON.parse(saved);
+    const existingIds = new Set(parsed.map((v) => v.id));
+    const missingMocks = mockVouchers.filter((m) => !existingIds.has(m.id));
+    return [...parsed, ...missingMocks].map((v) => ({
+      ...v,
+      target_audience: v.target_audience || 'all',
+      target_audience_label: v.target_audience_label || 'Semua Pelanggan (Publik)',
+      usage_per_user: v.usage_per_user || 1,
+    }));
   } catch {
     return mockVouchers;
   }

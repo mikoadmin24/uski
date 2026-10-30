@@ -260,6 +260,14 @@ export interface CustomQuote {
   created_at: string;
 }
 
+export type VoucherTargetAudience =
+  | 'all'
+  | 'new_customer'
+  | 'santri_pesantren'
+  | 'guru_pengajar'
+  | 'vip_member'
+  | 'specific_phones';
+
 export interface Voucher {
   id: string;
   code: string;
@@ -273,6 +281,11 @@ export interface Voucher {
   start_date: string;
   end_date: string;
   is_active: boolean;
+  target_audience?: VoucherTargetAudience;
+  target_audience_label?: string;
+  specific_phones?: string;
+  usage_per_user?: number;
+  applicable_category?: string;
 }
 
 export interface PromoBanner {

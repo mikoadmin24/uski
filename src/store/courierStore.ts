@@ -44,6 +44,16 @@ interface CourierState {
   toggleCourierStatus: (courierId: string, status: Courier['status']) => void;
   setGpsActive: (courierId: string, active: boolean) => void;
   recordTripBreadcrumb: (courierId: string, point: BreadcrumbPoint) => void;
+  addCourier: (courierData: {
+    name: string;
+    phone: string;
+    email?: string;
+    avatar_url?: string;
+    vehicle_type: 'motorcycle' | 'van';
+    vehicle_plate: string;
+  }) => void;
+  updateCourier: (courierId: string, data: Partial<Courier>) => void;
+  deleteCourier: (courierId: string) => void;
 }
 
 const STORE_BASE_COORDS = { lat: -6.3728, lng: 106.8335 }; // Gudang Utama Margonda Depok
@@ -719,6 +729,64 @@ export const useCourierStore = create<CourierState>((set, get) => ({
 
   toggleCourierStatus: (courierId, status) => {
     const updated = get().couriers.map((c) => (c.id === courierId ? { ...c, status } : c));
+    try {
+      localStorage.setItem(COURIER_STORAGE_KEY, JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+    set({ couriers: updated });
+  },
+
+  addCourier: (courierData) => {
+    const newCourier: Courier = {
+      id: `cour-${Date.now()}`,
+      name: courierData.name,
+      phone: courierData.phone,
+      email: courierData.email || `${courierData.name.toLowerCase().replace(/[^a-z0-9]/g, '')}@uskistore.id`,
+      avatar_url: courierData.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+      vehicle_type: courierData.vehicle_type,
+      vehicle_plate: courierData.vehicle_plate,
+      status: 'available',
+      is_gps_active: false,
+      total_delivered_today: 0,
+      last_seen_at: new Date().toISOString(),
+      current_location: {
+        lat: STORE_BASE_COORDS.lat,
+        lng: STORE_BASE_COORDS.lng,
+        heading: 0,
+        speed_kmh: 0,
+        accuracy_meters: 5,
+        address_approx: 'Gudang Utama USKI STORE Margonda Depok',
+        last_updated: new Date().toLocaleTimeString('id-ID'),
+        last_timestamp: Date.now(),
+        battery_level: 98,
+      },
+      active_delivery: null,
+      trip_history: [],
+      stationary_alert: { is_stationary: false, duration_minutes: 0, alert_type: null },
+    };
+
+    const updated = [...get().couriers, newCourier];
+    try {
+      localStorage.setItem(COURIER_STORAGE_KEY, JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+    set({ couriers: updated });
+  },
+
+  updateCourier: (courierId, data) => {
+    const updated = get().couriers.map((c) => (c.id === courierId ? { ...c, ...data } : c));
+    try {
+      localStorage.setItem(COURIER_STORAGE_KEY, JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+    set({ couriers: updated });
+  },
+
+  deleteCourier: (courierId) => {
+    const updated = get().couriers.filter((c) => c.id !== courierId);
     try {
       localStorage.setItem(COURIER_STORAGE_KEY, JSON.stringify(updated));
     } catch {

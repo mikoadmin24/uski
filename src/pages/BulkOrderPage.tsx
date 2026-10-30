@@ -28,7 +28,6 @@ export const BulkOrderPage: React.FC = () => {
   const [specifications, setSpecifications] = useState('');
   const [quantity, setQuantity] = useState<string>('100');
   const [targetDate, setTargetDate] = useState('');
-  const [estimatedBudget, setEstimatedBudget] = useState<string>('');
   const [shippingAddress, setShippingAddress] = useState('');
   const [fileName, setFileName] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,14 +60,13 @@ export const BulkOrderPage: React.FC = () => {
         specifications,
         quantity: Math.max(1, parseInt(quantity, 10) || 1),
         target_date: targetDate,
-        estimated_budget: estimatedBudget ? parseInt(estimatedBudget, 10) : undefined,
         shipping_address: shippingAddress,
         attachments,
       });
 
       setSuccessReq(newReq);
     } catch {
-      alert('Gagal mengirim pengajuan custom. Silakan coba kembali.');
+      alert('Gagal mengirim pesan request. Silakan coba kembali.');
     } finally {
       setIsSubmitting(false);
     }
@@ -79,13 +77,13 @@ export const BulkOrderPage: React.FC = () => {
       {/* Header Banner */}
       <div className="rounded-3xl bg-gradient-to-r from-[#0060AE] to-[#2D3033] text-white p-6 sm:p-10 space-y-3">
         <span className="inline-block px-3 py-1 bg-white/20 text-white text-xs font-bold uppercase rounded-full backdrop-blur-sm">
-          Layanan Khusus USKI STORE
+          Layanan Spesial USKI STORE
         </span>
         <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
-          Pemesanan Grosir, Custom & Pencarian Buku
+          Layanan Pesan Request & Pengadaan Kustom
         </h1>
         <p className="text-xs sm:text-sm text-neutral-2 max-w-2xl leading-relaxed">
-          Kirim daftar pengadaan buku perpustakaan sekolah, kitab kuning pesantren, ATK kantor, atau kebutuhan cetak khusus. Tim admin kami akan memeriksa ketersediaan distributor dan menerbitkan Surat Penawaran Resmi (Quotation).
+          Kirim daftar kebutuhan buku perpustakaan, kitab kuning pesantren, ATK kantor, atau kebutuhan cetak khusus. USKI Store menerapkan sistem harga pas resmi tanpa tawar-menawar dengan jaminan produk 100% original.
         </p>
       </div>
 
@@ -96,13 +94,13 @@ export const BulkOrderPage: React.FC = () => {
             <CheckCircle2 className="w-10 h-10" />
           </div>
           <h2 className="text-2xl font-extrabold text-[#101519]">
-            Pengajuan Penawaran Berhasil Dikirim!
+            Pesan Request Berhasil Dikirim!
           </h2>
           <p className="text-sm text-body max-w-lg mx-auto">
             Nomor Referensi Tiket: <strong className="text-primary text-base font-mono">{successReq.reference_number}</strong>
           </p>
           <p className="text-xs text-body max-w-md mx-auto">
-            Admin kami akan segera meninjau daftar kebutuhan Anda, memvalidasi stok supplier, dan menerbitkan rincian penawaran harga resmi dalam kurun waktu 1x24 jam.
+            Admin kami akan segera meninjau daftar request barang Anda dan memvalidasi ketersediaan stok distributor resmi dalam waktu 1x24 jam.
           </p>
 
           <div className="pt-4 flex flex-wrap justify-center gap-3">
@@ -110,13 +108,13 @@ export const BulkOrderPage: React.FC = () => {
               to={`/bulk-order/${successReq.reference_number}`}
               className="px-6 py-3 bg-primary text-white font-extrabold text-xs sm:text-sm rounded-xl hover:bg-primary-dark transition-all"
             >
-              Lihat Status Penawaran Ini
+              Lihat Status Pesan Request
             </Link>
             <button
               onClick={() => setSuccessReq(null)}
               className="px-6 py-3 bg-neutral-2 text-[#2D3033] font-bold text-xs sm:text-sm rounded-xl hover:bg-neutral-1/50 transition-all"
             >
-              Ajukan Permintaan Lain
+              Ajukan Request Lain
             </button>
           </div>
         </div>
@@ -256,25 +254,20 @@ export const BulkOrderPage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="font-bold text-body block mb-1">Target Tanggal Dibutuhkan</label>
+                  <label className="font-bold text-body block mb-1">Target Tanggal Dibutuhkan (Opsional)</label>
                   <input
                     type="date"
                     value={targetDate}
                     onChange={(e) => setTargetDate(e.target.value)}
-                    className="w-full h-11 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
+                    className="w-full h-11 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary text-xs"
                   />
                 </div>
 
-                <div>
-                  <label className="font-bold text-body block mb-1">Perkiraan Anggaran / Budget (Rp, Opsional)</label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={estimatedBudget}
-                    onChange={(e) => setEstimatedBudget(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, ''))}
-                    placeholder="Contoh: 5000000"
-                    className="w-full h-11 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
-                  />
+                <div className="p-3 bg-neutral-2/50 rounded-xl flex items-center gap-2.5 border border-hairline">
+                  <ShieldCheck className="w-5 h-5 text-primary shrink-0" />
+                  <p className="text-[11px] text-body leading-relaxed">
+                    <strong>Kebijakan Harga Pas Resmi:</strong> USKI Store tidak menerima tawar-menawar harga untuk memastikan keaslian kualitas dan garansi distributor resmi.
+                  </p>
                 </div>
               </div>
 
@@ -326,10 +319,10 @@ export const BulkOrderPage: React.FC = () => {
               className="w-full h-12 bg-primary hover:bg-primary-dark text-white font-extrabold text-sm rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <Upload className="w-4 h-4" />
-              <span>{isSubmitting ? 'Mengirim Pengajuan...' : 'Kirim Pengajuan Penawaran'}</span>
+              <span>{isSubmitting ? 'Mengirim Request...' : 'Kirim Pesan Request'}</span>
             </button>
             <p className="text-[11px] text-body text-center mt-2">
-              Pengajuan ini gratis dan tidak mengikat. Admin kami akan menghubungi Anda dengan rincian harga terbaik.
+              Pesan request ini akan diverifikasi admin ke distributor resmi untuk ketersediaan stok buku dan spesifikasi kustom.
             </p>
           </div>
         </form>
@@ -340,7 +333,7 @@ export const BulkOrderPage: React.FC = () => {
         <div className="bg-white border border-hairline rounded-3xl p-6 space-y-4">
           <h3 className="text-sm font-extrabold text-[#101519] border-b border-hairline pb-2 flex items-center gap-2">
             <Clock className="w-4 h-4 text-primary" />
-            Riwayat Permintaan Penawaran Terdaftar
+            Riwayat Pesan Request Terdaftar
           </h3>
 
           <div className="space-y-3">
@@ -364,7 +357,7 @@ export const BulkOrderPage: React.FC = () => {
                   to={`/bulk-order/${req.reference_number}`}
                   className="px-4 py-2 bg-white border border-hairline hover:border-primary text-primary font-bold rounded-xl shadow-sm transition-all self-start sm:self-center"
                 >
-                  Lihat Detail & Penawaran
+                  Lihat Detail Pesan Request
                 </Link>
               </div>
             ))}

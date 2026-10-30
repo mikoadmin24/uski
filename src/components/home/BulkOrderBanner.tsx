@@ -15,13 +15,13 @@ export const BulkOrderBanner: React.FC = () => {
         </h2>
 
         <p className="text-xs md:text-sm text-neutral-2 leading-relaxed">
-          Unggah daftar kebutuhan format Excel, CSV, atau PDF. Kami carikan buku langka, kitab khusus, cetak buku berlogo instansi, dan perlengkapan ATK grosir dengan penawaran harga resmi (Quotation).
+          Unggah daftar kebutuhan format Excel, CSV, atau PDF. Kami carikan buku langka, kitab khusus, cetak buku berlogo instansi, dan perlengkapan ATK grosir dengan layanan Pesan Request resmi toko harga pas.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 text-xs">
           <div className="flex items-center gap-2 text-neutral-2">
             <CheckCircle2 className="w-4 h-4 text-accent-2 shrink-0" />
-            <span>Harga Grosir Kompetitif</span>
+            <span>Harga Pas Resmi Distributor</span>
           </div>
           <div className="flex items-center gap-2 text-neutral-2">
             <CheckCircle2 className="w-4 h-4 text-accent-2 shrink-0" />
@@ -39,7 +39,7 @@ export const BulkOrderBanner: React.FC = () => {
             className="inline-flex items-center gap-2 px-6 py-3 bg-accent-2 hover:bg-[#e6b932] text-[#101519] font-extrabold text-sm rounded-xl transition-all shadow-sm"
           >
             <Upload className="w-4 h-4" />
-            <span>Upload Daftar / Ajukan Custom</span>
+            <span>Ajukan Pesan Request</span>
           </Link>
           <Link
             to="/contact"

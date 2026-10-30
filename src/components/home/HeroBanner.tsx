@@ -60,7 +60,7 @@ export const HeroBanner: React.FC = () => {
                   to={banner.link_url}
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white text-xs md:text-sm font-extrabold rounded-xl transition-all"
                 >
-                  <span>Lihat Penawaran</span>
+                  <span>Lihat Promo & Produk</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>

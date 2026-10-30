@@ -24,6 +24,8 @@ import {
   Download,
   Box,
   RotateCw,
+  Eye,
+  ExternalLink,
 } from 'lucide-react';
 import { useProductStore } from '@/store/productStore';
 import { useCategoryStore } from '@/store/categoryStore';
@@ -66,6 +68,7 @@ export const AdminProducts: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [productToDelete, setProductToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [selectedProductDetail, setSelectedProductDetail] = useState<Product | null>(null);
   const [stockAdjustProduct, setStockAdjustProduct] = useState<Product | null>(null);
   const [printLabelProduct, setPrintLabelProduct] = useState<Product | null>(null);
   const [printCopies, setPrintCopies] = useState('1');
@@ -657,7 +660,11 @@ export const AdminProducts: React.FC = () => {
                     </tr>
                   ) : (
                     filteredProducts.map((p) => (
-                      <tr key={p.id} className="hover:bg-neutral-2/30 transition-colors">
+                      <tr
+                        key={p.id}
+                        onClick={() => setSelectedProductDetail(p)}
+                        className="hover:bg-primary/5 cursor-pointer transition-colors group"
+                      >
                         <td className="py-3.5 px-4 flex items-center gap-3">
                           <img
                             src={p.images[0]}
@@ -665,7 +672,7 @@ export const AdminProducts: React.FC = () => {
                             className="w-10 h-12 object-cover rounded-lg border border-hairline shrink-0 bg-neutral-2"
                           />
                           <div className="min-w-0">
-                            <p className="font-bold text-[#101519] truncate max-w-xs">{p.name}</p>
+                            <p className="font-bold text-[#101519] truncate max-w-xs group-hover:underline">{p.name}</p>
                             <p className="text-[11px] text-body">{p.author || p.brand?.name || '-'}</p>
                           </div>
                         </td>
@@ -691,7 +698,7 @@ export const AdminProducts: React.FC = () => {
                         </td>
 
                         {/* Stok & Quick Adjust Button directly in Table */}
-                        <td className="py-3.5 px-4 text-center">
+                        <td className="py-3.5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
                           <div className="inline-flex items-center gap-1.5">
                             <button
                               onClick={() => handleOpenStockAdjust(p)}
@@ -708,7 +715,7 @@ export const AdminProducts: React.FC = () => {
                           </div>
                         </td>
 
-                        <td className="py-3.5 px-4 text-center">
+                        <td className="py-3.5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={() => updateProduct(p.id, { is_active: !p.is_active })}
                             className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors ${
@@ -719,8 +726,16 @@ export const AdminProducts: React.FC = () => {
                           </button>
                         </td>
 
-                        <td className="py-3.5 px-4 text-center">
+                        <td className="py-3.5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-center gap-1">
+                            <button
+                              title="Lihat Detail Lengkap Produk"
+                              onClick={() => setSelectedProductDetail(p)}
+                              className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors font-bold text-xs"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+
                             <button
                               title="Cetak Label Stiker Barcode"
                               onClick={() => setPrintLabelProduct(p)}
@@ -828,6 +843,170 @@ export const AdminProducts: React.FC = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* SATU POPUP LENGKAP: DETAIL PRODUK & QUICK ACTIONS                         */}
+      {/* ========================================================================= */}
+      {selectedProductDetail && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[92dvh] overflow-y-auto shadow-2xl border border-hairline flex flex-col touch-scroll">
+            
+            {/* Modal Header */}
+            <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md px-6 py-4 border-b border-hairline flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black">
+                  <Package className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-[#101519] line-clamp-1">
+                    {selectedProductDetail.name}
+                  </h3>
+                  <p className="text-xs text-body font-mono">
+                    SKU: {selectedProductDetail.sku_master} {selectedProductDetail.isbn ? `• ISBN: ${selectedProductDetail.isbn}` : ''}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedProductDetail(null)}
+                className="p-2 hover:bg-neutral-2 rounded-xl text-body hover:text-[#101519] transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-5 text-xs flex-1">
+              <div className="flex flex-col sm:flex-row gap-5">
+                <div className="w-full sm:w-44 shrink-0">
+                  <img
+                    src={selectedProductDetail.images[0]}
+                    alt={selectedProductDetail.name}
+                    className="w-full h-56 object-cover rounded-2xl border border-hairline shadow-xs bg-neutral-100"
+                  />
+                  <div className="mt-2 text-center">
+                    <span className={`px-2.5 py-1 rounded-full font-bold text-[10px] inline-block ${
+                      selectedProductDetail.is_active ? 'bg-green-100 text-green-700' : 'bg-neutral-2 text-body'
+                    }`}>
+                      {selectedProductDetail.is_active ? '● Produk Aktif di Toko' : '○ Non-Aktif'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex-1 space-y-3.5">
+                  <div className="bg-neutral-2/40 border border-hairline rounded-2xl p-3.5 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-body font-medium">Kategori:</span>
+                      <strong className="text-primary">
+                        {categories.find((c) => c.id === selectedProductDetail.category_id)?.name || '-'}
+                      </strong>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-body font-medium">Harga Toko:</span>
+                      <div>
+                        <span className="text-base font-black text-primary">
+                          {formatRupiah(selectedProductDetail.sale_price ?? selectedProductDetail.base_price)}
+                        </span>
+                        {selectedProductDetail.sale_price && (
+                          <span className="text-[11px] text-body line-through block text-right">
+                            {formatRupiah(selectedProductDetail.base_price)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center border-t border-hairline pt-2">
+                      <span className="text-body font-medium">Stok Fisik Tersedia:</span>
+                      <span className={`font-black text-sm px-2.5 py-0.5 rounded-lg ${
+                        selectedProductDetail.stock_quantity <= selectedProductDetail.min_stock_alert
+                          ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                          : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                      }`}>
+                        {selectedProductDetail.stock_quantity} pcs
+                        {selectedProductDetail.stock_quantity <= selectedProductDetail.min_stock_alert ? ' (Menipis!)' : ' (Aman)'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-[11px] text-body">
+                      <span>Batas Alert Minimum:</span>
+                      <span>{selectedProductDetail.min_stock_alert} pcs</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[11px] text-body">
+                      <span>Berat Barang:</span>
+                      <span>{selectedProductDetail.weight_grams} gram</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="font-bold text-body block mb-1">Deskripsi Produk:</span>
+                    <p className="p-3 bg-neutral-100/70 rounded-xl leading-relaxed text-[#101519] max-h-32 overflow-y-auto">
+                      {selectedProductDetail.description || 'Tidak ada deskripsi.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Actions Bar */}
+              <div className="pt-2 border-t border-hairline">
+                <span className="font-bold text-body block mb-2">Aksi Cepat untuk Produk Ini:</span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const p = selectedProductDetail;
+                      setSelectedProductDetail(null);
+                      handleOpenStockAdjust(p);
+                    }}
+                    className="py-2.5 px-3 bg-primary/10 hover:bg-primary hover:text-white text-primary rounded-xl font-bold flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <ArrowUpDown className="w-3.5 h-3.5" />
+                    <span>Sesuaikan Stok</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const p = selectedProductDetail;
+                      setSelectedProductDetail(null);
+                      setPrintLabelProduct(p);
+                    }}
+                    className="py-2.5 px-3 bg-neutral-2 hover:bg-neutral-3 text-[#101519] rounded-xl font-bold flex items-center justify-center gap-1.5 transition-colors border border-hairline"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>Cetak Barcode</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const p = selectedProductDetail;
+                      setSelectedProductDetail(null);
+                      handleOpenEditModal(p);
+                    }}
+                    className="py-2.5 px-3 bg-neutral-900 hover:bg-black text-white rounded-xl font-bold flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                    <span>Edit Produk</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="sticky bottom-0 bg-white/95 backdrop-blur-md px-6 py-3 border-t border-hairline flex items-center justify-between text-xs">
+              <span className="text-body font-mono">
+                ID: {selectedProductDetail.id}
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedProductDetail(null)}
+                className="px-5 py-2 bg-neutral-2 hover:bg-neutral-3 text-[#101519] rounded-xl font-bold transition-colors"
+              >
+                Tutup Popup
+              </button>
+            </div>
+
           </div>
         </div>
       )}

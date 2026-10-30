@@ -16,6 +16,7 @@ import {
   X,
   AlertTriangle,
   Navigation,
+  Truck,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useOrderStore } from '@/store/orderStore';
@@ -99,11 +100,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
       title: 'LOGISTIK & PENGADAAN',
       items: [
         {
-          label: 'Armada Kurir & Live GPS',
+          label: 'Armada & Kurir Toko',
           path: '/admin/couriers',
-          icon: Navigation,
-          badge: activeCouriersCount > 0 ? `${activeCouriersCount} Live` : undefined,
-          badgeColor: 'bg-green-400 text-black',
+          icon: Truck,
+          badge: couriers.length > 0 ? `${couriers.length} Kurir` : undefined,
+          badgeColor: 'bg-primary/20 text-primary',
         },
         ...(isAdminOrManager
           ? [
