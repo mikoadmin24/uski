@@ -41,9 +41,9 @@ export const CheckoutPage: React.FC = () => {
 
   // Shipping & Payment selection
   const [shippingMethod, setShippingMethod] = useState<{ id: string; name: string; fee: number }>({
-    id: 'jnt',
-    name: 'J&T Express Reguler (2-3 Hari)',
-    fee: 14000,
+    id: 'toko',
+    name: 'Kurir Toko USKI (Pengantaran Langsung dari Toko)',
+    fee: 10000,
   });
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('manual_qris');
@@ -300,9 +300,10 @@ export const CheckoutPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               {[
+                { id: 'toko', name: 'Kurir Toko USKI (Pengantaran Langsung dari Toko)', fee: 10000 },
                 { id: 'jnt', name: 'J&T Express Reguler (2-3 Hari)', fee: 14000 },
                 { id: 'sicepat', name: 'SiCepat Reguler (1-2 Hari)', fee: 16000 },
-                { id: 'cargo', name: 'Kargo Sentral (Hemat untuk Paket Berat)', fee: 28000 },
+                { id: 'cargo', name: 'Kargo Sentral (Hemat untuk Buku & ATK Berat)', fee: 28000 },
                 { id: 'pickup', name: 'Ambil Sendiri di Toko USKI STORE (Gratis)', fee: 0 },
               ].map((opt) => (
                 <label

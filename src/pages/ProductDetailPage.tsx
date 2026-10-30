@@ -32,6 +32,33 @@ export const ProductDetailPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'desc' | 'specs' | 'reviews'>('desc');
   const [addedToast, setAddedToast] = useState<boolean>(false);
 
+  // Reviews state
+  const [showReviewModal, setShowReviewModal] = useState<boolean>(false);
+  const [customerReviews, setCustomerReviews] = useState<{ name: string; rating: number; comment: string; date: string }[]>([]);
+  const [newRating, setNewRating] = useState<number>(5);
+  const [reviewerName, setReviewerName] = useState<string>('');
+  const [reviewComment, setReviewComment] = useState<string>('');
+
+  const handleReviewSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reviewerName || !reviewComment) return;
+
+    setCustomerReviews([
+      {
+        name: reviewerName,
+        rating: newRating,
+        comment: reviewComment,
+        date: 'Baru saja',
+      },
+      ...customerReviews,
+    ]);
+
+    setShowReviewModal(false);
+    setReviewerName('');
+    setReviewComment('');
+    setNewRating(5);
+  };
+
   // Set initial image
   React.useEffect(() => {
     if (product && product.images.length > 0) {
@@ -247,22 +274,36 @@ export const ProductDetailPage: React.FC = () => {
             )}
 
             {/* CTAs */}
-            <div className="pt-4 flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={handleAddToCart}
-                disabled={maxStock === 0}
-                className="flex-1 h-12 border-2 border-primary text-primary hover:bg-primary/5 font-extrabold text-sm rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            <div className="pt-4 space-y-2.5">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={handleAddToCart}
+                  disabled={maxStock === 0}
+                  className="flex-1 h-12 border-2 border-primary text-primary hover:bg-primary/5 font-extrabold text-sm rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  <span>+ Keranjang</span>
+                </button>
+                <button
+                  onClick={handleBuyNow}
+                  disabled={maxStock === 0}
+                  className="flex-1 h-12 bg-primary hover:bg-primary-dark text-white font-extrabold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                >
+                  <span>Beli Sekarang</span>
+                </button>
+              </div>
+
+              {/* Direct WhatsApp Quick Order */}
+              <a
+                href={`https://wa.me/6281234567890?text=${encodeURIComponent(
+                  `Halo USKI STORE, saya ingin memesan:\n• Produk: ${product.name}\n• Varian: ${selectedVariant?.name || 'Standar'}\n• Jumlah: ${quantity} pcs\n• Harga: ${formatRupiah(currentPrice * quantity)}\nMohon info ketersediaan stok dan opsi pengiriman. Terima kasih!`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full h-11 bg-[#25D366] hover:bg-[#20ba59] text-white font-bold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm"
               >
-                <ShoppingCart className="w-4 h-4" />
-                <span>+ Keranjang</span>
-              </button>
-              <button
-                onClick={handleBuyNow}
-                disabled={maxStock === 0}
-                className="flex-1 h-12 bg-primary hover:bg-primary-dark text-white font-extrabold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
-              >
-                <span>Beli Sekarang</span>
-              </button>
+                <span>💬 Beli Cepat via WhatsApp</span>
+              </a>
             </div>
 
             {/* Bulk RFQ prompt */}
@@ -350,30 +391,124 @@ export const ProductDetailPage: React.FC = () => {
           )}
 
           {activeTab === 'reviews' && (
-            <div className="space-y-4 max-w-2xl">
-              <div className="flex items-center gap-4 p-4 bg-neutral-2 rounded-2xl">
-                <div className="text-3xl font-extrabold text-primary">
-                  {product.rating.toFixed(1)}
-                </div>
-                <div className="text-xs text-body">
-                  <div className="flex text-amber-500 mb-1">
-                    {'★'.repeat(5)}
+            <div className="space-y-6 max-w-2xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-neutral-2/60 rounded-2xl border border-hairline">
+                <div className="flex items-center gap-4">
+                  <div className="text-3xl font-extrabold text-primary">
+                    {product.rating.toFixed(1)}
                   </div>
-                  <span>Berdasarkan {product.reviews_count} ulasan terverifikasi pembeli</span>
+                  <div className="text-xs text-body">
+                    <div className="flex text-amber-500 mb-1">
+                      {'★'.repeat(5)}
+                    </div>
+                    <span>Berdasarkan {product.reviews_count + customerReviews.length} ulasan terverifikasi pembeli</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setShowReviewModal(true)}
+                  className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary-dark transition-all self-start sm:self-center"
+                >
+                  + Tulis Ulasan Pembeli
+                </button>
+              </div>
+
+              {/* Review List */}
+              <div className="space-y-3">
+                {customerReviews.map((rev, idx) => (
+                  <div key={idx} className="border border-hairline rounded-2xl p-4 space-y-1.5 bg-white">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-[#101519]">{rev.name} (Pembeli Terverifikasi)</span>
+                      <span className="text-body text-[11px]">{rev.date}</span>
+                    </div>
+                    <div className="flex text-amber-500 text-xs">{'★'.repeat(rev.rating)}</div>
+                    <p className="text-xs text-[#2D3033] leading-relaxed">{rev.comment}</p>
+                  </div>
+                ))}
+
+                <div className="border border-hairline rounded-2xl p-4 space-y-1.5 bg-white">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-[#101519]">M. Rizky (Pembeli Terverifikasi)</span>
+                    <span className="text-body text-[11px]">2 hari yang lalu</span>
+                  </div>
+                  <div className="flex text-amber-500 text-xs">{'★'.repeat(5)}</div>
+                  <p className="text-xs text-[#2D3033]">
+                    Kualitas barang sangat bagus, original, packing rapi menggunakan bubble wrap tebal. Pengiriman cepat sampai.
+                  </p>
                 </div>
               </div>
 
-              {/* Sample Review */}
-              <div className="border border-hairline rounded-2xl p-4 space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-[#101519]">M. Rizky (Pembeli Terverifikasi)</span>
-                  <span className="text-body">2 hari yang lalu</span>
+              {/* Review Modal */}
+              {showReviewModal && (
+                <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                  <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4">
+                    <div className="flex items-center justify-between border-b border-hairline pb-3">
+                      <h3 className="font-extrabold text-sm text-[#101519]">Tulis Ulasan untuk {product.name}</h3>
+                      <button onClick={() => setShowReviewModal(false)}>
+                        ✕
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleReviewSubmit} className="space-y-4 text-xs">
+                      <div>
+                        <label className="font-bold text-body block mb-1.5">Rating Bintang</label>
+                        <div className="flex gap-2">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              type="button"
+                              key={star}
+                              onClick={() => setNewRating(star)}
+                              className={`text-2xl transition-transform ${star <= newRating ? 'text-amber-500 scale-110' : 'text-neutral-1'}`}
+                            >
+                              ★
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="font-bold text-body block mb-1">Nama Pembeli *</label>
+                        <input
+                          type="text"
+                          required
+                          value={reviewerName}
+                          onChange={(e) => setReviewerName(e.target.value)}
+                          placeholder="Nama lengkap atau inisial"
+                          className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="font-bold text-body block mb-1">Ulasan & Kesan *</label>
+                        <textarea
+                          rows={3}
+                          required
+                          value={reviewComment}
+                          onChange={(e) => setReviewComment(e.target.value)}
+                          placeholder="Bagikan pengalaman Anda tentang kualitas buku/ATK ini..."
+                          className="w-full p-3 bg-neutral-2 border border-hairline rounded-xl font-semibold"
+                        />
+                      </div>
+
+                      <div className="pt-2 flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowReviewModal(false)}
+                          className="px-4 py-2 bg-neutral-2 text-body font-bold rounded-xl"
+                        >
+                          Batal
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-5 py-2 bg-primary text-white font-bold rounded-xl hover:bg-primary-dark"
+                        >
+                          Kirim Ulasan
+                        </button>
+                      </div>
+                    </form>
+                  </div>
                 </div>
-                <div className="flex text-amber-500 text-xs">{'★'.repeat(5)}</div>
-                <p className="text-xs text-[#2D3033]">
-                  Kualitas barang sangat bagus, original, packing rapi menggunakan bubble wrap tebal. Pengiriman cepat sampai.
-                </p>
-              </div>
+              )}
             </div>
           )}
         </div>

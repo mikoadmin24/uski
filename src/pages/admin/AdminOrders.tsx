@@ -23,6 +23,7 @@ export const AdminOrders: React.FC = () => {
   const [trackingNumberInput, setTrackingNumberInput] = useState('');
   const [courierInput, setCourierInput] = useState('');
   const [printInvoiceOrder, setPrintInvoiceOrder] = useState<Order | null>(null);
+  const [printShippingLabelOrder, setPrintShippingLabelOrder] = useState<Order | null>(null);
 
   const filteredOrders = orders.filter((o) => {
     const q = searchQuery.toLowerCase();
@@ -162,13 +163,22 @@ export const AdminOrders: React.FC = () => {
                     )}
                   </td>
                   <td className="py-3.5 px-4 text-center">
-                    <button
-                      onClick={() => setPrintInvoiceOrder(ord)}
-                      title="Cetak Invoice / Packing Slip"
-                      className="p-1.5 hover:text-primary text-body hover:bg-neutral-2 rounded-lg"
-                    >
-                      <Printer className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center justify-center gap-1">
+                      <button
+                        onClick={() => setPrintInvoiceOrder(ord)}
+                        title="Cetak Faktur / Invoice"
+                        className="p-1.5 hover:text-primary text-body hover:bg-neutral-2 rounded-lg transition-colors"
+                      >
+                        <Printer className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setPrintShippingLabelOrder(ord)}
+                        title="Cetak Label Resi Pengiriman (Thermal 100x150mm)"
+                        className="p-1.5 hover:text-green-600 text-body hover:bg-neutral-2 rounded-lg transition-colors"
+                      >
+                        <Truck className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -192,7 +202,19 @@ export const AdminOrders: React.FC = () => {
 
             <form onSubmit={handleSaveTracking} className="space-y-3 text-xs">
               <div>
-                <label className="font-bold text-body block mb-1">Nama Jasa Kurir / Ekspedisi</label>
+                <label className="font-bold text-body block mb-1">Pilih / Nama Jasa Ekspedisi</label>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {['Kurir Toko USKI', 'J&T Express', 'SiCepat', 'Sentral Kargo'].map((c) => (
+                    <button
+                      type="button"
+                      key={c}
+                      onClick={() => setCourierInput(c)}
+                      className="px-2 py-1 bg-neutral-2 hover:bg-primary hover:text-white rounded text-[10px] font-semibold transition-colors"
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
                 <input
                   type="text"
                   required
@@ -203,11 +225,11 @@ export const AdminOrders: React.FC = () => {
               </div>
 
               <div>
-                <label className="font-bold text-body block mb-1">Nomor Resi Resmi *</label>
+                <label className="font-bold text-body block mb-1">Nomor Resi / Kode Antar Toko *</label>
                 <input
                   type="text"
                   required
-                  placeholder="Contoh: 00391283910"
+                  placeholder="Contoh: USKI-TOKO-01 atau JNT-982192"
                   value={trackingNumberInput}
                   onChange={(e) => setTrackingNumberInput(e.target.value)}
                   className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-mono font-bold uppercase"
@@ -317,6 +339,88 @@ export const AdminOrders: React.FC = () => {
                 <Printer className="w-3.5 h-3.5" />
                 <span>Cetak Lembar Ini</span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Printable Thermal Shipping Label (100x150 mm) Modal */}
+      {printShippingLabelOrder && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl print:m-0 print:p-0 print:border-none print:shadow-none">
+            {/* Header Controls (hidden on print) */}
+            <div className="flex items-center justify-between border-b border-hairline pb-2 print:hidden">
+              <span className="text-xs font-bold text-body">Label Thermal (100x150 mm)</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="px-3 py-1.5 bg-primary text-white font-bold text-xs rounded-lg flex items-center gap-1"
+                >
+                  <Printer className="w-3 h-3" />
+                  <span>Cetak Label</span>
+                </button>
+                <button
+                  onClick={() => setPrintShippingLabelOrder(null)}
+                  className="px-2 py-1 bg-neutral-2 text-body font-bold text-xs rounded-lg"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Label Card Body (Thermal 100x150mm format) */}
+            <div className="border-2 border-black p-4 space-y-3 font-sans text-black">
+              {/* Top Banner: Courier & Logistics Name */}
+              <div className="flex items-center justify-between border-b-2 border-black pb-2">
+                <div>
+                  <h4 className="font-extrabold text-sm tracking-wider uppercase text-primary">USKI STORE</h4>
+                  <p className="text-[10px] font-bold">EKSPEDISI: {printShippingLabelOrder.shipment?.courier_name || printShippingLabelOrder.shipping_method}</p>
+                </div>
+                {printShippingLabelOrder.payment_method === 'cod' ? (
+                  <div className="px-2 py-1 bg-black text-white font-black text-xs rounded">
+                    COD: {formatRupiah(printShippingLabelOrder.total_amount)}
+                  </div>
+                ) : (
+                  <div className="px-2 py-0.5 border border-black font-black text-[10px] uppercase">
+                    NON-COD (LUNAS)
+                  </div>
+                )}
+              </div>
+
+              {/* Barcode Area */}
+              <div className="text-center py-1 border-b-2 border-black space-y-0.5">
+                <div className="font-mono tracking-widest text-lg font-black bg-neutral-100 py-1 border border-black/30">
+                  ||| | |||| | ||||| |||
+                </div>
+                <p className="font-mono font-bold text-xs tracking-wider">
+                  {printShippingLabelOrder.shipment?.tracking_number || printShippingLabelOrder.order_number}
+                </p>
+              </div>
+
+              {/* Recipient (Penerima) */}
+              <div className="border-b-2 border-black pb-2 space-y-0.5 text-xs">
+                <span className="font-bold uppercase text-[10px] text-gray-600 block">PENERIMA:</span>
+                <p className="font-extrabold text-sm text-black">{printShippingLabelOrder.shipping_address.recipient_name}</p>
+                <p className="font-bold text-xs">{printShippingLabelOrder.shipping_address.phone_number}</p>
+                <p className="text-[11px] leading-snug">
+                  {printShippingLabelOrder.shipping_address.street_address}, {printShippingLabelOrder.shipping_address.district}, {printShippingLabelOrder.shipping_address.city}, {printShippingLabelOrder.shipping_address.province} ({printShippingLabelOrder.shipping_address.postal_code})
+                </p>
+              </div>
+
+              {/* Sender (Pengirim) */}
+              <div className="border-b border-black pb-2 space-y-0.5 text-[11px]">
+                <span className="font-bold uppercase text-[9px] text-gray-600 block">PENGIRIM:</span>
+                <p className="font-bold">USKI STORE (0812-3456-7890)</p>
+                <p className="text-[10px] text-gray-700">Jl. Margonda Raya No. 102, Depok, Jawa Barat</p>
+              </div>
+
+              {/* Package Content & Notes */}
+              <div className="text-[10px] space-y-0.5">
+                <p><strong>Isi Paket:</strong> {printShippingLabelOrder.items.map((i) => `${i.product_name} (${i.quantity})`).join(', ')}</p>
+                {printShippingLabelOrder.notes && (
+                  <p className="italic text-gray-700"><strong>Catatan:</strong> {printShippingLabelOrder.notes}</p>
+                )}
+              </div>
             </div>
           </div>
         </div>

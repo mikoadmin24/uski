@@ -227,13 +227,28 @@ export const CartPage: React.FC = () => {
             </div>
 
             {/* Proceed to Checkout CTA */}
-            <button
-              onClick={() => navigate('/checkout')}
-              className="w-full h-12 bg-primary hover:bg-primary-dark text-white font-extrabold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm"
-            >
-              <span>Lanjut ke Pembayaran</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="space-y-2">
+              <button
+                onClick={() => navigate('/checkout')}
+                className="w-full h-12 bg-primary hover:bg-primary-dark text-white font-extrabold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm"
+              >
+                <span>Lanjut ke Pembayaran Web</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+
+              <a
+                href={`https://wa.me/6281234567890?text=${encodeURIComponent(
+                  `Halo USKI STORE, saya ingin memesan daftar belanja keranjang berikut:\n${items
+                    .map((it, idx) => `${idx + 1}. ${it.product.name} (${it.quantity} pcs) - ${formatRupiah(it.selected_price * it.quantity)}`)
+                    .join('\n')}\nTotal Estimasi: ${formatRupiah(total)}\nMohon info ketersediaan stok & ongkos kirim. Terima kasih!`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full h-11 bg-[#25D366] hover:bg-[#20ba59] text-white font-bold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm text-center"
+              >
+                <span>💬 Pesan Langsung via WhatsApp</span>
+              </a>
+            </div>
 
             <p className="text-[11px] text-body text-center">
               Perhitungan harga final dan stok diverifikasi langsung secara aman di server.

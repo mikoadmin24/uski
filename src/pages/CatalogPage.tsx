@@ -15,6 +15,7 @@ export const CatalogPage: React.FC = () => {
 
   const [selectedCategory, setSelectedCategory] = useState<string>(queryCategory);
   const [selectedBrand, setSelectedBrand] = useState<string>('');
+  const [subFilter, setSubFilter] = useState<string>('');
   const [inStockOnly, setInStockOnly] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<string>('popular');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 500000]);
@@ -45,6 +46,16 @@ export const CatalogPage: React.FC = () => {
         if (selectedCategory) {
           const cat = mockCategories.find((c) => c.slug === selectedCategory);
           if (cat && p.category_id !== cat.id) return false;
+        }
+
+        // Sub-filter (Bidang Kitab / Jenjang Pendidikan)
+        if (subFilter) {
+          const qSub = subFilter.toLowerCase();
+          const matchText =
+            p.name.toLowerCase().includes(qSub) ||
+            p.description.toLowerCase().includes(qSub) ||
+            JSON.stringify(p.specifications).toLowerCase().includes(qSub);
+          if (!matchText) return false;
         }
 
         // Brand filter
@@ -87,11 +98,13 @@ export const CatalogPage: React.FC = () => {
     priceRange,
     queryFilter,
     sortBy,
+    subFilter,
   ]);
 
   const handleResetFilters = () => {
     setSelectedCategory('');
     setSelectedBrand('');
+    setSubFilter('');
     setInStockOnly(false);
     setPriceRange([0, 500000]);
     setSearchParams({});
@@ -188,6 +201,54 @@ export const CatalogPage: React.FC = () => {
                 ))}
               </div>
             </div>
+
+            {/* Sub-filter for Kitab */}
+            {selectedCategory === 'kitab' && (
+              <div className="border-t border-hairline pt-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-body mb-2.5">
+                  Bidang Keilmuan Kitab
+                </h4>
+                <div className="space-y-1.5">
+                  {['', 'Fikih', 'Nahwu', 'Hadits', 'Tafsir'].map((field) => (
+                    <button
+                      key={field}
+                      onClick={() => setSubFilter(field)}
+                      className={`w-full text-left text-xs py-1.5 px-2 rounded-lg transition-colors ${
+                        subFilter === field
+                          ? 'bg-primary text-white font-bold'
+                          : 'text-[#2D3033] hover:bg-neutral-2'
+                      }`}
+                    >
+                      {field === '' ? 'Semua Bidang' : `Kitab ${field}`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Sub-filter for Pelajaran */}
+            {selectedCategory === 'buku-pelajaran' && (
+              <div className="border-t border-hairline pt-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-body mb-2.5">
+                  Jenjang Pendidikan
+                </h4>
+                <div className="space-y-1.5">
+                  {['', 'SD', 'SMP', 'SMA', 'Kelas 10'].map((lvl) => (
+                    <button
+                      key={lvl}
+                      onClick={() => setSubFilter(lvl)}
+                      className={`w-full text-left text-xs py-1.5 px-2 rounded-lg transition-colors ${
+                        subFilter === lvl
+                          ? 'bg-primary text-white font-bold'
+                          : 'text-[#2D3033] hover:bg-neutral-2'
+                      }`}
+                    >
+                      {lvl === '' ? 'Semua Jenjang' : lvl}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Brand Filter */}
             <div className="border-t border-hairline pt-4">

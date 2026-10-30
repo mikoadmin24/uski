@@ -11,6 +11,8 @@ import {
   ArrowRight,
   ShieldCheck,
   AlertCircle,
+  Printer,
+  X,
 } from 'lucide-react';
 import { useCustomOrderStore } from '@/store/customOrderStore';
 import { formatRupiah, formatDate } from '@/lib/utils';
@@ -22,6 +24,7 @@ export const BulkOrderQuotationPage: React.FC = () => {
 
   const req = getRequestByReference(reference || '');
   const [actionMsg, setActionMsg] = useState<{ text: string; isError: boolean } | null>(null);
+  const [showPrintQuotation, setShowPrintQuotation] = useState<boolean>(false);
 
   if (!req) {
     return (
@@ -171,23 +174,33 @@ export const BulkOrderQuotationPage: React.FC = () => {
           )}
 
           {/* Approval Action Buttons if pending customer action */}
-          {req.status === 'quote_sent' && (
-            <div className="pt-4 border-t border-hairline flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={handleApprove}
-                className="flex-1 py-3.5 bg-primary hover:bg-primary-dark text-white font-extrabold text-xs sm:text-sm rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Setujui Penawaran & Buat Pesanan Resmi</span>
-              </button>
-              <button
-                onClick={handleReject}
-                className="px-6 py-3.5 bg-neutral-2 hover:bg-red-50 text-body hover:text-red-600 font-bold text-xs sm:text-sm rounded-xl transition-all"
-              >
-                Tolak Penawaran
-              </button>
-            </div>
-          )}
+          <div className="pt-4 border-t border-hairline flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => setShowPrintQuotation(true)}
+              className="px-5 py-3.5 bg-neutral-2 hover:bg-neutral-1/40 text-[#101519] font-extrabold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-2 border border-hairline"
+            >
+              <Printer className="w-4 h-4 text-primary" />
+              <span>Cetak / Simpan PDF Penawaran</span>
+            </button>
+
+            {req.status === 'quote_sent' && (
+              <>
+                <button
+                  onClick={handleApprove}
+                  className="flex-1 py-3.5 bg-primary hover:bg-primary-dark text-white font-extrabold text-xs sm:text-sm rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Setujui Penawaran & Buat Pesanan Resmi</span>
+                </button>
+                <button
+                  onClick={handleReject}
+                  className="px-6 py-3.5 bg-neutral-2 hover:bg-red-50 text-body hover:text-red-600 font-bold text-xs sm:text-sm rounded-xl transition-all"
+                >
+                  Tolak Penawaran
+                </button>
+              </>
+            )}
+          </div>
 
           {req.status === 'converted_to_order' && (
             <div className="p-4 bg-green-50 border border-green-200 text-green-800 rounded-2xl text-xs font-semibold flex items-center gap-2">
@@ -204,6 +217,128 @@ export const BulkOrderQuotationPage: React.FC = () => {
           <p className="text-xs text-body max-w-md mx-auto">
             Daftar pengajuan kebutuhan Anda sedang diperiksa ke supplier penerbit & pabrik ATK. Anda akan menerima notifikasi begitu surat penawaran harga selesai dibuat.
           </p>
+        </div>
+      )}
+      {/* Printable Official Quotation Modal */}
+      {showPrintQuotation && quote && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-3xl w-full p-8 max-h-[95vh] overflow-y-auto space-y-6 print:m-0 print:p-0 print:border-none print:shadow-none shadow-2xl">
+            {/* Header Controls (Hidden on print) */}
+            <div className="flex items-center justify-between border-b border-hairline pb-4 print:hidden">
+              <span className="text-xs font-bold text-body">Tinjauan Lembar Penawaran Fisik</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="px-4 py-2 bg-primary text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Cetak / Unduh PDF</span>
+                </button>
+                <button
+                  onClick={() => setShowPrintQuotation(false)}
+                  className="px-3 py-2 bg-neutral-2 text-body font-bold text-xs rounded-xl"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Official Letterhead (Kop Surat) */}
+            <div className="border-b-2 border-black pb-4 text-center space-y-1">
+              <h2 className="text-xl font-extrabold tracking-wider text-primary">USKI STORE OFFICIAL</h2>
+              <p className="text-xs font-semibold text-[#101519]">
+                PUSAT DISTRIBUSI BUKU UMUM, PELAJARAN, AL-QUR'AN, KITAB & ATK INSTANSI
+              </p>
+              <p className="text-[11px] text-body">
+                Jl. Margonda Raya No. 102, Depok, Jawa Barat | WhatsApp: 0812-3456-7890 | Email: cs@uskistore.id
+              </p>
+            </div>
+
+            {/* Meta info */}
+            <div className="flex justify-between items-start text-xs pt-2">
+              <div>
+                <p><strong>Kepada Yth:</strong> {req.customer_name}</p>
+                <p><strong>Instansi:</strong> {req.institution_name || 'Perorangan'}</p>
+                <p><strong>Alamat Tujuan:</strong> {req.shipping_address || 'Sesuai Pengajuan'}</p>
+              </div>
+              <div className="text-right">
+                <p><strong>Nomor Quotation:</strong> <span className="font-mono">{quote.quote_number}</span></p>
+                <p><strong>Tanggal Terbit:</strong> {formatDate(quote.created_at)}</p>
+                <p><strong>Masa Berlaku:</strong> s.d {formatDate(quote.expires_at)}</p>
+              </div>
+            </div>
+
+            <div className="text-center py-2">
+              <h3 className="font-extrabold text-sm underline tracking-wide">
+                SURAT PENAWARAN HARGA PENGADAAN (QUOTATION)
+              </h3>
+              <p className="text-xs text-body italic mt-0.5">Perihal: {req.title}</p>
+            </div>
+
+            {/* Items table */}
+            <table className="w-full text-xs text-left border border-black/20">
+              <thead className="bg-neutral-2/80 font-bold border-b border-black/20">
+                <tr>
+                  <th className="p-2.5 border-r border-black/20 text-center w-8">No</th>
+                  <th className="p-2.5 border-r border-black/20">Uraian Kebutuhan & Spesifikasi</th>
+                  <th className="p-2.5 border-r border-black/20 text-center w-16">Vol</th>
+                  <th className="p-2.5 border-r border-black/20 text-right w-28">Harga Satuan</th>
+                  <th className="p-2.5 text-right w-32">Total Harga</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-black/10">
+                {quote.items.map((it, idx) => (
+                  <tr key={it.id}>
+                    <td className="p-2.5 border-r border-black/10 text-center">{idx + 1}</td>
+                    <td className="p-2.5 border-r border-black/10 font-medium">{it.description}</td>
+                    <td className="p-2.5 border-r border-black/10 text-center">{it.quantity}</td>
+                    <td className="p-2.5 border-r border-black/10 text-right">{formatRupiah(it.unit_price)}</td>
+                    <td className="p-2.5 text-right font-bold">{formatRupiah(it.subtotal)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Totals calculation */}
+            <div className="flex justify-end text-xs">
+              <div className="w-64 space-y-1.5 border border-black/20 p-3 rounded-lg bg-neutral-2/30">
+                <div className="flex justify-between">
+                  <span>Subtotal Barang:</span>
+                  <span className="font-bold">{formatRupiah(quote.subtotal)}</span>
+                </div>
+                {quote.additional_services_fee > 0 && (
+                  <div className="flex justify-between">
+                    <span>Biaya Jasa Cetak:</span>
+                    <span className="font-bold">{formatRupiah(quote.additional_services_fee)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span>Ongkos Kirim Kargo/Kurir:</span>
+                  <span className="font-bold">{formatRupiah(quote.shipping_fee)}</span>
+                </div>
+                <div className="flex justify-between border-t border-black/20 pt-1.5 font-extrabold text-sm text-primary">
+                  <span>Grand Total:</span>
+                  <span>{formatRupiah(quote.grand_total)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Terms and Signature Area */}
+            <div className="grid grid-cols-2 gap-8 text-xs pt-4 border-t border-hairline">
+              <div className="space-y-1">
+                <p className="font-bold">Ketentuan & Pembayaran:</p>
+                <p className="text-[11px] text-body">1. Pembayaran melalui rekening resmi USKI STORE.</p>
+                <p className="text-[11px] text-body">2. Estimasi pengerjaan / pengiriman: {quote.lead_time_days} hari kerja.</p>
+                <p className="text-[11px] text-body">3. Harga sudah termasuk packing standar aman.</p>
+              </div>
+
+              <div className="text-center space-y-12">
+                <p>Depok, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br /><strong>USKI STORE OFFICIAL</strong></p>
+                <div className="border-b border-black w-40 mx-auto" />
+                <p className="text-[11px] text-body -mt-10">(Divisi Pengadaan & Penjualan)</p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
