@@ -311,6 +311,17 @@ export interface InventoryMovement {
   created_at: string;
 }
 
+export type DeliveryStatus = 'assigned' | 'pickup' | 'on_delivery' | 'delivered' | 'failed';
+
+export interface BreadcrumbPoint {
+  lat: number;
+  lng: number;
+  timestamp: string;
+  speed_kmh: number;
+  address?: string;
+  accuracy_meters?: number;
+}
+
 export interface CourierLocation {
   lat: number;
   lng: number;
@@ -319,6 +330,7 @@ export interface CourierLocation {
   accuracy_meters?: number;
   address_approx: string;
   last_updated: string;
+  last_timestamp?: number;
   battery_level?: number;
 }
 
@@ -333,8 +345,24 @@ export interface ActiveDelivery {
   eta_minutes: number;
   distance_km: number;
   progress_pct: number;
+  status: DeliveryStatus;
+  picked_up_at?: string;
+  delivered_at?: string;
+  failed_at?: string;
+  failed_reason?: string;
+  failed_notes?: string;
+  reassigned_from?: string;
+  reassign_reason?: string;
   proof_photo?: string;
+  proof_signature?: string;
   delivery_notes?: string;
+}
+
+export interface CourierStationaryAlert {
+  is_stationary: boolean;
+  duration_minutes: number;
+  alert_type: 'idle_too_long' | 'abnormal_speed' | null;
+  message?: string;
 }
 
 export interface Courier {
@@ -350,4 +378,7 @@ export interface Courier {
   active_delivery?: ActiveDelivery | null;
   total_delivered_today: number;
   is_gps_active: boolean;
+  last_seen_at?: string;
+  trip_history?: BreadcrumbPoint[];
+  stationary_alert?: CourierStationaryAlert;
 }
