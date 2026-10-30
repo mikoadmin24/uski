@@ -74,10 +74,12 @@ export const AdminPromos: React.FC = () => {
 
   const handleOpenAdd = () => {
     resetForm();
+    setSelectedVoucherDetail(null);
     setShowModal(true);
   };
 
   const handleOpenEdit = (v: Voucher) => {
+    setSelectedVoucherDetail(null);
     setEditingVoucher(v);
     setCode(v.code);
     setDescription(v.description || '');
@@ -93,6 +95,11 @@ export const AdminPromos: React.FC = () => {
     setUsagePerUser(String(v.usage_per_user || 1));
     setApplicableCategory(v.applicable_category || 'all');
     setShowModal(true);
+  };
+
+  const handleOpenDetail = (v: Voucher) => {
+    setShowModal(false);
+    setSelectedVoucherDetail(v);
   };
 
   const getTargetAudienceLabel = (target: VoucherTargetAudience): string => {
@@ -320,7 +327,7 @@ export const AdminPromos: React.FC = () => {
               {vouchers.map((v) => (
                 <tr
                   key={v.id}
-                  onClick={() => setSelectedVoucherDetail(v)}
+                  onClick={() => handleOpenDetail(v)}
                   className="hover:bg-primary/5 cursor-pointer transition-colors group"
                 >
                   <td className="py-3.5 px-4">
@@ -384,7 +391,7 @@ export const AdminPromos: React.FC = () => {
                     <div className="flex items-center justify-center gap-1">
                       <button
                         title="Lihat Detail Voucher"
-                        onClick={() => setSelectedVoucherDetail(v)}
+                        onClick={() => handleOpenDetail(v)}
                         className="p-1.5 hover:text-primary text-body hover:bg-neutral-2 rounded-lg transition-colors"
                       >
                         <Eye className="w-4 h-4" />
@@ -423,7 +430,7 @@ export const AdminPromos: React.FC = () => {
       {/* ========================================================================= */}
       {selectedVoucherDetail && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-hairline touch-scroll">
+          <div className="bg-white rounded-xl sm:rounded-2xl max-w-lg w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto space-y-4 sm:space-y-5 shadow-2xl border border-hairline touch-scroll">
             <div className="flex items-center justify-between border-b border-hairline pb-3">
               <div className="flex items-center gap-2.5">
                 <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black">
@@ -444,7 +451,7 @@ export const AdminPromos: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSelectedVoucherDetail(null)}
-                className="p-1.5 hover:bg-neutral-2 rounded-xl text-body hover:text-[#101519]"
+                className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-body hover:bg-neutral-2 hover:text-[#101519] transition-colors touch-manipulation"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -553,14 +560,18 @@ export const AdminPromos: React.FC = () => {
       {/* ========================================================================= */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 space-y-4 shadow-2xl max-h-[92dvh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] touch-scroll">
+          <div className="bg-white rounded-xl sm:rounded-2xl max-w-lg w-full p-4 sm:p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] border border-hairline touch-scroll">
             <div className="flex items-center justify-between border-b border-hairline pb-3">
               <h3 className="text-base font-extrabold text-[#101519] flex items-center gap-1.5">
                 <Ticket className="w-5 h-5 text-primary" />
                 <span>{editingVoucher ? 'Edit Voucher Promo' : 'Buat Voucher Promo Baru'}</span>
               </h3>
-              <button onClick={() => setShowModal(false)}>
-                <X className="w-5 h-5 text-body" />
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-body hover:bg-neutral-2 hover:text-[#101519] transition-colors touch-manipulation"
+              >
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -750,13 +761,13 @@ export const AdminPromos: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2.5 bg-neutral-2 text-body font-bold rounded-xl"
+                  className="min-h-[40px] px-5 py-2.5 bg-neutral-2 text-body font-bold text-xs rounded-xl hover:bg-neutral-3 transition-colors touch-manipulation"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl shadow-xs transition-colors"
+                  className="min-h-[40px] px-6 py-2.5 bg-primary hover:bg-primary-hover text-white font-bold text-xs rounded-xl shadow-xs transition-colors touch-manipulation"
                 >
                   Simpan Voucher
                 </button>

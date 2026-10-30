@@ -200,9 +200,26 @@ export const OrderTrackingPage: React.FC = () => {
               (c) =>
                 c.active_delivery?.order_number === searchedOrder.order_number ||
                 c.active_delivery?.order_id === searchedOrder.id
-            ) || (searchedOrder.shipping_method?.toLowerCase().includes('toko') ? couriers[0] : null);
+            );
 
-            if (!assignedCourier || searchedOrder.status === 'awaiting_payment' || searchedOrder.status === 'awaiting_verification') {
+            if (searchedOrder.status === 'awaiting_payment' || searchedOrder.status === 'awaiting_verification') {
+              return null;
+            }
+
+            if (!assignedCourier) {
+              if (searchedOrder.shipping_method?.toLowerCase().includes('toko') && searchedOrder.status !== 'cancelled') {
+                return (
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 flex items-center gap-2.5">
+                    <Clock className="w-5 h-5 shrink-0 text-amber-600" />
+                    <div>
+                      <p className="font-bold text-sm text-amber-900">Menunggu Penugasan Kurir Toko</p>
+                      <p className="text-[11px] text-amber-700 mt-0.5">
+                        Pesanan Anda telah masuk antrean pengiriman. Admin toko USKI sedang menugaskan staf kurir internal untuk mengantar paket ke alamat Anda.
+                      </p>
+                    </div>
+                  </div>
+                );
+              }
               return null;
             }
 
@@ -254,18 +271,22 @@ export const OrderTrackingPage: React.FC = () => {
                   <div className="flex items-center justify-between text-white/90">
                     <span>Estimasi Sampai (ETA):</span>
                     <span className="font-extrabold text-green-400 text-sm">
-                      ~{assignedCourier.active_delivery?.eta_minutes || 8} Menit Lagi
+                      {assignedCourier.active_delivery?.eta_minutes
+                        ? `~${assignedCourier.active_delivery.eta_minutes} Menit Lagi`
+                        : 'Menyesuaikan rute pengantaran'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-[11px] text-white/60">
-                    <span>Sisa Jarak: {assignedCourier.active_delivery?.distance_km || 1.4} km</span>
+                    <span>
+                      Sisa Jarak: {assignedCourier.active_delivery?.distance_km ? `${assignedCourier.active_delivery.distance_km} km` : '-'}
+                    </span>
                     <span>Kecepatan: {assignedCourier.current_location.speed_kmh} km/jam</span>
                   </div>
                   <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-primary to-green-400 rounded-full transition-all duration-500"
                       style={{
-                        width: `${assignedCourier.active_delivery?.progress_pct || 70}%`,
+                        width: `${assignedCourier.active_delivery?.progress_pct || 15}%`,
                       }}
                     />
                   </div>

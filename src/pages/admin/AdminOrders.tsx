@@ -33,6 +33,7 @@ import { useOrderStore } from '@/store/orderStore';
 import { useCourierStore } from '@/store/courierStore';
 import { formatRupiah, formatDate } from '@/lib/utils';
 import { OrderStatus, Order, PaymentStatus } from '@/types';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 export const AdminOrders: React.FC = () => {
   const navigate = useNavigate();
@@ -92,24 +93,76 @@ export const AdminOrders: React.FC = () => {
     const courier = couriers.find((c) => c.id === assignCourierId);
     if (!courier) return;
 
-    assignDelivery(assignCourierId, {
+    const trackingNumber = `USKI-TOKO-${liveSelectedOrder.order_number.replace(/[^0-9]/g, '').slice(-4) || '88'}`;
+    const courierLabel = `Kurir Toko USKI - ${courier.name} (${courier.vehicle_plate})`;
+
+    const deliveryPayload = {
       order_id: liveSelectedOrder.id,
       order_number: liveSelectedOrder.order_number,
       recipient_name: liveSelectedOrder.shipping_address.recipient_name,
       recipient_phone: liveSelectedOrder.shipping_address.phone_number,
       destination_address: `${liveSelectedOrder.shipping_address.street_address}, ${liveSelectedOrder.shipping_address.district || ''}, ${liveSelectedOrder.shipping_address.city}`,
-      destination_coords: { lat: -6.3728, lng: 106.8335 },
-      eta_minutes: 20,
-      distance_km: 3.5,
+      destination_coords: { lat: 0, lng: 0 },
+      eta_minutes: 0,
+      distance_km: 0,
       delivery_notes: assignNotes || liveSelectedOrder.notes || 'Hati-hati dalam pengantaran',
-      status: 'assigned',
-    });
+      status: 'assigned' as const,
+    };
+
+    assignDelivery(assignCourierId, deliveryPayload);
 
     updateShipmentTracking(
       liveSelectedOrder.id,
-      `USKI-TOKO-${liveSelectedOrder.order_number.replace(/[^0-9]/g, '').slice(-4) || '88'}`,
-      `Kurir Toko USKI - ${courier.name} (${courier.vehicle_plate})`
+      trackingNumber,
+      courierLabel
     );
+
+    // Direct write to Supabase orders & couriers tables
+    const client = supabase;
+    if (isSupabaseConfigured && client) {
+      const nowIso = new Date().toISOString();
+      const primaryOrderUpdates = {
+        courier_id: assignCourierId,
+        courier_name: courier.name,
+        tracking_number: trackingNumber,
+        order_status: 'shipped',
+        status: 'shipped',
+        dispatched_at: nowIso,
+        updated_at: nowIso,
+      };
+
+      Promise.resolve(
+        client
+          .from('orders')
+          .update(primaryOrderUpdates)
+          .eq('id', liveSelectedOrder.id)
+      )
+        .then(({ error }) => {
+          if (error && error.code === 'PGRST204') {
+            return client
+              .from('orders')
+              .update({
+                status: 'shipped',
+                courier_name: courier.name,
+                tracking_number: trackingNumber,
+                updated_at: nowIso,
+              })
+              .eq('id', liveSelectedOrder.id);
+          }
+        })
+        .catch((err: any) => console.error('Failed to sync order assignment to Supabase:', err));
+
+      Promise.resolve(
+        client
+          .from('couriers')
+          .update({
+            status: 'delivering',
+            active_delivery: deliveryPayload,
+            updated_at: nowIso,
+          })
+          .eq('id', assignCourierId)
+      ).catch((err: any) => console.error('Failed to sync courier status to Supabase:', err));
+    }
 
     setAssignCourierId('');
     setAssignNotes('');
@@ -134,6 +187,33 @@ export const AdminOrders: React.FC = () => {
       liveSelectedOrder.shipment?.tracking_number || `USKI-TOKO-${liveSelectedOrder.order_number.slice(-4)}`,
       `Kurir Toko USKI - ${targetCourier.name} (${targetCourier.vehicle_plate})`
     );
+
+    const client = supabase;
+    if (isSupabaseConfigured && client) {
+      const nowIso = new Date().toISOString();
+      Promise.resolve(
+        client
+          .from('orders')
+          .update({
+            courier_id: reassignToCourierId,
+            courier_name: targetCourier.name,
+            updated_at: nowIso,
+          })
+          .eq('id', liveSelectedOrder.id)
+      )
+        .then(({ error }) => {
+          if (error && error.code === 'PGRST204') {
+            return client
+              .from('orders')
+              .update({
+                courier_name: targetCourier.name,
+                updated_at: nowIso,
+              })
+              .eq('id', liveSelectedOrder.id);
+          }
+        })
+        .catch((err: any) => console.error('Failed to sync reassigned order to Supabase:', err));
+    }
 
     setIsReassigning(false);
     setReassignToCourierId('');
@@ -372,14 +452,22 @@ export const AdminOrders: React.FC = () => {
                           <span>Detail</span>
                         </button>
                         <button
-                          onClick={() => setPrintInvoiceOrder(ord)}
+                          onClick={() => {
+                            setSelectedOrderDetail(null);
+                            setPrintShippingLabelOrder(null);
+                            setPrintInvoiceOrder(ord);
+                          }}
                           title="Cetak Faktur / Invoice"
                           className="p-1.5 hover:text-primary text-body hover:bg-neutral-2 rounded-lg transition-colors"
                         >
                           <Printer className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => setPrintShippingLabelOrder(ord)}
+                          onClick={() => {
+                            setSelectedOrderDetail(null);
+                            setPrintInvoiceOrder(null);
+                            setPrintShippingLabelOrder(ord);
+                          }}
                           title="Cetak Label Resi Thermal (100x150mm)"
                           className="p-1.5 hover:text-green-600 text-body hover:bg-neutral-2 rounded-lg transition-colors"
                         >
@@ -400,7 +488,7 @@ export const AdminOrders: React.FC = () => {
       {/* ========================================================================= */}
       {liveSelectedOrder && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[92dvh] overflow-y-auto shadow-2xl border border-hairline flex flex-col touch-scroll">
+          <div className="bg-white rounded-xl sm:rounded-2xl max-w-lg sm:max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-hairline flex flex-col touch-scroll">
             
             {/* Modal Sticky Header */}
             <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md px-4 sm:px-6 py-3 sm:py-4 border-b border-hairline flex flex-wrap items-center justify-between gap-3">
@@ -425,7 +513,12 @@ export const AdminOrders: React.FC = () => {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setPrintInvoiceOrder(liveSelectedOrder)}
+                  onClick={() => {
+                    const ord = liveSelectedOrder;
+                    setSelectedOrderDetail(null);
+                    setPrintShippingLabelOrder(null);
+                    setPrintInvoiceOrder(ord);
+                  }}
                   className="px-2.5 sm:px-3 py-1.5 bg-neutral-2 hover:bg-primary hover:text-white rounded-xl text-xs font-bold text-body flex items-center gap-1.5 transition-colors"
                 >
                   <Printer className="w-3.5 h-3.5" />
@@ -433,7 +526,12 @@ export const AdminOrders: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPrintShippingLabelOrder(liveSelectedOrder)}
+                  onClick={() => {
+                    const ord = liveSelectedOrder;
+                    setSelectedOrderDetail(null);
+                    setPrintInvoiceOrder(null);
+                    setPrintShippingLabelOrder(ord);
+                  }}
                   className="px-2.5 sm:px-3 py-1.5 bg-neutral-2 hover:bg-emerald-600 hover:text-white rounded-xl text-xs font-bold text-body flex items-center gap-1.5 transition-colors"
                 >
                   <Truck className="w-3.5 h-3.5" />
@@ -445,7 +543,7 @@ export const AdminOrders: React.FC = () => {
                     setSelectedOrderDetail(null);
                     setIsReassigning(false);
                   }}
-                  className="p-1.5 sm:p-2 hover:bg-neutral-2 rounded-xl text-body hover:text-[#101519] transition-colors"
+                  className="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 hover:bg-neutral-2 rounded-xl text-body hover:text-[#101519] transition-colors touch-manipulation"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -569,19 +667,19 @@ export const AdminOrders: React.FC = () => {
                         <div className="bg-white border border-hairline px-3 py-2 rounded-xl text-center min-w-[90px]">
                           <span className="text-[10px] text-body block font-medium">Mulai Antar</span>
                           <span className="font-black text-sm text-[#101519]">
-                            {assignedCourier.active_delivery?.started_at || '10:15 WIB'}
+                            {assignedCourier.active_delivery?.started_at || '-'}
                           </span>
                         </div>
                         <div className="bg-white border border-hairline px-3 py-2 rounded-xl text-center min-w-[90px]">
                           <span className="text-[10px] text-body block font-medium">Estimasi Tiba</span>
                           <span className="font-black text-sm text-primary">
-                            ~{assignedCourier.active_delivery?.eta_minutes || 15} Menit
+                            {assignedCourier.active_delivery?.eta_minutes ? `~${assignedCourier.active_delivery.eta_minutes} Menit` : '-'}
                           </span>
                         </div>
                         <div className="bg-white border border-hairline px-3 py-2 rounded-xl text-center min-w-[90px]">
                           <span className="text-[10px] text-body block font-medium">Jarak Tempuh</span>
                           <span className="font-black text-sm text-[#101519]">
-                            {assignedCourier.active_delivery?.distance_km || 2.5} km
+                            {assignedCourier.active_delivery?.distance_km ? `${assignedCourier.active_delivery.distance_km} km` : '-'}
                           </span>
                         </div>
                       </div>
@@ -611,14 +709,14 @@ export const AdminOrders: React.FC = () => {
                           <div className="flex items-center justify-between mb-1.5">
                             <span className="font-bold text-[#101519]">Progres Pengantaran</span>
                             <span className="font-extrabold text-primary">
-                              {assignedCourier.active_delivery?.progress_pct || 65}%
+                              {assignedCourier.active_delivery?.progress_pct || 0}%
                             </span>
                           </div>
                           {/* Progress bar */}
                           <div className="w-full h-2.5 bg-neutral-200 rounded-full overflow-hidden">
                             <div
                               className="h-full bg-primary rounded-full transition-all duration-500"
-                              style={{ width: `${assignedCourier.active_delivery?.progress_pct || 65}%` }}
+                              style={{ width: `${assignedCourier.active_delivery?.progress_pct || 0}%` }}
                             ></div>
                           </div>
                         </div>
@@ -963,7 +1061,12 @@ export const AdminOrders: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPrintShippingLabelOrder(liveSelectedOrder)}
+                  onClick={() => {
+                    const ord = liveSelectedOrder;
+                    setSelectedOrderDetail(null);
+                    setPrintInvoiceOrder(null);
+                    setPrintShippingLabelOrder(ord);
+                  }}
                   className="flex-1 sm:flex-initial px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs"
                 >
                   <Printer className="w-3.5 h-3.5" />
@@ -978,28 +1081,37 @@ export const AdminOrders: React.FC = () => {
 
       {/* Printable Invoice Modal */}
       {printInvoiceOrder && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-8 max-h-[88dvh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] space-y-6 shadow-2xl touch-scroll">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          <div className="bg-white rounded-xl sm:rounded-2xl max-w-lg sm:max-w-2xl w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto space-y-5 shadow-2xl border border-hairline touch-scroll">
             <div className="flex items-center justify-between border-b border-hairline pb-4">
               <div>
                 <span className="text-xl font-extrabold text-primary">USKI STORE</span>
                 <span className="text-xs text-body block">Faktur & Surat Jalan Resmi</span>
               </div>
-              <div className="text-right">
-                <span className="font-mono font-bold text-sm">{printInvoiceOrder.order_number}</span>
-                <span className="text-xs text-body block">{formatDate(printInvoiceOrder.created_at)}</span>
+              <div className="flex items-center gap-2">
+                <div className="text-right">
+                  <span className="font-mono font-bold text-sm">{printInvoiceOrder.order_number}</span>
+                  <span className="text-xs text-body block">{formatDate(printInvoiceOrder.created_at)}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPrintInvoiceOrder(null)}
+                  className="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded-xl text-body hover:bg-neutral-2 hover:text-[#101519] transition-colors touch-manipulation"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
             </div>
 
             {/* Recipient info */}
-            <div className="grid grid-cols-2 gap-4 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
               <div>
                 <span className="font-bold text-body block">Penerima:</span>
                 <p className="font-bold text-[#101519]">{printInvoiceOrder.shipping_address.recipient_name}</p>
                 <p className="text-body">{printInvoiceOrder.shipping_address.phone_number}</p>
                 <p className="text-body">{printInvoiceOrder.shipping_address.street_address}, {printInvoiceOrder.shipping_address.city}</p>
               </div>
-              <div className="text-right">
+              <div className="sm:text-right">
                 <span className="font-bold text-body block">Metode Pembayaran:</span>
                 <p className="font-bold text-[#101519] uppercase">{printInvoiceOrder.payment_method}</p>
                 <span className="font-bold text-body block mt-2">Logistik:</span>
@@ -1008,26 +1120,28 @@ export const AdminOrders: React.FC = () => {
             </div>
 
             {/* Table of items */}
-            <table className="w-full text-xs text-left">
-              <thead>
-                <tr className="border-b border-hairline text-body font-bold">
-                  <th className="py-2">Item Barang</th>
-                  <th className="py-2 text-center">Jumlah</th>
-                  <th className="py-2 text-right">Harga</th>
-                  <th className="py-2 text-right">Subtotal</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-hairline">
-                {printInvoiceOrder.items.map((it) => (
-                  <tr key={it.id}>
-                    <td className="py-2.5 font-bold text-[#101519]">{it.product_name}</td>
-                    <td className="py-2.5 text-center">{it.quantity}</td>
-                    <td className="py-2.5 text-right">{formatRupiah(it.price)}</td>
-                    <td className="py-2.5 text-right font-bold">{formatRupiah(it.subtotal)}</td>
+            <div className="overflow-x-auto touch-scroll">
+              <table className="w-full min-w-[320px] text-xs text-left">
+                <thead>
+                  <tr className="border-b border-hairline text-body font-bold">
+                    <th className="py-2">Item Barang</th>
+                    <th className="py-2 text-center">Jumlah</th>
+                    <th className="py-2 text-right">Harga</th>
+                    <th className="py-2 text-right">Subtotal</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-hairline">
+                  {printInvoiceOrder.items.map((it) => (
+                    <tr key={it.id}>
+                      <td className="py-2.5 font-bold text-[#101519]">{it.product_name}</td>
+                      <td className="py-2.5 text-center">{it.quantity}</td>
+                      <td className="py-2.5 text-right">{formatRupiah(it.price)}</td>
+                      <td className="py-2.5 text-right font-bold">{formatRupiah(it.subtotal)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
             {/* Total calculation */}
             <div className="space-y-1.5 text-xs max-w-xs ml-auto border-t border-hairline pt-3">
@@ -1045,16 +1159,29 @@ export const AdminOrders: React.FC = () => {
               </div>
             </div>
 
-            <div className="pt-4 border-t border-hairline flex justify-end gap-3">
+            <div className="pt-4 border-t border-hairline flex flex-wrap items-center justify-end gap-2.5">
               <button
+                type="button"
+                onClick={() => {
+                  const ord = printInvoiceOrder;
+                  setPrintInvoiceOrder(null);
+                  setSelectedOrderDetail(ord);
+                }}
+                className="px-4 py-2 bg-neutral-2 hover:bg-neutral-3 text-[#101519] font-bold text-xs rounded-xl transition-colors"
+              >
+                Kembali ke Detail
+              </button>
+              <button
+                type="button"
                 onClick={() => setPrintInvoiceOrder(null)}
-                className="px-4 py-2 bg-neutral-2 text-body font-bold text-xs rounded-xl"
+                className="px-4 py-2 bg-neutral-2 hover:bg-neutral-3 text-[#101519] font-bold text-xs rounded-xl transition-colors"
               >
                 Tutup
               </button>
               <button
+                type="button"
                 onClick={() => window.print()}
-                className="px-5 py-2 bg-primary text-white font-bold text-xs rounded-xl flex items-center gap-1.5"
+                className="px-5 py-2 bg-primary hover:bg-primary-dark text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all shadow-xs"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>Cetak Lembar Ini</span>
@@ -1066,22 +1193,35 @@ export const AdminOrders: React.FC = () => {
 
       {/* Printable Thermal Shipping Label (100x150 mm) Modal */}
       {printShippingLabelOrder && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-6 max-h-[88dvh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] space-y-4 shadow-2xl print:m-0 print:p-0 print:border-none print:shadow-none touch-scroll">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          <div className="bg-white rounded-xl sm:rounded-2xl max-w-lg w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl print:m-0 print:p-0 print:border-none print:shadow-none touch-scroll border border-hairline">
             {/* Header Controls (hidden on print) */}
             <div className="flex items-center justify-between border-b border-hairline pb-2 print:hidden">
               <span className="text-xs font-bold text-body">Label Thermal (100x150 mm)</span>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 <button
+                  type="button"
+                  onClick={() => {
+                    const ord = printShippingLabelOrder;
+                    setPrintShippingLabelOrder(null);
+                    setSelectedOrderDetail(ord);
+                  }}
+                  className="px-3 py-1.5 bg-neutral-2 hover:bg-neutral-3 text-[#101519] font-bold text-xs rounded-lg transition-colors"
+                >
+                  Kembali
+                </button>
+                <button
+                  type="button"
                   onClick={() => window.print()}
-                  className="px-3 py-1.5 bg-primary text-white font-bold text-xs rounded-lg flex items-center gap-1"
+                  className="px-3 py-1.5 bg-primary hover:bg-primary-dark text-white font-bold text-xs rounded-lg flex items-center gap-1 transition-colors shadow-xs"
                 >
                   <Printer className="w-3 h-3" />
                   <span>Cetak Label</span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => setPrintShippingLabelOrder(null)}
-                  className="px-2 py-1 bg-neutral-2 text-body font-bold text-xs rounded-lg"
+                  className="min-w-[36px] min-h-[36px] flex items-center justify-center p-1.5 bg-neutral-2 hover:bg-neutral-3 text-body hover:text-[#101519] rounded-lg transition-colors touch-manipulation"
                 >
                   <X className="w-4 h-4" />
                 </button>

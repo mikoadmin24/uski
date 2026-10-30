@@ -1,18 +1,19 @@
 import { create } from 'zustand';
 import { Product, InventoryMovement } from '@/types';
-import { mockProducts } from '@/data/mockData';
 import { dbService, isSupabaseConfigured } from '@/lib/supabase';
 
 interface ProductState {
   products: Product[];
   inventoryMovements: InventoryMovement[];
   setProductsFromSupabase: (products: Product[]) => void;
+  setInventoryMovementsFromSupabase: (movements: InventoryMovement[]) => void;
   getProductBySlug: (slug: string) => Product | undefined;
   getProductById: (id: string) => Product | undefined;
   getProductByBarcodeOrSku: (query: string) => Product | undefined;
   addProduct: (product: Omit<Product, 'id' | 'created_at' | 'rating' | 'reviews_count' | 'sales_count'>) => Promise<Product>;
   updateProduct: (id: string, updates: Partial<Product>) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
+  updateStock: (productId: string, newStock: number) => Promise<void>;
   adjustStock: (
     productId: string,
     variantId: string | undefined,
@@ -29,43 +30,23 @@ const MOVEMENTS_STORAGE_KEY = 'uski_inventory_movements_v2';
 const getInitialProducts = (): Product[] => {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : mockProducts;
+    if (!saved) return [];
+    const parsed = JSON.parse(saved);
+    if (!Array.isArray(parsed)) return [];
+    const mockIds = new Set(['prod-1', 'prod-2', 'prod-3', 'prod-4', 'prod-5', 'prod-6', 'prod-7', 'prod-8', 'prod-9', 'prod-10', 'prod-11', 'prod-12']);
+    return parsed.filter((p) => !mockIds.has(p.id));
   } catch {
-    return mockProducts;
+    return [];
   }
 };
 
 const getInitialMovements = (): InventoryMovement[] => {
   try {
     const saved = localStorage.getItem(MOVEMENTS_STORAGE_KEY);
-    return saved
-      ? JSON.parse(saved)
-      : [
-          {
-            id: 'mov-1',
-            product_id: 'prod-1',
-            product_name: 'Atomic Habits',
-            sku: 'BK-AH-001',
-            type: 'initial',
-            quantity_delta: 50,
-            stock_after: 50,
-            notes: 'Stok awal pembukaan toko',
-            operator_name: 'Super Admin',
-            created_at: '2026-01-01T08:00:00Z',
-          },
-          {
-            id: 'mov-2',
-            product_id: 'prod-1',
-            product_name: 'Atomic Habits',
-            sku: 'BK-AH-001',
-            type: 'sale_out',
-            quantity_delta: -5,
-            stock_after: 45,
-            notes: 'Penjualan pesanan reguler',
-            operator_name: 'System Checkout',
-            created_at: '2026-02-15T10:00:00Z',
-          },
-        ];
+    if (!saved) return [];
+    const parsed = JSON.parse(saved);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((m) => m.id !== 'mov-1' && m.id !== 'mov-2');
   } catch {
     return [];
   }
@@ -76,13 +57,23 @@ export const useProductStore = create<ProductState>((set, get) => ({
   inventoryMovements: getInitialMovements(),
 
   setProductsFromSupabase: (cloudProducts) => {
-    if (!cloudProducts || cloudProducts.length === 0) return;
+    if (!cloudProducts) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudProducts));
     } catch {
       // ignore
     }
     set({ products: cloudProducts });
+  },
+
+  setInventoryMovementsFromSupabase: (movements) => {
+    if (!movements) return;
+    try {
+      localStorage.setItem(MOVEMENTS_STORAGE_KEY, JSON.stringify(movements));
+    } catch {
+      // ignore
+    }
+    set({ inventoryMovements: movements });
   },
 
   getProductBySlug: (slug) => {
@@ -155,6 +146,20 @@ export const useProductStore = create<ProductState>((set, get) => ({
 
     if (isSupabaseConfigured) {
       await dbService.products.delete(id);
+    }
+  },
+
+  updateStock: async (productId: string, newStock: number) => {
+    const updated = get().products.map((p) => (p.id === productId ? { ...p, stock_quantity: newStock } : p));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+    set({ products: updated });
+
+    if (isSupabaseConfigured) {
+      await dbService.products.upsert({ id: productId, stock_quantity: newStock });
     }
   },
 

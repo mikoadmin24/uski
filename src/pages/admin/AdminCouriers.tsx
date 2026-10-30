@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Truck,
   Plus,
@@ -25,6 +25,7 @@ import { useCourierStore } from '@/store/courierStore';
 import { useOrderStore } from '@/store/orderStore';
 import { Courier } from '@/types';
 import { formatDate } from '@/lib/utils';
+import { dbService, supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 export const AdminCouriers: React.FC = () => {
   const {
@@ -33,6 +34,7 @@ export const AdminCouriers: React.FC = () => {
     toggleCourierStatus,
     addCourier,
     updateCourier,
+    setCouriersFromSupabase,
   } = useCourierStore();
   const { orders } = useOrderStore();
 
@@ -61,111 +63,109 @@ export const AdminCouriers: React.FC = () => {
   const [reassignReason, setReassignReason] = useState('Pengalihan rute pengiriman / kendala kurir');
 
   // Tab 2: Simple History & Delivery Proof Filter States
-  const [historyFilterDate, setHistoryFilterDate] = useState<string>('2026-10-30'); // 'all' or 'YYYY-MM-DD'
+  const [historyFilterDate, setHistoryFilterDate] = useState<string>('all'); // 'all' or 'YYYY-MM-DD'
   const [historyFilterCourier, setHistoryFilterCourier] = useState<string>('all');
   const [historyFilterStatus, setHistoryFilterStatus] = useState<string>('all');
   const [selectedDetailRecord, setSelectedDetailRecord] = useState<any | null>(null);
+  const [deliveryRecords, setDeliveryRecords] = useState<any[]>([]);
 
-  // Historical Deliveries Log Data for Simple Human-Friendly Audit
-  const allDeliveryRecords = [
-    {
-      id: 'deliv-rec-1',
-      order_number: 'USKI-2026-0089',
-      date_iso: '2026-10-30',
-      date_display: 'Jumat, 30 Okt 2026',
-      time_display: '10:45 WIB',
-      courier_id: 'cour-1',
-      courier_name: 'Bambang Supriyadi',
-      courier_plate: 'B 4521 EXD (Honda Beat)',
-      recipient_name: 'Budi Santoso',
-      recipient_phone: '0812-9876-5432',
-      destination_address: 'Jl. Margonda Raya No. 102, Beji, Kota Depok',
-      status: 'success' as const,
-      status_label: 'Sukses Diserahterimakan',
-      package_summary: '2x Atomic Habits, 1x Binder Pastel',
-      proof_photo: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&q=80&w=800',
-      proof_signature_name: 'Budi Santoso',
-      received_by_note: 'Diterima langsung oleh pembeli di depan pagar rumah dalam kondisi segel baik',
-    },
-    {
-      id: 'deliv-rec-2',
-      order_number: 'USKI-2026-0091',
-      date_iso: '2026-10-30',
-      date_display: 'Jumat, 30 Okt 2026',
-      time_display: '11:20 WIB',
-      courier_id: 'cour-3',
-      courier_name: 'Agus Pratama',
-      courier_plate: 'B 9022 UTR (Gran Max Van)',
-      recipient_name: 'Yayasan Pendidikan Al-Hikmah (SIT Al-Hikmah)',
-      recipient_phone: '0812-4455-6677',
-      destination_address: 'Komp. Sekolah Islam Terpadu (SIT) Al-Hikmah, Jl. Menpor No. 05, RT 02/RW 03, Kel. Tugu, Kec. Cimanggis, Kota Depok, Jawa Barat 16951',
-      status: 'success' as const,
-      status_label: 'Sukses Diserahterimakan',
-      package_summary: '20x Mushaf Al-Quran Cordova A5, 10x Box Joyko Gel Pen',
-      proof_photo: 'https://images.unsplash.com/photo-1580828343064-fde4fc206bc6?auto=format&fit=crop&q=80&w=800',
-      proof_signature_name: 'Drs. H. Syarifuddin (Kepala TU)',
-      received_by_note: 'Diserahkan langsung ke ruang Tata Usaha gedung SIT Al-Hikmah. Diterima lengkap.',
-    },
-    {
-      id: 'deliv-rec-3',
-      order_number: 'USKI-2026-0084',
-      date_iso: '2026-10-29',
-      date_display: 'Kamis, 29 Okt 2026',
-      time_display: '14:15 WIB',
-      courier_id: 'cour-1',
-      courier_name: 'Bambang Supriyadi',
-      courier_plate: 'B 4521 EXD (Honda Beat)',
-      recipient_name: 'Siti Aminah',
-      recipient_phone: '0857-9988-1122',
-      destination_address: 'Jl. Merak No. 14, Sukmajaya, Depok',
-      status: 'success' as const,
-      status_label: 'Sukses Diserahterimakan',
-      package_summary: '3x Buku Tulis Kiky, 1x Set Pensil Warna Faber-Castell',
-      proof_photo: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=800',
-      proof_signature_name: 'Siti Aminah',
-      received_by_note: 'Diterima oleh Siti Aminah sendiri',
-    },
-    {
-      id: 'deliv-rec-4',
-      order_number: 'USKI-2026-0077',
-      date_iso: '2026-10-29',
-      date_display: 'Kamis, 29 Okt 2026',
-      time_display: '16:30 WIB',
-      courier_id: 'cour-3',
-      courier_name: 'Agus Pratama',
-      courier_plate: 'B 9022 UTR (Gran Max Van)',
-      recipient_name: 'Hendra Wijaya',
-      recipient_phone: '0813-2233-4455',
-      destination_address: 'Perumahan Pesona Depok Blok B3 No. 12',
-      status: 'failed' as const,
-      status_label: 'Gagal Antar (Jadwal Ulang)',
-      package_summary: '5x Al-Quran Hafalan, 2x Kitab Fiqih',
-      failed_reason: 'Penerima Tidak di Tempat & Pagar Terkunci',
-      failed_notes: 'Kurir sudah menunggu 15 menit dan telepon tidak diangkat. Paket dibawa kembali ke gudang.',
-    },
-    {
-      id: 'deliv-rec-5',
-      order_number: 'USKI-2026-0062',
-      date_iso: '2026-10-28',
-      date_display: 'Rabu, 28 Okt 2026',
-      time_display: '11:00 WIB',
-      courier_id: 'cour-2',
-      courier_name: 'Rahmat Hidayat',
-      courier_plate: 'B 3189 KLP (Yamaha NMAX)',
-      recipient_name: 'Ibu Hj. Nurul',
-      recipient_phone: '0811-7788-9900',
-      destination_address: 'Jl. Kemiri Muka No. 45, Beji, Depok',
-      status: 'success' as const,
-      status_label: 'Sukses Diserahterimakan',
-      package_summary: '10x Buku Iqro, 5x Juz Amma',
-      proof_photo: 'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&q=80&w=800',
-      proof_signature_name: 'Hj. Nurul',
-      received_by_note: 'Diterima oleh Ibu Hj. Nurul untuk pengajian anak-anak musholla',
-    },
-  ];
+  // 1. Fetch Couriers live from Supabase
+  useEffect(() => {
+    dbService.couriers.getAll().then((data) => {
+      if (data && data.length > 0) {
+        setCouriersFromSupabase(data);
+      }
+    }).catch((err) => console.error('Failed to fetch couriers from Supabase:', err));
+  }, [setCouriersFromSupabase]);
+
+  // 2. Fetch Live Delivery Proofs & Completed Deliveries from Supabase
+  useEffect(() => {
+    let isMounted = true;
+    const fetchDeliveryHistory = async () => {
+      try {
+        const proofs = await dbService.deliveryProofs.getAll().catch(() => null);
+        const liveRecords: any[] = [];
+
+        if (proofs && Array.isArray(proofs) && proofs.length > 0) {
+          for (const p of proofs) {
+            const ord = orders.find((o) => o.id === p.order_id);
+            const cour = couriers.find((c) => c.id === p.courier_id);
+            const dateObj = p.delivered_at || p.created_at ? new Date(p.delivered_at || p.created_at!) : new Date();
+            const dateIso = dateObj.toISOString().split('T')[0];
+            const dateDisplay = dateObj.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
+            const timeDisplay = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+
+            liveRecords.push({
+              id: p.id || `proof-${p.order_id}`,
+              order_id: p.order_id,
+              order_number: ord?.order_number || `ORD-${p.order_id.slice(-6)}`,
+              date_iso: dateIso,
+              date_display: dateDisplay,
+              time_display: timeDisplay,
+              courier_id: p.courier_id,
+              courier_name: cour?.name || ord?.shipment?.courier_name || 'Kurir Toko USKI',
+              courier_plate: cour?.vehicle_plate || 'Armada Toko',
+              recipient_name: p.recipient_name || ord?.shipping_address?.recipient_name || 'Penerima Paket',
+              recipient_phone: ord?.shipping_address?.phone_number || '-',
+              destination_address: ord?.shipping_address ? `${ord.shipping_address.street_address}, ${ord.shipping_address.city}` : 'Alamat Pengiriman',
+              status: 'success',
+              status_label: 'Sukses Diserahterimakan',
+              package_summary: ord?.items ? ord.items.map((it: any) => `${it.quantity}x ${it.product_name}`).join(', ') : 'Paket Pesanan Pelanggan',
+              proof_photo: p.proof_photo_url,
+              proof_signature_url: p.signature_url,
+              proof_signature_name: p.recipient_name,
+              received_by_note: p.delivery_notes,
+            });
+          }
+        }
+
+        // Also merge delivered orders from orderStore that might not be in delivery_proofs
+        const deliveredOrders = orders.filter((o) => o.status === 'delivered');
+        for (const ord of deliveredOrders) {
+          if (!liveRecords.some((r) => r.order_id === ord.id || r.order_number === ord.order_number)) {
+            const cour = couriers.find((c) => c.name === ord.shipment?.courier_name || (c.active_delivery?.order_id === ord.id));
+            const dateObj = ord.updated_at ? new Date(ord.updated_at) : new Date();
+            const dateIso = dateObj.toISOString().split('T')[0];
+            const dateDisplay = dateObj.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
+            const timeDisplay = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+
+            liveRecords.push({
+              id: `ord-${ord.id}`,
+              order_id: ord.id,
+              order_number: ord.order_number,
+              date_iso: dateIso,
+              date_display: dateDisplay,
+              time_display: timeDisplay,
+              courier_id: cour?.id,
+              courier_name: cour?.name || ord.shipment?.courier_name || 'Kurir Toko USKI',
+              courier_plate: cour?.vehicle_plate || 'Armada Toko',
+              recipient_name: (ord as any).delivery_recipient_name || ord.shipping_address?.recipient_name || ord.customer_name,
+              recipient_phone: ord.shipping_address?.phone_number || ord.customer_phone,
+              destination_address: ord.shipping_address ? `${ord.shipping_address.street_address}, ${ord.shipping_address.city}` : 'Alamat Pelanggan',
+              status: 'success',
+              status_label: 'Sukses Diserahterimakan',
+              package_summary: ord.items ? ord.items.map((it: any) => `${it.quantity}x ${it.product_name}`).join(', ') : 'Paket Pesanan Pelanggan',
+              proof_photo: (ord as any).delivery_proof_url || (ord as any).proof_of_payment_url,
+              proof_signature_url: (ord as any).delivery_signature_url,
+              proof_signature_name: (ord as any).delivery_recipient_name || ord.shipping_address?.recipient_name,
+              received_by_note: (ord as any).delivery_notes || ord.notes,
+            });
+          }
+        }
+
+        if (isMounted) {
+          setDeliveryRecords(liveRecords);
+        }
+      } catch (err) {
+        console.error('Error fetching live delivery history:', err);
+      }
+    };
+
+    fetchDeliveryHistory();
+  }, [orders, couriers]);
 
   // Filter Historical Deliveries
-  const filteredHistoryRecords = allDeliveryRecords.filter((rec) => {
+  const filteredHistoryRecords = deliveryRecords.filter((rec) => {
     const matchDate = historyFilterDate === 'all' || rec.date_iso === historyFilterDate;
     const matchCourier = historyFilterCourier === 'all' || rec.courier_id === historyFilterCourier;
     const matchStatus = historyFilterStatus === 'all' || rec.status === historyFilterStatus;
@@ -189,6 +189,9 @@ export const AdminCouriers: React.FC = () => {
 
   // Handlers for Add / Edit Courier
   const handleOpenAdd = () => {
+    setSelectedDetailRecord(null);
+    setEditingCourier(null);
+    setReassignSourceCourier(null);
     setFormName('');
     setFormPhone('');
     setFormEmail('');
@@ -199,6 +202,9 @@ export const AdminCouriers: React.FC = () => {
   };
 
   const handleOpenEdit = (c: Courier) => {
+    setSelectedDetailRecord(null);
+    setShowAddModal(false);
+    setReassignSourceCourier(null);
     setEditingCourier(c);
     setFormName(c.name);
     setFormPhone(c.phone);
@@ -235,11 +241,22 @@ export const AdminCouriers: React.FC = () => {
     }
   };
 
+  // Status Off-Duty Handler
+  const handleSetOffDuty = (courierId: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'off_duty' || currentStatus === 'offline' ? 'available' : 'off_duty';
+    toggleCourierStatus(courierId, newStatus);
+  };
+
   // Reassign Handler
   const handleOpenReassignModal = (courier: Courier) => {
+    setSelectedDetailRecord(null);
+    setShowAddModal(false);
+    setEditingCourier(null);
     setReassignSourceCourier(courier);
-    const otherCouriers = couriers.filter((c) => c.id !== courier.id);
-    setTargetCourierId(otherCouriers[0]?.id || '');
+    const availableCouriers = couriers.filter(
+      (c) => c.id !== courier.id && c.status === 'available' && !c.active_delivery
+    );
+    setTargetCourierId(availableCouriers[0]?.id || '');
     setReassignReason('Pengalihan rute pengiriman / kendala kurir');
   };
 
@@ -247,12 +264,77 @@ export const AdminCouriers: React.FC = () => {
     e.preventDefault();
     if (!reassignSourceCourier || !reassignSourceCourier.active_delivery || !targetCourierId) return;
 
+    const targetCourier = couriers.find((c) => c.id === targetCourierId);
+    if (!targetCourier || targetCourier.status !== 'available' || targetCourier.active_delivery) {
+      alert('Kurir pengganti tidak tersedia atau sedang mengantar pesanan lain.');
+      return;
+    }
+
+    const orderId = reassignSourceCourier.active_delivery.order_id;
+    const sourceId = reassignSourceCourier.id;
+
+    const deliveryTransfer = {
+      ...reassignSourceCourier.active_delivery,
+      status: 'assigned' as const,
+      reassigned_from: reassignSourceCourier.name,
+      reassign_reason: reassignReason,
+    };
+
     reassignDelivery(
-      reassignSourceCourier.active_delivery.order_id,
-      reassignSourceCourier.id,
+      orderId,
+      sourceId,
       targetCourierId,
       reassignReason
     );
+
+    const client = supabase;
+    if (isSupabaseConfigured && client) {
+      const nowIso = new Date().toISOString();
+      Promise.resolve(
+        client
+          .from('couriers')
+          .update({
+            status: 'idle',
+            active_delivery: null,
+            updated_at: nowIso,
+          })
+          .eq('id', sourceId)
+      ).catch((err: any) => console.error('Failed to release source courier in Supabase:', err));
+
+      Promise.resolve(
+        client
+          .from('couriers')
+          .update({
+            status: 'delivering',
+            active_delivery: deliveryTransfer,
+            updated_at: nowIso,
+          })
+          .eq('id', targetCourierId)
+      ).catch((err: any) => console.error('Failed to assign target courier in Supabase:', err));
+
+      Promise.resolve(
+        client
+          .from('orders')
+          .update({
+            courier_id: targetCourierId,
+            courier_name: targetCourier?.name,
+            updated_at: nowIso,
+          })
+          .eq('id', orderId)
+      )
+        .then(({ error }) => {
+          if (error && error.code === 'PGRST204') {
+            return client
+              .from('orders')
+              .update({
+                courier_name: targetCourier?.name,
+                updated_at: nowIso,
+              })
+              .eq('id', orderId);
+          }
+        })
+        .catch((err: any) => console.error('Failed to update order courier in Supabase:', err));
+    }
 
     setReassignSourceCourier(null);
   };
@@ -494,7 +576,7 @@ export const AdminCouriers: React.FC = () => {
 
                     <button
                       type="button"
-                      onClick={() => toggleCourierStatus(c.id, c.status === 'off_duty' ? 'available' : 'off_duty')}
+                      onClick={() => handleSetOffDuty(c.id, c.status)}
                       className={`px-2.5 py-2 rounded-xl font-bold text-[11px] border transition-colors ${
                         c.status === 'off_duty'
                           ? 'bg-emerald-600 text-white'
@@ -670,11 +752,11 @@ export const AdminCouriers: React.FC = () => {
       {/* MODAL: LIGHTBOX BUKTI SERAH TERIMA & TANDA TANGAN (POPUP SATU RINGAN)      */}
       {/* ========================================================================= */}
       {selectedDetailRecord && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[92dvh] overflow-y-auto shadow-2xl border border-hairline flex flex-col touch-scroll">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          <div className="bg-white rounded-xl sm:rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-hairline flex flex-col touch-scroll">
             
             {/* Header */}
-            <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md px-6 py-4 border-b border-hairline flex items-center justify-between">
+            <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md px-4 sm:px-6 py-3 sm:py-4 border-b border-hairline flex items-center justify-between">
               <div>
                 <h3 className="font-extrabold text-base text-[#101519]">
                   Bukti Serah Terima #{selectedDetailRecord.order_number}
@@ -686,7 +768,7 @@ export const AdminCouriers: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSelectedDetailRecord(null)}
-                className="p-1.5 hover:bg-neutral-2 rounded-xl text-body hover:text-[#101519]"
+                className="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 hover:bg-neutral-2 rounded-xl text-body hover:text-[#101519] transition-colors touch-manipulation"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -734,6 +816,20 @@ export const AdminCouriers: React.FC = () => {
                 </div>
               )}
 
+              {/* Tanda Tangan Digital Penerima */}
+              {(selectedDetailRecord.proof_signature_url || selectedDetailRecord.signature_url) && (
+                <div className="space-y-1">
+                  <span className="font-bold text-body block">Tanda Tangan Digital Penerima:</span>
+                  <div className="rounded-2xl overflow-hidden bg-white border border-hairline p-3 flex items-center justify-center max-h-40">
+                    <img
+                      src={selectedDetailRecord.proof_signature_url || selectedDetailRecord.signature_url}
+                      alt="Tanda Tangan Digital"
+                      className="max-h-32 object-contain"
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* Info Pengiriman */}
               <div className="space-y-1.5 border-t border-hairline pt-3 text-[11px]">
                 <div className="flex justify-between">
@@ -771,18 +867,22 @@ export const AdminCouriers: React.FC = () => {
       {/* MODAL: TAMBAH KURIR BARU                                                 */}
       {/* ========================================================================= */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
           <form
             onSubmit={handleSaveCourier}
-            className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl text-xs"
+            className="bg-white rounded-xl sm:rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 space-y-4 shadow-2xl border border-hairline text-xs touch-scroll"
           >
             <div className="flex items-center justify-between border-b border-hairline pb-3">
               <h3 className="font-extrabold text-base text-[#101519] flex items-center gap-1.5">
                 <Truck className="w-5 h-5 text-primary" />
                 <span>Tambah Kurir Toko Baru</span>
               </h3>
-              <button type="button" onClick={() => setShowAddModal(false)}>
-                <X className="w-5 h-5 text-body" />
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded-xl text-body hover:bg-neutral-2 hover:text-[#101519] transition-colors touch-manipulation"
+              >
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -795,7 +895,7 @@ export const AdminCouriers: React.FC = () => {
                   placeholder="Contoh: Budi Santoso"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold"
+                  className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary text-xs"
                 />
               </div>
 
@@ -807,17 +907,17 @@ export const AdminCouriers: React.FC = () => {
                   placeholder="Contoh: 0812-3456-7890"
                   value={formPhone}
                   onChange={(e) => setFormPhone(e.target.value)}
-                  className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold font-mono"
+                  className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold font-mono focus:outline-none focus:border-primary text-xs"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div>
                   <label className="font-bold text-body block mb-1">Tipe Kendaraan</label>
                   <select
                     value={formVehicleType}
                     onChange={(e) => setFormVehicleType(e.target.value as any)}
-                    className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold"
+                    className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary text-xs"
                   >
                     <option value="motorcycle">🛵 Sepeda Motor</option>
                     <option value="van">🚐 Mobil Blind Van</option>
@@ -831,7 +931,7 @@ export const AdminCouriers: React.FC = () => {
                     placeholder="Contoh: B 1234 XYZ"
                     value={formPlate}
                     onChange={(e) => setFormPlate(e.target.value)}
-                    className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold uppercase"
+                    className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold uppercase focus:outline-none focus:border-primary text-xs"
                   />
                 </div>
               </div>
@@ -843,7 +943,7 @@ export const AdminCouriers: React.FC = () => {
                   placeholder="https://..."
                   value={formAvatar}
                   onChange={(e) => setFormAvatar(e.target.value)}
-                  className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold"
+                  className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary text-xs"
                 />
               </div>
             </div>
@@ -871,17 +971,21 @@ export const AdminCouriers: React.FC = () => {
       {/* MODAL: EDIT DATA KURIR                                                    */}
       {/* ========================================================================= */}
       {editingCourier && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
           <form
             onSubmit={handleSaveCourier}
-            className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl text-xs"
+            className="bg-white rounded-xl sm:rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 space-y-4 shadow-2xl border border-hairline text-xs touch-scroll"
           >
             <div className="flex items-center justify-between border-b border-hairline pb-3">
               <h3 className="font-extrabold text-base text-[#101519] flex items-center gap-1.5">
                 <Edit className="w-4 h-4 text-primary" />
                 <span>Edit Kurir: {editingCourier.name}</span>
               </h3>
-              <button type="button" onClick={() => setEditingCourier(null)}>
+              <button
+                type="button"
+                onClick={() => setEditingCourier(null)}
+                className="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded-xl text-body hover:bg-neutral-2 hover:text-[#101519] transition-colors touch-manipulation"
+              >
                 <X className="w-5 h-5 text-body" />
               </button>
             </div>
@@ -894,7 +998,7 @@ export const AdminCouriers: React.FC = () => {
                   required
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold"
+                  className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary text-xs"
                 />
               </div>
 
@@ -905,17 +1009,17 @@ export const AdminCouriers: React.FC = () => {
                   required
                   value={formPhone}
                   onChange={(e) => setFormPhone(e.target.value)}
-                  className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold font-mono"
+                  className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold font-mono focus:outline-none focus:border-primary text-xs"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div>
                   <label className="font-bold text-body block mb-1">Tipe Kendaraan</label>
                   <select
                     value={formVehicleType}
                     onChange={(e) => setFormVehicleType(e.target.value as any)}
-                    className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold"
+                    className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary text-xs"
                   >
                     <option value="motorcycle">🛵 Sepeda Motor</option>
                     <option value="van">🚐 Mobil Blind Van</option>
@@ -928,7 +1032,7 @@ export const AdminCouriers: React.FC = () => {
                     required
                     value={formPlate}
                     onChange={(e) => setFormPlate(e.target.value)}
-                    className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold uppercase"
+                    className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold uppercase focus:outline-none focus:border-primary text-xs"
                   />
                 </div>
               </div>
@@ -957,10 +1061,10 @@ export const AdminCouriers: React.FC = () => {
       {/* MODAL: REASSIGN / ALIHKAN TUGAS KE KURIR LAIN                             */}
       {/* ========================================================================= */}
       {reassignSourceCourier && reassignSourceCourier.active_delivery && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
           <form
             onSubmit={handleReassignSubmit}
-            className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl text-xs"
+            className="bg-white rounded-xl sm:rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 space-y-4 shadow-2xl border border-hairline text-xs touch-scroll"
           >
             <div className="flex items-center justify-between border-b border-hairline pb-3">
               <div className="flex items-center gap-2">
@@ -969,7 +1073,11 @@ export const AdminCouriers: React.FC = () => {
                   Alihkan Tugas Kurir
                 </h3>
               </div>
-              <button type="button" onClick={() => setReassignSourceCourier(null)}>
+              <button
+                type="button"
+                onClick={() => setReassignSourceCourier(null)}
+                className="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded-xl text-body hover:bg-neutral-2 hover:text-[#101519] transition-colors touch-manipulation"
+              >
                 <X className="w-5 h-5 text-body" />
               </button>
             </div>
@@ -989,14 +1097,14 @@ export const AdminCouriers: React.FC = () => {
                 required
                 value={targetCourierId}
                 onChange={(e) => setTargetCourierId(e.target.value)}
-                className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold"
+                className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary text-xs"
               >
                 <option value="">-- Pilih Kurir --</option>
                 {couriers
-                  .filter((c) => c.id !== reassignSourceCourier.id)
+                  .filter((c) => c.id !== reassignSourceCourier.id && c.status === 'available' && !c.active_delivery)
                   .map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.name} ({c.vehicle_plate}) - {c.status === 'available' ? 'Standby' : 'Sedang Mengantar'}
+                      {c.name} ({c.vehicle_plate}) - Standby
                     </option>
                   ))}
               </select>
@@ -1009,7 +1117,7 @@ export const AdminCouriers: React.FC = () => {
                 required
                 value={reassignReason}
                 onChange={(e) => setReassignReason(e.target.value)}
-                className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold"
+                className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary text-xs"
               />
             </div>
 

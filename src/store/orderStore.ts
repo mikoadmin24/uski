@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 import { Order, OrderStatus, PaymentStatus } from '@/types';
-import { mockOrders } from '@/data/mockData';
-import { dbService, isSupabaseConfigured } from '@/lib/supabase';
+import { dbService, isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 interface OrderState {
   orders: Order[];
   setOrdersFromSupabase: (orders: Order[]) => void;
   createOrder: (orderData: Omit<Order, 'id' | 'created_at' | 'updated_at'>) => Order;
+  addOrder: (orderData: Omit<Order, 'id' | 'created_at' | 'updated_at'>) => Order;
   getOrderByNumber: (orderNumber: string) => Order | undefined;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   updatePaymentStatus: (orderId: string, status: PaymentStatus, verifierName?: string, rejectionReason?: string) => void;
@@ -19,13 +19,13 @@ const STORAGE_KEY = 'uski_orders_v1';
 const getInitialOrders = (): Order[] => {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (!saved) return mockOrders;
+    if (!saved) return [];
     const parsed: Order[] = JSON.parse(saved);
-    const existingIds = new Set(parsed.map(o => o.id));
-    const missingMocks = mockOrders.filter(m => !existingIds.has(m.id));
-    return [...parsed, ...missingMocks];
+    if (!Array.isArray(parsed)) return [];
+    // Ensure no old dummy mock orders are retained
+    return parsed.filter((o) => !o.id?.startsWith('ord-10'));
   } catch {
-    return mockOrders;
+    return [];
   }
 };
 
@@ -33,7 +33,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   orders: getInitialOrders(),
 
   setOrdersFromSupabase: (cloudOrders) => {
-    if (!cloudOrders || cloudOrders.length === 0) return;
+    if (!cloudOrders) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudOrders));
     } catch {
@@ -45,7 +45,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   createOrder: (orderData) => {
     const newOrder: Order = {
       ...orderData,
-      id: `ord-${Date.now()}`,
+      id: `ord-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -60,13 +60,24 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     set({ orders: updated });
 
     if (isSupabaseConfigured) {
-      dbService.orders.insert(newOrder).catch((err) =>
+      const isUuid = (val?: string) =>
+        typeof val === 'string' &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val);
+
+      const payload = {
+        ...newOrder,
+        customer_id: isUuid(newOrder.customer_id) ? newOrder.customer_id : undefined,
+      };
+
+      dbService.orders.insert(payload).catch((err) =>
         console.error('Failed to sync new order to Supabase:', err)
       );
     }
 
     return newOrder;
   },
+
+  addOrder: (orderData) => get().createOrder(orderData),
 
   getOrderByNumber: (orderNumber) => {
     const cleanNum = orderNumber.trim().toUpperCase();
@@ -142,6 +153,20 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       dbService.orders.updateStatus(orderId, orderStatus).catch((err) =>
         console.error('Failed to sync payment status to Supabase:', err)
       );
+      if (supabase) {
+        supabase
+          .from('orders')
+          .update({
+            payment_status: status,
+            payment_rejection_reason: rejectionReason || null,
+            verified_by: verifierName,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', orderId)
+          .then(({ error }) => {
+            if (error) console.error('Failed to sync payment details to Supabase:', error);
+          });
+      }
     }
   },
 
@@ -187,6 +212,8 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         return {
           ...order,
           status: 'shipped' as OrderStatus,
+          courier_name: courierName || order.shipping_method,
+          tracking_number: trackingNumber,
           shipment: {
             id: `shp-${Date.now()}`,
             order_id: order.id,
@@ -218,6 +245,19 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       dbService.orders.updateStatus(orderId, 'shipped').catch((err) =>
         console.error('Failed to sync shipment tracking to Supabase:', err)
       );
+      if (supabase) {
+        supabase
+          .from('orders')
+          .update({
+            tracking_number: trackingNumber,
+            courier_name: courierName || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', orderId)
+          .then(({ error }) => {
+            if (error) console.error('Failed to sync tracking fields to Supabase:', error);
+          });
+      }
     }
   },
 }));

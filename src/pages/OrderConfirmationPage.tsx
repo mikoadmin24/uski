@@ -10,6 +10,8 @@ import {
   Building,
   QrCode,
   FileCheck,
+  X,
+  ZoomIn,
 } from 'lucide-react';
 import { useOrderStore } from '@/store/orderStore';
 import { formatRupiah, formatDate } from '@/lib/utils';
@@ -23,6 +25,7 @@ export const OrderConfirmationPage: React.FC = () => {
   const [copiedAccount, setCopiedAccount] = useState<string | null>(null);
   const [proofFile, setProofFile] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<boolean>(false);
+  const [showQrModal, setShowQrModal] = useState<boolean>(false);
 
   if (!order) {
     return (
@@ -54,7 +57,7 @@ export const OrderConfirmationPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+    <div className="max-w-3xl mx-auto px-4 py-8 space-y-6 overflow-x-hidden w-full">
       {/* Top Banner Alert */}
       <div className="bg-white border border-hairline rounded-3xl p-6 sm:p-8 text-center space-y-3">
         <div className="w-14 h-14 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
@@ -74,12 +77,12 @@ export const OrderConfirmationPage: React.FC = () => {
 
       {/* Payment Instructions Card */}
       <div className="bg-white border border-hairline rounded-3xl p-6 sm:p-8 space-y-6">
-        <div className="flex items-center justify-between border-b border-hairline pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-hairline pb-4">
           <div>
             <h2 className="text-base font-extrabold text-[#101519]">Instruksi Pembayaran</h2>
             <p className="text-xs text-body">Silakan selesaikan pembayaran sebelum batas waktu 24 jam</p>
           </div>
-          <div className="text-right">
+          <div className="text-left sm:text-right">
             <span className="text-xs text-body block">Total Tagihan:</span>
             <span className="text-xl font-extrabold text-primary">{formatRupiah(order.total_amount)}</span>
           </div>
@@ -88,13 +91,20 @@ export const OrderConfirmationPage: React.FC = () => {
         {/* QRIS Display if QRIS */}
         {order.payment_method === 'manual_qris' && (
           <div className="space-y-4 text-center">
-            <div className="inline-block p-4 bg-white border-2 border-hairline rounded-2xl shadow-sm">
+            <div
+              onClick={() => setShowQrModal(true)}
+              className="inline-block p-4 bg-white border-2 border-hairline rounded-2xl shadow-sm cursor-pointer hover:border-primary transition-all group"
+            >
               <img
                 src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=00020101021126570014ID.LINKAJA.WWW01189360091100215000000215204581253033605802ID5910USKI%20STORE6005DEPOK62070703A016304"
                 alt="QRIS Toko USKI STORE"
                 className="w-48 h-48 mx-auto object-contain"
               />
-              <p className="text-[11px] font-bold text-body mt-2">NMID: ID1020268892100 (USKI STORE)</p>
+              <div className="mt-2 flex items-center justify-center gap-1 text-[11px] font-bold text-primary group-hover:underline">
+                <ZoomIn className="w-3.5 h-3.5" />
+                <span>Klik untuk Memperbesar QRIS</span>
+              </div>
+              <p className="text-[10px] text-body mt-0.5">NMID: ID1020268892100 (USKI STORE)</p>
             </div>
             <p className="text-xs text-[#2D3033] max-w-md mx-auto">
               Buka aplikasi BCA Mobile, GoPay, OVO, Dana, LinkAja, atau ShopeePay Anda, lalu scan QRIS resmi di atas dan transfer tepat sebesar <strong className="text-primary">{formatRupiah(order.total_amount)}</strong>.
@@ -117,7 +127,7 @@ export const OrderConfirmationPage: React.FC = () => {
               ].map((acc) => (
                 <div
                   key={acc.number}
-                  className="p-4 bg-neutral-2/60 rounded-2xl border border-hairline flex items-center justify-between"
+                  className="p-4 bg-neutral-2/60 rounded-2xl border border-hairline flex items-center justify-between gap-3"
                 >
                   <div>
                     <span className="text-xs font-bold text-primary block">{acc.bank}</span>
@@ -125,8 +135,9 @@ export const OrderConfirmationPage: React.FC = () => {
                     <span className="text-xs text-body block">a.n {acc.name}</span>
                   </div>
                   <button
+                    type="button"
                     onClick={() => handleCopy(acc.number)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-hairline hover:border-primary rounded-xl text-xs font-bold text-[#101519] shadow-sm transition-all"
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-hairline hover:border-primary rounded-xl text-xs font-bold text-[#101519] shadow-sm transition-all min-h-[40px] touch-manipulation shrink-0"
                   >
                     <Copy className="w-3.5 h-3.5 text-primary" />
                     <span>{copiedAccount === acc.number ? 'Tersalin!' : 'Salin'}</span>
@@ -193,7 +204,7 @@ export const OrderConfirmationPage: React.FC = () => {
 
                 <button
                   type="submit"
-                  className="w-full py-3 bg-primary hover:bg-primary-dark text-white font-extrabold text-xs sm:text-sm rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+                  className="w-full min-h-[44px] py-3 bg-primary hover:bg-primary-dark text-white font-extrabold text-xs sm:text-sm rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 touch-manipulation"
                 >
                   <Upload className="w-4 h-4" />
                   <span>Kirim Bukti Pembayaran</span>
@@ -231,12 +242,54 @@ export const OrderConfirmationPage: React.FC = () => {
           </Link>
           <Link
             to="/"
-            className="px-4 py-2 bg-neutral-2 hover:bg-neutral-1/40 text-[#2D3033] font-bold rounded-xl transition-colors"
+            className="min-h-[40px] px-5 py-2.5 bg-neutral-2 hover:bg-neutral-3 text-[#2D3033] font-bold rounded-xl transition-colors inline-flex items-center touch-manipulation"
           >
             Kembali ke Beranda
           </Link>
         </div>
       </div>
+
+      {/* QRIS Enlarge Modal */}
+      {showQrModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          <div className="bg-white rounded-xl sm:rounded-2xl max-w-sm w-full p-4 sm:p-6 space-y-4 shadow-2xl text-center max-h-[90vh] overflow-y-auto border border-hairline touch-scroll">
+            <div className="flex items-center justify-between border-b border-hairline pb-3">
+              <div className="flex items-center gap-2">
+                <QrCode className="w-5 h-5 text-primary" />
+                <h3 className="text-base font-extrabold text-[#101519]">QRIS USKI STORE</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowQrModal(false)}
+                className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-body hover:bg-neutral-2 hover:text-[#101519] transition-colors touch-manipulation"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-3 bg-neutral-2/40 rounded-xl border border-hairline">
+              <img
+                src="https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=00020101021126570014ID.LINKAJA.WWW01189360091100215000000215204581253033605802ID5910USKI%20STORE6005DEPOK62070703A016304"
+                alt="QRIS USKI STORE Besar"
+                className="w-64 h-64 mx-auto object-contain"
+              />
+              <p className="text-xs font-bold text-[#101519] mt-2">NMID: ID1020268892100 (USKI STORE)</p>
+              <p className="text-[11px] text-body mt-1">
+                Total Pembayaran: <strong className="text-primary">{formatRupiah(order.total_amount)}</strong>
+              </p>
+            </div>
+            <p className="text-xs text-body leading-relaxed">
+              Scan barcode di atas menggunakan aplikasi e-wallet atau mobile banking apa pun yang mendukung QRIS nasional.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowQrModal(false)}
+              className="w-full min-h-[40px] py-2.5 bg-neutral-2 hover:bg-neutral-3 text-[#101519] font-bold text-xs rounded-xl transition-colors touch-manipulation"
+            >
+              Tutup QRIS
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

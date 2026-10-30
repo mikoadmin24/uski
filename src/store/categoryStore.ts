@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { Category, PromoBanner } from '@/types';
-import { mockCategories, mockBanners } from '@/data/mockData';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { dbService, supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 interface CategoryState {
   categories: Category[];
@@ -23,18 +22,26 @@ const BANNERS_KEY = 'uski_banners_v1';
 const getInitialCategories = (): Category[] => {
   try {
     const saved = localStorage.getItem(CATEGORIES_KEY);
-    return saved ? JSON.parse(saved) : mockCategories;
+    if (!saved) return [];
+    const parsed: Category[] = JSON.parse(saved);
+    if (!Array.isArray(parsed)) return [];
+    const mockIds = new Set(['cat-1', 'cat-2', 'cat-3', 'cat-4', 'cat-5', 'cat-6', 'cat-7', 'cat-8', 'cat-9', 'cat-10']);
+    return parsed.filter((c) => !mockIds.has(c.id));
   } catch {
-    return mockCategories;
+    return [];
   }
 };
 
 const getInitialBanners = (): PromoBanner[] => {
   try {
     const saved = localStorage.getItem(BANNERS_KEY);
-    return saved ? JSON.parse(saved) : mockBanners;
+    if (!saved) return [];
+    const parsed: PromoBanner[] = JSON.parse(saved);
+    if (!Array.isArray(parsed)) return [];
+    const mockBannerIds = new Set(['banner-1', 'banner-2', 'banner-3']);
+    return parsed.filter((b) => !mockBannerIds.has(b.id));
   } catch {
-    return mockBanners;
+    return [];
   }
 };
 
@@ -43,7 +50,7 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
   banners: getInitialBanners(),
 
   setCategoriesFromSupabase: (categories) => {
-    if (!categories || categories.length === 0) return;
+    if (!categories) return;
     try {
       localStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories));
     } catch {
@@ -53,7 +60,7 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
   },
 
   setBannersFromSupabase: (banners) => {
-    if (!banners || banners.length === 0) return;
+    if (!banners) return;
     try {
       localStorage.setItem(BANNERS_KEY, JSON.stringify(banners));
     } catch {
@@ -76,13 +83,10 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
     }
     set({ categories: updated });
 
-    if (isSupabaseConfigured && supabase) {
-      supabase
-        .from('categories')
-        .insert(newCategory)
-        .then(({ error }) => {
-          if (error) console.error('Error inserting category to Supabase:', error);
-        });
+    if (isSupabaseConfigured) {
+      dbService.categories.upsert(newCategory).catch((err) =>
+        console.error('Error inserting category to Supabase:', err)
+      );
     }
 
     return newCategory;
@@ -97,14 +101,10 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
     }
     set({ categories: updated });
 
-    if (isSupabaseConfigured && supabase) {
-      supabase
-        .from('categories')
-        .update(updates)
-        .eq('id', id)
-        .then(({ error }) => {
-          if (error) console.error('Error updating category in Supabase:', error);
-        });
+    if (isSupabaseConfigured) {
+      dbService.categories.upsert({ id, ...updates }).catch((err) =>
+        console.error('Error updating category in Supabase:', err)
+      );
     }
   },
 
@@ -141,13 +141,10 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
     }
     set({ banners: updated });
 
-    if (isSupabaseConfigured && supabase) {
-      supabase
-        .from('banners')
-        .insert(newBanner)
-        .then(({ error }) => {
-          if (error) console.error('Error inserting banner to Supabase:', error);
-        });
+    if (isSupabaseConfigured) {
+      dbService.banners.upsert(newBanner).catch((err) =>
+        console.error('Error inserting banner to Supabase:', err)
+      );
     }
 
     return newBanner;
@@ -162,14 +159,10 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
     }
     set({ banners: updated });
 
-    if (isSupabaseConfigured && supabase) {
-      supabase
-        .from('banners')
-        .update(updates)
-        .eq('id', id)
-        .then(({ error }) => {
-          if (error) console.error('Error updating banner in Supabase:', error);
-        });
+    if (isSupabaseConfigured) {
+      dbService.banners.upsert({ id, ...updates }).catch((err) =>
+        console.error('Error updating banner in Supabase:', err)
+      );
     }
   },
 
@@ -209,14 +202,10 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
     }
     set({ banners: updated });
 
-    if (isSupabaseConfigured && supabase) {
-      supabase
-        .from('banners')
-        .update({ is_active: nextStatus })
-        .eq('id', id)
-        .then(({ error }) => {
-          if (error) console.error('Error toggling banner status in Supabase:', error);
-        });
+    if (isSupabaseConfigured) {
+      dbService.banners.upsert({ id, is_active: nextStatus }).catch((err) =>
+        console.error('Error toggling banner status in Supabase:', err)
+      );
     }
   },
 }));

@@ -67,6 +67,16 @@ export const Navbar: React.FC = () => {
     }
   };
 
+  const handleOpenAuthModal = (mode: 'login' | 'register' = 'login') => {
+    setMobileMenuOpen(false);
+    setCategoryMenuOpen(false);
+    setRoleSwitcherOpen(false);
+    setShowSuggestions(false);
+    setAuthMode(mode);
+    setAuthError(null);
+    setShowManualLoginModal(true);
+  };
+
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-hairline shadow-sm w-full">
       {/* Main Header Row */}
@@ -321,12 +331,8 @@ export const Navbar: React.FC = () => {
               )
             ) : (
               <button
-                onClick={() => {
-                  setAuthMode('login');
-                  setAuthError(null);
-                  setShowManualLoginModal(true);
-                }}
-                className="flex items-center gap-1.5 px-3.5 h-9 sm:h-11 bg-primary hover:bg-primary-dark text-white rounded-full text-xs font-bold transition-all shadow-xs"
+                onClick={() => handleOpenAuthModal('login')}
+                className="flex items-center gap-1.5 px-3.5 h-9 sm:h-11 bg-primary hover:bg-primary-dark text-white rounded-full text-xs font-bold transition-all shadow-xs touch-manipulation"
               >
                 <User className="w-3.5 h-3.5" />
                 <span>Masuk</span>
@@ -556,6 +562,25 @@ export const Navbar: React.FC = () => {
             >
               Lacak Pengiriman Pesanan
             </Link>
+            {!user ? (
+              <button
+                type="button"
+                onClick={() => handleOpenAuthModal('login')}
+                className="w-full mt-2 min-h-[40px] py-2.5 bg-primary text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 touch-manipulation shadow-xs"
+              >
+                <User className="w-4 h-4" />
+                <span>Masuk / Daftar Akun</span>
+              </button>
+            ) : (
+              <Link
+                to={user.role === 'customer' ? '/account' : user.role === 'courier' ? '/courier' : '/admin'}
+                onClick={() => setMobileMenuOpen(false)}
+                className="block py-2 text-sm font-bold text-primary hover:underline flex items-center gap-1.5"
+              >
+                <User className="w-4 h-4" />
+                <span>{user.role === 'customer' ? 'Buka Akun Saya' : 'Buka Dashboard'} ({user.full_name})</span>
+              </Link>
+            )}
           </div>
 
           <div className="pt-2 border-t border-hairline">
@@ -578,8 +603,8 @@ export const Navbar: React.FC = () => {
 
       {/* Client-Ready Authentication Modal (Login & Register) */}
       {showManualLoginModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl max-h-[90dvh] overflow-y-auto touch-scroll">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          <div className="bg-white rounded-xl sm:rounded-2xl max-w-sm w-full p-4 sm:p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto border border-hairline touch-scroll">
             <div className="flex items-center justify-between border-b border-hairline pb-3">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
@@ -600,7 +625,7 @@ export const Navbar: React.FC = () => {
                   setShowManualLoginModal(false);
                   setAuthError(null);
                 }}
-                className="p-1 rounded-lg text-body hover:bg-neutral-2 hover:text-[#101519]"
+                className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-body hover:bg-neutral-2 hover:text-[#101519] transition-colors touch-manipulation"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -816,7 +841,7 @@ export const Navbar: React.FC = () => {
                 <button
                   type="submit"
                   disabled={authLoading}
-                  className="w-full h-11 bg-primary hover:bg-primary-dark disabled:opacity-50 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2"
+                  className="w-full min-h-[44px] h-11 bg-primary hover:bg-primary-dark disabled:opacity-50 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 touch-manipulation"
                 >
                   <span>{authLoading ? 'Memproses...' : authMode === 'login' ? 'Masuk Sekarang' : 'Daftar Akun'}</span>
                 </button>

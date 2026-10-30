@@ -127,6 +127,11 @@ export const AdminProducts: React.FC = () => {
   };
 
   const handleOpenAddModal = () => {
+    setSelectedProductDetail(null);
+    setStockAdjustProduct(null);
+    setShowCameraScanner(false);
+    setPrintLabelProduct(null);
+    setProductToDelete(null);
     resetForm();
     setShowAddModal(true);
   };
@@ -137,6 +142,12 @@ export const AdminProducts: React.FC = () => {
   };
 
   const handleOpenEditModal = (product: Product) => {
+    setSelectedProductDetail(null);
+    setStockAdjustProduct(null);
+    setShowCameraScanner(false);
+    setPrintLabelProduct(null);
+    setProductToDelete(null);
+    setShowAddModal(false);
     setEditingProduct(product);
     setName(product.name);
     setSkuMaster(product.sku_master);
@@ -160,6 +171,12 @@ export const AdminProducts: React.FC = () => {
   };
 
   const handleOpenStockAdjust = (product: Product) => {
+    setSelectedProductDetail(null);
+    setShowAddModal(false);
+    setEditingProduct(null);
+    setShowCameraScanner(false);
+    setPrintLabelProduct(null);
+    setProductToDelete(null);
     setStockAdjustProduct(product);
     setStockDelta('10');
     setAdjustmentType('purchase_in');
@@ -852,10 +869,10 @@ export const AdminProducts: React.FC = () => {
       {/* ========================================================================= */}
       {selectedProductDetail && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[92dvh] overflow-y-auto shadow-2xl border border-hairline flex flex-col touch-scroll">
+          <div className="bg-white rounded-xl sm:rounded-2xl max-w-lg sm:max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-hairline flex flex-col touch-scroll">
             
             {/* Modal Header */}
-            <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md px-6 py-4 border-b border-hairline flex items-center justify-between gap-3">
+            <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md px-4 sm:px-6 py-3 sm:py-4 border-b border-hairline flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black">
                   <Package className="w-5 h-5" />
@@ -872,7 +889,7 @@ export const AdminProducts: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSelectedProductDetail(null)}
-                className="p-2 hover:bg-neutral-2 rounded-xl text-body hover:text-[#101519] transition-colors"
+                className="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 hover:bg-neutral-2 rounded-xl text-body hover:text-[#101519] transition-colors touch-manipulation"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1013,8 +1030,8 @@ export const AdminProducts: React.FC = () => {
 
       {/* QUICK STOCK ADJUSTMENT MODAL */}
       {stockAdjustProduct && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl max-h-[88dvh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] touch-scroll">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          <div className="bg-white rounded-xl sm:rounded-2xl max-w-lg w-full p-4 sm:p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto border border-hairline touch-scroll">
             <div className="flex items-center justify-between border-b border-hairline pb-3">
               <div className="flex items-center gap-2">
                 <ArrowUpDown className="w-5 h-5 text-primary" />
@@ -1022,7 +1039,11 @@ export const AdminProducts: React.FC = () => {
                   Penyesuaian & Opname Stok
                 </h3>
               </div>
-              <button onClick={() => setStockAdjustProduct(null)}>
+              <button
+                type="button"
+                onClick={() => setStockAdjustProduct(null)}
+                className="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded-xl text-body hover:bg-neutral-2 hover:text-[#101519] transition-colors touch-manipulation"
+              >
                 <X className="w-5 h-5 text-body" />
               </button>
             </div>
@@ -1056,7 +1077,7 @@ export const AdminProducts: React.FC = () => {
                 <select
                   value={adjustmentType}
                   onChange={(e) => setAdjustmentType(e.target.value as any)}
-                  className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
+                  className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary text-xs"
                 >
                   <option value="purchase_in">🟢 Barang Masuk / Restock Supplier (+)</option>
                   <option value="damaged">🔴 Barang Rusak / Cacat (-)</option>
@@ -1078,7 +1099,7 @@ export const AdminProducts: React.FC = () => {
                   placeholder="Contoh: 20"
                   value={stockDelta}
                   onChange={(e) => setStockDelta(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?!$)/, ''))}
-                  className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
+                  className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary text-xs"
                 />
               </div>
 
@@ -1090,7 +1111,7 @@ export const AdminProducts: React.FC = () => {
                   value={adjustmentNotes}
                   onChange={(e) => setAdjustmentNotes(e.target.value)}
                   placeholder="Contoh: Faktur No. 2099 / Pengadaan SiDu"
-                  className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
+                  className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary text-xs"
                 />
               </div>
 
@@ -1117,14 +1138,18 @@ export const AdminProducts: React.FC = () => {
 
       {/* CAMERA SCANNER MODAL */}
       {showCameraScanner && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl text-center max-h-[88dvh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] touch-scroll">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          <div className="bg-white rounded-xl sm:rounded-2xl max-w-sm sm:max-w-md w-full p-4 sm:p-6 space-y-4 shadow-2xl text-center max-h-[90vh] overflow-y-auto border border-hairline touch-scroll">
             <div className="flex items-center justify-between border-b border-hairline pb-3">
               <div className="flex items-center gap-2">
                 <Camera className="w-5 h-5 text-primary" />
                 <h3 className="text-base font-extrabold text-[#101519]">Scanner Kamera Barcode</h3>
               </div>
-              <button onClick={handleCloseCameraScanner}>
+              <button
+                type="button"
+                onClick={handleCloseCameraScanner}
+                className="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded-xl text-body hover:bg-neutral-2 hover:text-[#101519] transition-colors touch-manipulation"
+              >
                 <X className="w-5 h-5 text-body" />
               </button>
             </div>
@@ -1155,8 +1180,8 @@ export const AdminProducts: React.FC = () => {
 
       {/* PRINT BARCODE LABEL STICKER MODAL */}
       {printLabelProduct && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl max-h-[88dvh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] touch-scroll">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          <div className="bg-white rounded-xl sm:rounded-2xl max-w-lg w-full p-4 sm:p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto border border-hairline touch-scroll">
             <div className="flex items-center justify-between border-b border-hairline pb-3">
               <div className="flex items-center gap-2">
                 <Printer className="w-5 h-5 text-primary" />
@@ -1164,7 +1189,11 @@ export const AdminProducts: React.FC = () => {
                   Cetak Label Stiker Barcode
                 </h3>
               </div>
-              <button onClick={() => setPrintLabelProduct(null)}>
+              <button
+                type="button"
+                onClick={() => setPrintLabelProduct(null)}
+                className="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded-xl text-body hover:bg-neutral-2 hover:text-[#101519] transition-colors touch-manipulation"
+              >
                 <X className="w-5 h-5 text-body" />
               </button>
             </div>
@@ -1261,8 +1290,8 @@ export const AdminProducts: React.FC = () => {
 
       {/* Add Product Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 max-h-[88dvh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] space-y-6 shadow-2xl touch-scroll">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          <div className="bg-white rounded-xl sm:rounded-2xl max-w-lg sm:max-w-2xl w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto overscroll-contain space-y-4 sm:space-y-6 shadow-2xl border border-hairline touch-scroll">
             <div className="flex items-center justify-between border-b border-hairline pb-4">
               <div>
                 <h3 className="text-lg font-extrabold text-[#101519]">Tambah Produk Baru</h3>
@@ -1271,7 +1300,7 @@ export const AdminProducts: React.FC = () => {
               <button
                 type="button"
                 onClick={handleCloseAddModal}
-                className="p-1 rounded-lg text-body hover:bg-neutral-2 hover:text-[#101519] transition-colors"
+                className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-body hover:bg-neutral-2 hover:text-[#101519] transition-colors touch-manipulation"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1521,8 +1550,8 @@ export const AdminProducts: React.FC = () => {
 
       {/* Full Edit Product Modal */}
       {editingProduct && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 max-h-[88dvh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] space-y-6 shadow-2xl touch-scroll">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          <div className="bg-white rounded-xl sm:rounded-2xl max-w-lg sm:max-w-2xl w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto overscroll-contain space-y-4 sm:space-y-6 shadow-2xl border border-hairline touch-scroll">
             <div className="flex items-center justify-between border-b border-hairline pb-4">
               <div>
                 <h3 className="text-lg font-extrabold text-[#101519]">Edit Data Produk</h3>
@@ -1533,7 +1562,7 @@ export const AdminProducts: React.FC = () => {
               <button
                 type="button"
                 onClick={handleCloseEditModal}
-                className="p-1 rounded-lg text-body hover:bg-neutral-2 hover:text-[#101519] transition-colors"
+                className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-body hover:bg-neutral-2 hover:text-[#101519] transition-colors touch-manipulation"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1730,8 +1759,8 @@ export const AdminProducts: React.FC = () => {
 
       {/* Delete Confirmation Modal */}
       {productToDelete && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl text-center max-h-[88dvh] overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] touch-scroll">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          <div className="bg-white rounded-xl sm:rounded-2xl max-w-sm sm:max-w-md w-full p-4 sm:p-6 space-y-4 shadow-2xl text-center max-h-[90vh] overflow-y-auto overscroll-contain border border-hairline touch-scroll">
             <div className="w-12 h-12 rounded-2xl bg-red-100 text-badge-text flex items-center justify-center mx-auto">
               <Trash2 className="w-6 h-6" />
             </div>
@@ -1746,7 +1775,7 @@ export const AdminProducts: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setProductToDelete(null)}
-                className="px-5 py-2.5 bg-neutral-2 text-body font-bold text-xs rounded-xl"
+                className="min-h-[40px] px-5 py-2.5 bg-neutral-2 text-body font-bold text-xs rounded-xl hover:bg-neutral-3 transition-colors touch-manipulation"
               >
                 Batal
               </button>
@@ -1756,7 +1785,7 @@ export const AdminProducts: React.FC = () => {
                   deleteProduct(productToDelete.id);
                   setProductToDelete(null);
                 }}
-                className="px-5 py-2.5 bg-badge-text text-white font-bold text-xs rounded-xl hover:bg-red-700 transition-colors shadow-sm"
+                className="min-h-[40px] px-5 py-2.5 bg-badge-text text-white font-bold text-xs rounded-xl hover:bg-red-700 transition-colors shadow-sm touch-manipulation"
               >
                 Ya, Hapus Produk
               </button>

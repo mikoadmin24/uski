@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { Voucher } from '@/types';
-import { mockVouchers } from '@/data/mockData';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { dbService, isSupabaseConfigured } from '@/lib/supabase';
 
 interface PromoState {
   vouchers: Voucher[];
@@ -10,6 +9,7 @@ interface PromoState {
   updateVoucher: (id: string, updates: Partial<Voucher>) => void;
   deleteVoucher: (id: string) => void;
   toggleVoucherStatus: (id: string) => void;
+  incrementUsage: (id: string) => void;
   validateVoucher: (
     code: string,
     subtotal: number
@@ -21,18 +21,20 @@ const VOUCHERS_KEY = 'uski_vouchers_v1';
 const getInitialVouchers = (): Voucher[] => {
   try {
     const saved = localStorage.getItem(VOUCHERS_KEY);
-    if (!saved) return mockVouchers;
+    if (!saved) return [];
     const parsed: Voucher[] = JSON.parse(saved);
-    const existingIds = new Set(parsed.map((v) => v.id));
-    const missingMocks = mockVouchers.filter((m) => !existingIds.has(m.id));
-    return [...parsed, ...missingMocks].map((v) => ({
-      ...v,
-      target_audience: v.target_audience || 'all',
-      target_audience_label: v.target_audience_label || 'Semua Pelanggan (Publik)',
-      usage_per_user: v.usage_per_user || 1,
-    }));
+    if (!Array.isArray(parsed)) return [];
+    const mockIds = new Set(['vouch-1', 'vouch-2', 'vouch-3', 'vouch-4']);
+    return parsed
+      .filter((v) => !mockIds.has(v.id))
+      .map((v) => ({
+        ...v,
+        target_audience: v.target_audience || 'all',
+        target_audience_label: v.target_audience_label || 'Semua Pelanggan (Publik)',
+        usage_per_user: v.usage_per_user || 1,
+      }));
   } catch {
-    return mockVouchers;
+    return [];
   }
 };
 
@@ -40,7 +42,7 @@ export const usePromoStore = create<PromoState>((set, get) => ({
   vouchers: getInitialVouchers(),
 
   setVouchersFromSupabase: (vouchers) => {
-    if (!vouchers || vouchers.length === 0) return;
+    if (!vouchers) return;
     try {
       localStorage.setItem(VOUCHERS_KEY, JSON.stringify(vouchers));
     } catch {
@@ -54,6 +56,9 @@ export const usePromoStore = create<PromoState>((set, get) => ({
       ...data,
       id: `vouch-${Date.now()}`,
       usage_count: 0,
+      target_audience: data.target_audience || 'all',
+      target_audience_label: data.target_audience_label || 'Semua Pelanggan (Publik)',
+      usage_per_user: data.usage_per_user || 1,
     };
     const updated = [newVoucher, ...get().vouchers];
     try {
@@ -63,13 +68,10 @@ export const usePromoStore = create<PromoState>((set, get) => ({
     }
     set({ vouchers: updated });
 
-    if (isSupabaseConfigured && supabase) {
-      supabase
-        .from('vouchers')
-        .insert(newVoucher)
-        .then(({ error }) => {
-          if (error) console.error('Error inserting voucher to Supabase:', error);
-        });
+    if (isSupabaseConfigured) {
+      dbService.vouchers.upsert(newVoucher).catch((err) =>
+        console.error('Error inserting voucher to Supabase:', err)
+      );
     }
 
     return newVoucher;
@@ -84,14 +86,10 @@ export const usePromoStore = create<PromoState>((set, get) => ({
     }
     set({ vouchers: updated });
 
-    if (isSupabaseConfigured && supabase) {
-      supabase
-        .from('vouchers')
-        .update(updates)
-        .eq('id', id)
-        .then(({ error }) => {
-          if (error) console.error('Error updating voucher in Supabase:', error);
-        });
+    if (isSupabaseConfigured) {
+      dbService.vouchers.upsert({ id, ...updates }).catch((err) =>
+        console.error('Error updating voucher in Supabase:', err)
+      );
     }
   },
 
@@ -104,14 +102,10 @@ export const usePromoStore = create<PromoState>((set, get) => ({
     }
     set({ vouchers: updated });
 
-    if (isSupabaseConfigured && supabase) {
-      supabase
-        .from('vouchers')
-        .delete()
-        .eq('id', id)
-        .then(({ error }) => {
-          if (error) console.error('Error deleting voucher from Supabase:', error);
-        });
+    if (isSupabaseConfigured) {
+      dbService.vouchers.delete(id).catch((err) =>
+        console.error('Error deleting voucher from Supabase:', err)
+      );
     }
   },
 
@@ -131,14 +125,33 @@ export const usePromoStore = create<PromoState>((set, get) => ({
     }
     set({ vouchers: updated });
 
-    if (isSupabaseConfigured && supabase) {
-      supabase
-        .from('vouchers')
-        .update({ is_active: nextStatus })
-        .eq('id', id)
-        .then(({ error }) => {
-          if (error) console.error('Error toggling voucher status in Supabase:', error);
-        });
+    if (isSupabaseConfigured) {
+      dbService.vouchers.upsert({ id, is_active: nextStatus }).catch((err) =>
+        console.error('Error toggling voucher status in Supabase:', err)
+      );
+    }
+  },
+
+  incrementUsage: (id) => {
+    let newCount = 1;
+    const updated = get().vouchers.map((v) => {
+      if (v.id === id) {
+        newCount = (v.usage_count || 0) + 1;
+        return { ...v, usage_count: newCount };
+      }
+      return v;
+    });
+    try {
+      localStorage.setItem(VOUCHERS_KEY, JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+    set({ vouchers: updated });
+
+    if (isSupabaseConfigured) {
+      dbService.vouchers.upsert({ id, usage_count: newCount }).catch((err) =>
+        console.error('Error incrementing voucher usage in Supabase:', err)
+      );
     }
   },
 

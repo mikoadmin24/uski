@@ -69,7 +69,6 @@ export const CourierPortalPage: React.FC = () => {
     lastPingText: string;
   } | null>(null);
   const [batteryLevel, setBatteryLevel] = useState<number>(85);
-  const [secondsUntilNextPing, setSecondsUntilNextPing] = useState<number>(gpsTrackingIntervalSeconds || 15);
 
   // Complete delivery modal / form
   const [showCompleteModal, setShowCompleteModal] = useState(false);
@@ -85,14 +84,6 @@ export const CourierPortalPage: React.FC = () => {
   const [failedReason, setFailedReason] = useState(FAILED_REASONS[0]);
   const [failedNotes, setFailedNotes] = useState('');
   const [isSubmittingFailed, setIsSubmittingFailed] = useState(false);
-
-  // Countdown timer for interval simulation display
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setSecondsUntilNextPing((prev) => (prev <= 1 ? gpsTrackingIntervalSeconds || 15 : prev - 1));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [gpsTrackingIntervalSeconds]);
 
   // 1. AUTOMATIC GPS WATCHER on mount
   useEffect(() => {
@@ -115,11 +106,7 @@ export const CourierPortalPage: React.FC = () => {
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
         const { latitude, longitude, accuracy, speed } = pos.coords;
-        const currentSpeedKmh = speed
-          ? Math.round(speed * 3.6)
-          : currentCourier.status === 'delivering'
-          ? 32
-          : 0;
+        const currentSpeedKmh = speed ? Math.round(speed * 3.6) : 0;
 
         const timeStr = new Date().toLocaleTimeString('id-ID');
 
@@ -131,9 +118,6 @@ export const CourierPortalPage: React.FC = () => {
           speed: currentSpeedKmh,
           lastPingText: timeStr,
         });
-
-        // Reset countdown
-        setSecondsUntilNextPing(gpsTrackingIntervalSeconds || 15);
 
         // Broadcast to store so Admin sees it in real-time
         updateLocation(currentCourier.id, {
@@ -193,23 +177,46 @@ export const CourierPortalPage: React.FC = () => {
     }
 
     setIsSubmittingDelivery(true);
-    let finalProofUrl = proofPhotoPreview;
+    let finalProofUrl = proofPhotoPreview || '';
+    let finalSignatureUrl = signatureDataUrl || '';
 
+    // 1. Upload proof photo to bucket 'delivery-proofs' in subfolder 'proofs'
     if (selectedProofFile) {
       try {
-        const cloudUrl = await uploadFileToStorage(selectedProofFile, 'delivery-proofs');
+        const cloudUrl = await uploadFileToStorage(selectedProofFile, 'delivery-proofs', 'proofs');
         if (cloudUrl) {
           finalProofUrl = cloudUrl;
         }
       } catch (err) {
-        console.warn('Upload to Supabase Storage failed, using local preview fallback', err);
+        console.warn('Upload proof photo to Supabase Storage failed, using local preview fallback', err);
+      }
+    } else if (proofPhotoPreview && proofPhotoPreview.startsWith('data:')) {
+      try {
+        const cloudUrl = await uploadFileToStorage(proofPhotoPreview, 'delivery-proofs', 'proofs');
+        if (cloudUrl) {
+          finalProofUrl = cloudUrl;
+        }
+      } catch (err) {
+        console.warn('Upload base64 proof photo to storage failed:', err);
+      }
+    }
+
+    // 2. Upload digital signature to bucket 'delivery-proofs' in subfolder 'signatures'
+    if (signatureDataUrl) {
+      try {
+        const sigUrl = await uploadFileToStorage(signatureDataUrl, 'delivery-proofs', 'signatures');
+        if (sigUrl) {
+          finalSignatureUrl = sigUrl;
+        }
+      } catch (err) {
+        console.warn('Upload digital signature to Supabase Storage failed, using dataUrl fallback', err);
       }
     }
 
     completeDelivery(
       currentCourier.id,
       finalProofUrl,
-      signatureDataUrl,
+      finalSignatureUrl,
       `${recipientNameInput ? `Diterima oleh: ${recipientNameInput}. ` : ''}${deliveryNotes}`
     );
 
@@ -248,9 +255,9 @@ export const CourierPortalPage: React.FC = () => {
   const accuracyMeters = gpsCoords?.accuracy || currentCourier.current_location.accuracy_meters || 10;
   const accuracyBadge =
     accuracyMeters <= 15
-      ? { label: 'Tinggi (Satelit Akurat)', color: 'bg-green-100 text-green-800 border-green-200' }
+      ? { label: 'Tinggi (GPS Perangkat Aktif)', color: 'bg-green-100 text-green-800 border-green-200' }
       : accuracyMeters <= 50
-      ? { label: 'Sedang (Jaringan AGPS)', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' }
+      ? { label: 'Sedang (Jaringan Seluler)', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' }
       : { label: 'Rendah (>50m)', color: 'bg-orange-100 text-orange-800 border-orange-200' };
 
   return (
@@ -292,7 +299,7 @@ export const CourierPortalPage: React.FC = () => {
       </header>
 
       <main className="max-w-md mx-auto p-4 space-y-4">
-        {/* AUTOMATIC GPS TELEMETRY & HEARTBEAT CARD */}
+        {/* GPS PERANGKAT AKTIF */}
         <div
           className={`rounded-3xl p-5 text-white shadow-lg border transition-all ${
             gpsStatus === 'active'
@@ -315,7 +322,7 @@ export const CourierPortalPage: React.FC = () => {
               />
               <span className="font-extrabold text-xs uppercase tracking-wider text-green-400">
                 {gpsStatus === 'active'
-                  ? 'GPS Pelacak Otomatis Online'
+                  ? 'GPS Perangkat Aktif'
                   : gpsStatus === 'denied'
                   ? 'Izin GPS Ditolak'
                   : 'Menghubungkan GPS...'}
@@ -346,16 +353,16 @@ export const CourierPortalPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Heartbeat & Interval Meter */}
+              {/* Status Geolocation Perangkat */}
               <div className="flex items-center justify-between text-[11px] bg-white/5 p-2 rounded-xl text-white/80">
                 <div className="flex items-center gap-1.5">
                   <Activity className="w-3.5 h-3.5 text-primary" />
                   <span>
-                    Ping interval: <strong>{gpsTrackingIntervalSeconds}s</strong>
+                    Status Geolocation: <strong>GPS Perangkat Aktif</strong>
                   </span>
                 </div>
                 <div className="text-[10px] text-green-300 font-mono">
-                  Update berikutnya: {secondsUntilNextPing} detik
+                  Sinyal: Baik
                 </div>
               </div>
 

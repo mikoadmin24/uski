@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   BarChart3,
   Download,
@@ -35,11 +35,25 @@ import { useOrderStore } from '@/store/orderStore';
 import { useProductStore } from '@/store/productStore';
 import { useCategoryStore } from '@/store/categoryStore';
 import { formatRupiah, formatDate } from '@/lib/utils';
+import { dbService, isSupabaseConfigured } from '@/lib/supabase';
 
 export const AdminReports: React.FC = () => {
-  const { orders } = useOrderStore();
+  const { orders, setOrdersFromSupabase } = useOrderStore();
   const { products } = useProductStore();
   const { categories } = useCategoryStore();
+
+  // Load fresh orders from Supabase on mount if available
+  useEffect(() => {
+    if (isSupabaseConfigured) {
+      dbService.orders.getAll().then((data) => {
+        if (data && Array.isArray(data) && data.length > 0) {
+          setOrdersFromSupabase(data);
+        }
+      }).catch((err) => {
+        console.warn('Failed to fetch live orders for reports:', err);
+      });
+    }
+  }, [setOrdersFromSupabase]);
 
   // Period & Visual State
   const [period, setPeriod] = useState<'7days' | '30days' | 'monthly' | 'ytd'>('7days');
@@ -51,158 +65,451 @@ export const AdminReports: React.FC = () => {
   const paidOrders = orders.filter((o) => o.payment_status === 'verified');
   const pendingOrders = orders.filter((o) => o.payment_status === 'pending');
   const codOrders = orders.filter((o) => o.payment_method === 'cod' && o.status !== 'delivered');
+  const cancelledOrders = orders.filter((o) => o.status === 'cancelled');
 
-  const grossSales = orders.reduce((sum, o) => sum + o.total_amount, 0);
-  const confirmedSales = paidOrders.reduce((sum, o) => sum + o.total_amount, 0);
-  const pendingSales = pendingOrders.reduce((sum, o) => sum + o.total_amount, 0);
-  const codReceivables = codOrders.reduce((sum, o) => sum + o.total_amount, 0);
+  const grossSales = orders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
+  const confirmedSales = paidOrders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
+  const pendingSales = pendingOrders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
+  const codReceivables = codOrders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
 
   const totalItemsSold = paidOrders.reduce(
-    (sum, o) => sum + o.items.reduce((s, it) => s + it.quantity, 0),
+    (sum, o) => sum + (o.items ? o.items.reduce((s, it) => s + (Number(it.quantity) || 0), 0) : 0),
     0
   );
 
   // Financial margin calculations (standard retail bookstore margin 28.5%)
-  const estimatedProfit = Math.round(confirmedSales * 0.285);
-  const estimatedCogs = confirmedSales - estimatedProfit;
-  const operationalExpense = Math.round(confirmedSales * 0.055); // Opex ~5.5% (courier petrol, packaging, gateway fee)
+  const effectiveBaseRevenue = confirmedSales > 0 ? confirmedSales : grossSales;
+  const estimatedProfit = Math.round(effectiveBaseRevenue * 0.285);
+  const estimatedCogs = effectiveBaseRevenue - estimatedProfit;
+  const operationalExpense = Math.round(effectiveBaseRevenue * 0.055); // Opex ~5.5% (courier petrol, packaging, gateway fee)
   const netOperatingProfit = estimatedProfit - operationalExpense;
-  const netMarginPercent = confirmedSales > 0 ? ((netOperatingProfit / confirmedSales) * 100).toFixed(1) : '23.0';
+  const netMarginPercent = effectiveBaseRevenue > 0 ? ((netOperatingProfit / effectiveBaseRevenue) * 100).toFixed(1) : '0.0';
 
-  const averageOrderValue = paidOrders.length > 0 ? Math.round(confirmedSales / paidOrders.length) : 0;
-  const collectionRate = grossSales > 0 ? Math.round((confirmedSales / grossSales) * 100) : 100;
-  const inventoryAssetValuation = products.reduce((sum, p) => sum + p.base_price * p.stock_quantity, 0);
+  const averageOrderValue = paidOrders.length > 0
+    ? Math.round(confirmedSales / paidOrders.length)
+    : orders.length > 0
+    ? Math.round(grossSales / orders.length)
+    : 0;
 
-  // Time Series Chart Datasets
-  const chartDatasets = {
-    '7days': [
-      { label: 'Sen', fullDate: 'Senin, 24 Okt 2026', omset: 2150000, laba: 615000, hpp: 1535000, orders: 9 },
-      { label: 'Sel', fullDate: 'Selasa, 25 Okt 2026', omset: 2850000, laba: 812000, hpp: 2038000, orders: 12 },
-      { label: 'Rab', fullDate: 'Rabu, 26 Okt 2026', omset: 3450000, laba: 983000, hpp: 2467000, orders: 15 },
-      { label: 'Kam', fullDate: 'Kamis, 27 Okt 2026', omset: 3100000, laba: 883000, hpp: 2217000, orders: 13 },
-      { label: 'Jum', fullDate: 'Jumat, 28 Okt 2026', omset: 4650000, laba: 1325000, hpp: 3325000, orders: 20 },
-      { label: 'Sab', fullDate: 'Sabtu, 29 Okt 2026', omset: 5400000, laba: 1540000, hpp: 3860000, orders: 24 },
-      { label: 'Ahd', fullDate: 'Ahad, 30 Okt 2026', omset: 6120000, laba: 1744000, hpp: 4376000, orders: 27 },
-    ],
-    '30days': [
-      { label: 'Minggu 1', fullDate: '01 - 07 Okt 2026', omset: 14200000, laba: 4047000, hpp: 10153000, orders: 62 },
-      { label: 'Minggu 2', fullDate: '08 - 14 Okt 2026', omset: 16800000, laba: 4788000, hpp: 12012000, orders: 74 },
-      { label: 'Minggu 3', fullDate: '15 - 21 Okt 2026', omset: 18450000, laba: 5258000, hpp: 13192000, orders: 81 },
-      { label: 'Minggu 4', fullDate: '22 - 30 Okt 2026', omset: 27720000, laba: 7902000, hpp: 19818000, orders: 120 },
-    ],
-    'monthly': [
-      { label: 'Mei', fullDate: 'Mei 2026', omset: 39500000, laba: 11250000, hpp: 28250000, orders: 145 },
-      { label: 'Jun', fullDate: 'Juni 2026', omset: 45200000, laba: 12880000, hpp: 32320000, orders: 168 },
-      { label: 'Jul', fullDate: 'Juli 2026', omset: 53100000, laba: 15130000, hpp: 37970000, orders: 202 },
-      { label: 'Ags', fullDate: 'Agustus 2026', omset: 49800000, laba: 14190000, hpp: 35610000, orders: 189 },
-      { label: 'Sep', fullDate: 'September 2026', omset: 59700000, laba: 17010000, hpp: 42690000, orders: 226 },
-      { label: 'Okt', fullDate: 'Oktober 2026 (Berjalan)', omset: 67170000, laba: 19143000, hpp: 48027000, orders: 257 },
-    ],
-    'ytd': [
-      { label: 'Q1', fullDate: 'Kuartal 1 (Jan - Mar 2026)', omset: 108000000, laba: 30780000, hpp: 77220000, orders: 430 },
-      { label: 'Q2', fullDate: 'Kuartal 2 (Apr - Jun 2026)', omset: 129000000, laba: 36765000, hpp: 92235000, orders: 512 },
-      { label: 'Q3', fullDate: 'Kuartal 3 (Jul - Sep 2026)', omset: 162600000, laba: 46341000, hpp: 116259000, orders: 617 },
-      { label: 'Q4 (Berjalan)', fullDate: 'Kuartal 4 (Okt 2026)', omset: 67170000, laba: 19143000, hpp: 48027000, orders: 257 },
-    ],
+  const collectionRate = grossSales > 0 ? Math.round((confirmedSales / grossSales) * 100) : (orders.length === 0 ? 100 : 0);
+  const inventoryAssetValuation = products.reduce((sum, p) => sum + (Number(p.base_price) || 0) * (Number(p.stock_quantity) || 0), 0);
+
+  // Genuine Delivery & Logistics Performance Metrics
+  const deliveredOrders = orders.filter((o) => o.status === 'delivered');
+  const shippedOrders = orders.filter((o) => o.status === 'shipped');
+  const inProcessOrders = orders.filter((o) => o.status === 'processing' || o.status === 'ready_for_pickup');
+  const nonCancelledOrders = orders.filter((o) => o.status !== 'cancelled');
+  const deliverySuccessRate = nonCancelledOrders.length > 0
+    ? Math.round((deliveredOrders.length / nonCancelledOrders.length) * 100)
+    : 0;
+  const storeCourierOrders = orders.filter(
+    (o) =>
+      o.shipment?.courier_name?.toLowerCase().includes('toko') ||
+      o.shipping_method?.toLowerCase().includes('toko') ||
+      Boolean((o as any).courier_id)
+  );
+  const externalCourierOrders = orders.filter(
+    (o) =>
+      !o.shipment?.courier_name?.toLowerCase().includes('toko') &&
+      !o.shipping_method?.toLowerCase().includes('toko') &&
+      !Boolean((o as any).courier_id) &&
+      Boolean(o.shipping_method)
+  );
+
+  // Payment Breakdown Summary
+  const paymentBreakdowns = [
+    {
+      label: 'Lunas / Terverifikasi',
+      count: paidOrders.length,
+      amount: confirmedSales,
+      color: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+      badge: 'Lunas',
+    },
+    {
+      label: 'Menunggu Verifikasi',
+      count: pendingOrders.length,
+      amount: pendingSales,
+      color: 'text-amber-800 bg-amber-50 border-amber-200',
+      badge: 'Pending',
+    },
+    {
+      label: 'Piutang COD Toko',
+      count: codOrders.length,
+      amount: codReceivables,
+      color: 'text-blue-800 bg-blue-50 border-blue-200',
+      badge: 'COD',
+    },
+    {
+      label: 'Dibatalkan',
+      count: cancelledOrders.length,
+      amount: cancelledOrders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0),
+      color: 'text-neutral-700 bg-neutral-100 border-neutral-200',
+      badge: 'Batal',
+    },
+  ];
+
+  // Helper date utilities for live bucketing
+  const parseOrderDate = (isoStr?: string): Date | null => {
+    if (!isoStr) return null;
+    const d = new Date(isoStr);
+    return isNaN(d.getTime()) ? null : d;
   };
+
+  const getDayDateStr = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  // Genuine Period Revenue Comparison (vs Previous Equal Period)
+  const prevPeriodOmset = useMemo(() => {
+    const now = new Date();
+    if (period === '7days') {
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 14, 0, 0, 0);
+      const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7, 23, 59, 59);
+      return orders
+        .filter((o) => {
+          if (o.status === 'cancelled') return false;
+          const od = parseOrderDate(o.created_at);
+          return od ? od >= start && od <= end : false;
+        })
+        .reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
+    }
+    if (period === '30days') {
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 60, 0, 0, 0);
+      const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30, 23, 59, 59);
+      return orders
+        .filter((o) => {
+          if (o.status === 'cancelled') return false;
+          const od = parseOrderDate(o.created_at);
+          return od ? od >= start && od <= end : false;
+        })
+        .reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
+    }
+    if (period === 'monthly') {
+      const start = new Date(now.getFullYear(), now.getMonth() - 12, 1);
+      const end = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+      return orders
+        .filter((o) => {
+          if (o.status === 'cancelled') return false;
+          const od = parseOrderDate(o.created_at);
+          return od ? od >= start && od < end : false;
+        })
+        .reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
+    }
+    return 0;
+  }, [orders, period]);
+
+  const revenueGrowthRate = useMemo(() => {
+    if (prevPeriodOmset > 0) {
+      const diff = ((effectiveBaseRevenue - prevPeriodOmset) / prevPeriodOmset) * 100;
+      return (diff >= 0 ? '+' : '') + diff.toFixed(1) + '%';
+    }
+    return effectiveBaseRevenue > 0 ? '+100%' : '0.0%';
+  }, [effectiveBaseRevenue, prevPeriodOmset]);
+
+interface ChartPoint {
+  label: string;
+  fullDate: string;
+  omset: number;
+  laba: number;
+  hpp: number;
+  orders: number;
+}
+
+  // Live Aggregated Time Series Chart Datasets
+  const chartDatasets = useMemo(() => {
+    const now = new Date();
+
+    // 1. 7 Days Buckets (Last 7 calendar days ending today)
+    const days7: ChartPoint[] = [];
+    const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      const targetStr = getDayDateStr(d);
+      const dayOrders = orders.filter((o) => {
+        if (o.status === 'cancelled') return false;
+        const od = parseOrderDate(o.created_at);
+        return od ? getDayDateStr(od) === targetStr : false;
+      });
+      const omset = dayOrders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
+      const paidDayOrders = dayOrders.filter((o) => o.payment_status === 'verified');
+      const confirmedOmset = paidDayOrders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
+      const effectiveOmset = confirmedOmset > 0 ? confirmedOmset : omset;
+      const laba = Math.round(effectiveOmset * 0.285);
+      const hpp = effectiveOmset - laba;
+
+      days7.push({
+        label: dayNames[d.getDay()],
+        fullDate: d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' }),
+        omset,
+        laba,
+        hpp,
+        orders: dayOrders.length,
+      });
+    }
+
+    // 2. 30 Days Buckets (4 rolling weekly segments)
+    const weeks30: ChartPoint[] = [];
+    const weekRanges = [
+      { label: 'Minggu 1', startDaysAgo: 29, endDaysAgo: 22 },
+      { label: 'Minggu 2', startDaysAgo: 21, endDaysAgo: 15 },
+      { label: 'Minggu 3', startDaysAgo: 14, endDaysAgo: 8 },
+      { label: 'Minggu 4', startDaysAgo: 7, endDaysAgo: 0 },
+    ];
+    weekRanges.forEach(({ label, startDaysAgo, endDaysAgo }) => {
+      const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - startDaysAgo, 0, 0, 0, 0);
+      const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - endDaysAgo, 23, 59, 59, 999);
+
+      const weekOrders = orders.filter((o) => {
+        if (o.status === 'cancelled') return false;
+        const od = parseOrderDate(o.created_at);
+        return od ? od >= startDate && od <= endDate : false;
+      });
+      const omset = weekOrders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
+      const paidOrdersInWeek = weekOrders.filter((o) => o.payment_status === 'verified');
+      const confirmedOmset = paidOrdersInWeek.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
+      const effectiveOmset = confirmedOmset > 0 ? confirmedOmset : omset;
+      const laba = Math.round(effectiveOmset * 0.285);
+      const hpp = effectiveOmset - laba;
+
+      const fmtStart = startDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+      const fmtEnd = endDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+
+      weeks30.push({
+        label,
+        fullDate: `${fmtStart} - ${fmtEnd}`,
+        omset,
+        laba,
+        hpp,
+        orders: weekOrders.length,
+      });
+    });
+
+    // 3. Monthly Buckets (Last 6 calendar months)
+    const monthNamesId = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+    const fullMonthNamesId = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    const monthsList: ChartPoint[] = [];
+    for (let m = 5; m >= 0; m--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - m, 1);
+      const year = d.getFullYear();
+      const month = d.getMonth();
+      const label = monthNamesId[month];
+      const fullDate = `${fullMonthNamesId[month]} ${year}${m === 0 ? ' (Berjalan)' : ''}`;
+
+      const monthOrders = orders.filter((o) => {
+        if (o.status === 'cancelled') return false;
+        const od = parseOrderDate(o.created_at);
+        return od ? od.getFullYear() === year && od.getMonth() === month : false;
+      });
+      const omset = monthOrders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
+      const paidOrdersInMonth = monthOrders.filter((o) => o.payment_status === 'verified');
+      const confirmedOmset = paidOrdersInMonth.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
+      const effectiveOmset = confirmedOmset > 0 ? confirmedOmset : omset;
+      const laba = Math.round(effectiveOmset * 0.285);
+      const hpp = effectiveOmset - laba;
+
+      monthsList.push({
+        label,
+        fullDate,
+        omset,
+        laba,
+        hpp,
+        orders: monthOrders.length,
+      });
+    }
+
+    // 4. Quarterly (YTD) Buckets of current year
+    const quartersList: ChartPoint[] = [];
+    const currentYear = now.getFullYear();
+    const quartersDef = [
+      { q: 'Q1', months: [0, 1, 2], name: `Kuartal 1 (Jan - Mar ${currentYear})` },
+      { q: 'Q2', months: [3, 4, 5], name: `Kuartal 2 (Apr - Jun ${currentYear})` },
+      { q: 'Q3', months: [6, 7, 8], name: `Kuartal 3 (Jul - Sep ${currentYear})` },
+      { q: 'Q4', months: [9, 10, 11], name: `Kuartal 4 (Okt - Des ${currentYear})` },
+    ];
+    quartersDef.forEach((def) => {
+      const qOrders = orders.filter((o) => {
+        if (o.status === 'cancelled') return false;
+        const od = parseOrderDate(o.created_at);
+        return od ? od.getFullYear() === currentYear && def.months.includes(od.getMonth()) : false;
+      });
+      const omset = qOrders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
+      const paidOrdersInQ = qOrders.filter((o) => o.payment_status === 'verified');
+      const confirmedOmset = paidOrdersInQ.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
+      const effectiveOmset = confirmedOmset > 0 ? confirmedOmset : omset;
+      const laba = Math.round(effectiveOmset * 0.285);
+      const hpp = effectiveOmset - laba;
+
+      quartersList.push({
+        label: def.q,
+        fullDate: def.name,
+        omset,
+        laba,
+        hpp,
+        orders: qOrders.length,
+      });
+    });
+
+    return {
+      '7days': days7,
+      '30days': weeks30,
+      monthly: monthsList,
+      ytd: quartersList,
+    };
+  }, [orders]);
 
   const currentDataset = chartDatasets[period] || chartDatasets['7days'];
   const maxDatasetOmset = Math.max(...currentDataset.map((d) => d.omset), 1000000);
   const totalPeriodOmset = currentDataset.reduce((sum, d) => sum + d.omset, 0);
   const totalPeriodLaba = currentDataset.reduce((sum, d) => sum + d.laba, 0);
 
-  // Category composition data
-  const categoryBreakdown = [
-    {
-      name: 'Mushaf Al-Qur\'an & Kitab Klasik',
-      sharePercent: 46,
-      omset: confirmedSales * 0.46,
-      cogs: (confirmedSales * 0.46) * 0.65,
-      profit: (confirmedSales * 0.46) * 0.35,
-      marginRate: '35%',
-      colorClass: 'bg-emerald-600',
-      badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    },
-    {
-      name: 'Buku Pelajaran, Umum & Novel',
-      sharePercent: 32,
-      omset: confirmedSales * 0.32,
-      cogs: (confirmedSales * 0.32) * 0.72,
-      profit: (confirmedSales * 0.32) * 0.28,
-      marginRate: '28%',
-      colorClass: 'bg-primary',
-      badgeBg: 'bg-blue-50 text-blue-700 border-blue-200',
-    },
-    {
-      name: 'Alat Tulis Kantor & Kertas (ATK)',
-      sharePercent: 22,
-      omset: confirmedSales * 0.22,
-      cogs: (confirmedSales * 0.22) * 0.76,
-      profit: (confirmedSales * 0.22) * 0.24,
-      marginRate: '24%',
-      colorClass: 'bg-amber-500',
-      badgeBg: 'bg-amber-50 text-amber-700 border-amber-200',
-    },
-  ];
+  // Dynamic Category Composition calculated from real orders and catalog
+  const categoryBreakdown = useMemo(() => {
+    const categorySalesMap: Record<string, { id: string; name: string; omset: number; count: number }> = {};
+    categories.forEach((c) => {
+      categorySalesMap[c.id] = { id: c.id, name: c.name, omset: 0, count: 0 };
+    });
 
-  // Top profit driver products
-  const topProfitProducts = [
-    {
-      id: 'prod-p1',
-      name: 'Mushaf Al-Qur\'an Al-Karim Cordova Terjemah A5',
-      sku: 'KIT-COR-A5-GRN',
-      category: 'Al-Qur\'an & Kitab',
-      soldQty: 48,
-      revenue: 4560000,
-      marginPercent: 35,
-      netProfit: 1596000,
-      badge: 'Margin Tertinggi',
-    },
-    {
-      id: 'prod-p2',
-      name: 'Atomic Habits: Perubahan Kecil Hasil Luar Biasa',
-      sku: 'BK-AH-001',
-      category: 'Buku Best Seller',
-      soldQty: 34,
-      revenue: 3026000,
-      marginPercent: 30,
-      netProfit: 907800,
-      badge: 'Fast Moving',
-    },
-    {
-      id: 'prod-p3',
-      name: 'Joyko Gel Pen Shokyo Needle Point (Box 12 Pcs)',
-      sku: 'ATK-JYK-265-BLK',
-      category: 'Alat Tulis Kantor',
-      soldQty: 56,
-      revenue: 2016000,
-      marginPercent: 28,
-      netProfit: 564480,
-      badge: 'Volume Terbanyak',
-    },
-    {
-      id: 'prod-p4',
-      name: 'Kitab Safinatun Naja Makna Gandul Pesantren',
-      sku: 'KTB-SAF-001',
-      category: 'Kitab Kuning',
-      soldQty: 25,
-      revenue: 1125000,
-      marginPercent: 38,
-      netProfit: 427500,
-      badge: 'Margin Khusus',
-    },
-    {
-      id: 'prod-p5',
-      name: 'Buku Tulis Kiky Boxy 42 Lembar (Pack 10 Buku)',
-      sku: 'ATK-KIKY-BX-10',
-      category: 'Alat Tulis Kantor',
-      soldQty: 30,
-      revenue: 1050000,
-      marginPercent: 25,
-      netProfit: 262500,
-      badge: 'Konsisten',
-    },
-  ];
+    const ordersForCat = confirmedSales > 0 ? paidOrders : orders.filter((o) => o.status !== 'cancelled');
+    const baseSalesForCat = confirmedSales > 0 ? confirmedSales : grossSales;
+
+    ordersForCat.forEach((o) => {
+      o.items?.forEach((it) => {
+        const prod = products.find((p) => p.id === it.product_id || p.name === it.product_name);
+        const catId = prod?.category_id || (categories.length > 0 ? categories[0].id : 'cat-general');
+        if (!categorySalesMap[catId]) {
+          const catObj = categories.find((c) => c.id === catId);
+          categorySalesMap[catId] = {
+            id: catId,
+            name: catObj?.name || 'Katalog Umum',
+            omset: 0,
+            count: 0,
+          };
+        }
+        const itemSubtotal = Number(it.subtotal) || (Number(it.price) || 0) * (Number(it.quantity) || 1);
+        categorySalesMap[catId].omset += itemSubtotal;
+        categorySalesMap[catId].count += Number(it.quantity) || 1;
+      });
+    });
+
+    const categoryColors = [
+      { colorClass: 'bg-emerald-600', badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+      { colorClass: 'bg-primary', badgeBg: 'bg-blue-50 text-blue-700 border-blue-200' },
+      { colorClass: 'bg-amber-500', badgeBg: 'bg-amber-50 text-amber-700 border-amber-200' },
+      { colorClass: 'bg-purple-600', badgeBg: 'bg-purple-50 text-purple-700 border-purple-200' },
+      { colorClass: 'bg-teal-600', badgeBg: 'bg-teal-50 text-teal-700 border-teal-200' },
+    ];
+
+    const computed = Object.values(categorySalesMap)
+      .filter((c) => (baseSalesForCat > 0 ? c.omset > 0 : true))
+      .slice(0, 5)
+      .map((cat, idx) => {
+        const sharePercent = baseSalesForCat > 0 ? Number(((cat.omset / baseSalesForCat) * 100).toFixed(1)) : 0;
+        const style = categoryColors[idx % categoryColors.length];
+        return {
+          name: cat.name,
+          sharePercent,
+          omset: cat.omset,
+          cogs: Math.round(cat.omset * 0.715),
+          profit: Math.round(cat.omset * 0.285),
+          marginRate: '28.5%',
+          colorClass: style.colorClass,
+          badgeBg: style.badgeBg,
+        };
+      });
+
+    return computed.length > 0
+      ? computed
+      : [
+          {
+            name: 'Belum Ada Transaksi Kategori',
+            sharePercent: 0,
+            omset: 0,
+            cogs: 0,
+            profit: 0,
+            marginRate: '0%',
+            colorClass: 'bg-neutral-300',
+            badgeBg: 'bg-neutral-100 text-neutral-600 border-neutral-200',
+          },
+        ];
+  }, [orders, products, categories, confirmedSales, grossSales, paidOrders]);
+
+  // Dynamic Top Profit Driver Products calculated from real orders and catalog
+  const topProfitProducts = useMemo(() => {
+    const productProfitMap: Record<
+      string,
+      {
+        id: string;
+        name: string;
+        sku: string;
+        category: string;
+        soldQty: number;
+        revenue: number;
+        marginPercent: number;
+        netProfit: number;
+        badge: string;
+      }
+    > = {};
+
+    const ordersForProd = confirmedSales > 0 ? paidOrders : orders.filter((o) => o.status !== 'cancelled');
+
+    ordersForProd.forEach((o) => {
+      o.items?.forEach((it) => {
+        const prod = products.find((p) => p.id === it.product_id || p.name === it.product_name);
+        const prodKey = it.product_id || it.product_name;
+        const cat = categories.find((c) => c.id === prod?.category_id);
+        const itemSubtotal = Number(it.subtotal) || (Number(it.price) || 0) * (Number(it.quantity) || 1);
+        const itemQty = Number(it.quantity) || 1;
+
+        if (!productProfitMap[prodKey]) {
+          productProfitMap[prodKey] = {
+            id: prodKey,
+            name: it.product_name || prod?.name || 'Produk USKI',
+            sku: prod?.sku_master || 'SKU-001',
+            category: cat?.name || 'Katalog Toko',
+            soldQty: 0,
+            revenue: 0,
+            marginPercent: 28.5,
+            netProfit: 0,
+            badge: 'Fast Moving',
+          };
+        }
+        productProfitMap[prodKey].soldQty += itemQty;
+        productProfitMap[prodKey].revenue += itemSubtotal;
+        productProfitMap[prodKey].netProfit += Math.round(itemSubtotal * 0.285);
+      });
+    });
+
+    const sortedTop = Object.values(productProfitMap)
+      .sort((a, b) => b.netProfit - a.netProfit)
+      .slice(0, 5)
+      .map((p, idx) => ({
+        ...p,
+        badge: idx === 0 ? 'Margin Tertinggi' : idx === 1 ? 'Fast Moving' : idx === 2 ? 'Volume Terbanyak' : 'Konsisten',
+      }));
+
+    if (sortedTop.length > 0) return sortedTop;
+
+    return products.slice(0, 5).map((p, idx) => {
+      const cat = categories.find((c) => c.id === p.category_id);
+      return {
+        id: p.id,
+        name: p.name,
+        sku: p.sku_master,
+        category: cat?.name || 'Katalog Toko',
+        soldQty: 0,
+        revenue: 0,
+        marginPercent: 28.5,
+        netProfit: 0,
+        badge: idx === 0 ? 'Katalog Utama' : 'Siap Terjual',
+      };
+    });
+  }, [orders, products, categories, confirmedSales, paidOrders]);
 
   // Export CSV Handler
   const handleExportCSV = () => {
@@ -371,9 +678,13 @@ export const AdminReports: React.FC = () => {
             </div>
           </div>
           <div className="pt-3 mt-3 border-t border-hairline/80 flex items-center justify-between text-[11px]">
-            <span className="text-emerald-700 font-bold inline-flex items-center gap-1">
-              <TrendingUp className="w-3.5 h-3.5" />
-              +18.4% vs bln lalu
+            <span className={`${effectiveBaseRevenue >= prevPeriodOmset ? 'text-emerald-700' : 'text-rose-600'} font-bold inline-flex items-center gap-1`}>
+              {effectiveBaseRevenue >= prevPeriodOmset ? (
+                <TrendingUp className="w-3.5 h-3.5" />
+              ) : (
+                <TrendingDown className="w-3.5 h-3.5" />
+              )}
+              {revenueGrowthRate} vs periode lalu
             </span>
             <span className="text-body font-mono font-medium">
               {paidOrders.length} Pesanan Lunas
@@ -450,6 +761,115 @@ export const AdminReports: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* 2.5 REAL-TIME PAYMENT STATUS BREAKDOWN & ARUS KAS                         */}
+      {/* ========================================================================= */}
+      <div className="bg-white border border-hairline rounded-2xl p-4 sm:p-5 shadow-xs space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-hairline pb-2.5">
+          <div className="flex items-center gap-2">
+            <CreditCard className="w-4 h-4 text-primary" />
+            <h3 className="text-xs sm:text-sm font-bold text-[#101519]">
+              Distribusi Status Pembayaran &amp; Arus Transaksi Riil
+            </h3>
+          </div>
+          <span className="text-[11px] text-body">
+            Total Transaksi: <strong className="text-[#101519] font-mono">{orders.length}</strong> pesanan (Rata-rata:{' '}
+            <strong className="text-primary font-mono">{formatRupiah(averageOrderValue)}</strong>/order)
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {paymentBreakdowns.map((pb) => (
+            <div
+              key={pb.badge}
+              className={`p-3 rounded-xl border flex flex-col justify-between ${pb.color}`}
+            >
+              <div className="flex items-center justify-between text-[11px] font-bold">
+                <span>{pb.label}</span>
+                <span className="px-1.5 py-0.5 rounded text-[10px] uppercase font-black bg-white/60">
+                  {pb.count} Transaksi
+                </span>
+              </div>
+              <div className="mt-2 text-base sm:text-lg font-black font-mono tracking-tight">
+                {formatRupiah(pb.amount)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 2.6 REAL-TIME DELIVERY & LOGISTICS PERFORMANCE                            */}
+      {/* ========================================================================= */}
+      <div className="bg-white border border-hairline rounded-2xl p-4 sm:p-5 shadow-xs space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-hairline pb-2.5">
+          <div className="flex items-center gap-2">
+            <Package className="w-4 h-4 text-primary" />
+            <h3 className="text-xs sm:text-sm font-bold text-[#101519]">
+              Performa Pengiriman &amp; Logistik Pesanan Riil
+            </h3>
+          </div>
+          <span className="text-[11px] text-body">
+            Tingkat Keberhasilan Serah Terima: <strong className="text-emerald-700 font-mono font-bold">{deliverySuccessRate}%</strong>
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="p-3 rounded-xl border bg-emerald-50 text-emerald-800 border-emerald-200 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-[11px] font-bold">
+              <span>Terkirim (Delivered)</span>
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+            </div>
+            <div className="mt-2 text-base sm:text-lg font-black font-mono tracking-tight">
+              {deliveredOrders.length} Pesanan
+            </div>
+          </div>
+
+          <div className="p-3 rounded-xl border bg-blue-50 text-blue-800 border-blue-200 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-[11px] font-bold">
+              <span>Dalam Pengantaran</span>
+              <Clock className="w-3.5 h-3.5 text-blue-600" />
+            </div>
+            <div className="mt-2 text-base sm:text-lg font-black font-mono tracking-tight">
+              {shippedOrders.length} Pesanan
+            </div>
+          </div>
+
+          <div className="p-3 rounded-xl border bg-amber-50 text-amber-800 border-amber-200 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-[11px] font-bold">
+              <span>Proses Kemas / Siap</span>
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+            </div>
+            <div className="mt-2 text-base sm:text-lg font-black font-mono tracking-tight">
+              {inProcessOrders.length} Pesanan
+            </div>
+          </div>
+
+          <div className="p-3 rounded-xl border bg-purple-50 text-purple-800 border-purple-200 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-[11px] font-bold">
+              <span>Kurir Toko vs Ekspedisi</span>
+              <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
+            </div>
+            <div className="mt-2 text-xs font-bold font-mono tracking-tight">
+              {storeCourierOrders.length} Toko • {externalCourierOrders.length} Eksternal
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Empty Database State Notice */}
+      {orders.length === 0 && (
+        <div className="p-4 sm:p-5 bg-blue-50/80 border border-blue-200/80 rounded-2xl flex items-center gap-3.5 text-xs text-primary shadow-xs">
+          <Sparkles className="w-5 h-5 shrink-0" />
+          <div className="space-y-0.5">
+            <p className="font-extrabold text-sm">Database Pesanan Bersih (Live Supabase)</p>
+            <p className="text-body text-[11px]">
+              Belum ada pesanan yang tercatat di database. Seluruh grafik batang, kurva tren penjualan, dan pos laba rugi di bawah menampilkan baseline nol riil tanpa manipulasi dummy mock data.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* 3. CHARTS ENGINE: INTERACTIVE VISUALIZER (DUAL BAR & SMOOTH AREA MODES)    */}
@@ -568,8 +988,8 @@ export const AdminReports: React.FC = () => {
 
               {/* Data Columns */}
               {currentDataset.map((d, idx) => {
-                const omsetPct = Math.max(10, Math.round((d.omset / maxDatasetOmset) * 88));
-                const labaPct = Math.max(6, Math.round((d.laba / maxDatasetOmset) * 88));
+                const omsetPct = d.omset > 0 ? Math.max(4, Math.round((d.omset / maxDatasetOmset) * 88)) : 0;
+                const labaPct = d.laba > 0 ? Math.max(2, Math.round((d.laba / maxDatasetOmset) * 88)) : 0;
                 const isHovered = activeHoverIdx === idx;
 
                 return (
@@ -772,7 +1192,7 @@ export const AdminReports: React.FC = () => {
             </p>
           </div>
           <span className="px-3 py-1 bg-neutral-2 text-[#101519] font-mono text-xs font-bold rounded-lg border border-hairline self-start sm:self-auto">
-            Periode: Oktober 2026
+            Periode: {period === '7days' ? '7 Hari Terakhir' : period === '30days' ? '30 Hari Terakhir' : period === 'monthly' ? '6 Bulan Terakhir' : 'Tahun Berjalan (Kuartal)'}
           </span>
         </div>
 
@@ -793,43 +1213,31 @@ export const AdminReports: React.FC = () => {
                   I. Pendapatan Usaha (Revenue)
                 </td>
               </tr>
-              <tr className="hover:bg-neutral-2/10">
-                <td className="py-2.5 px-5 pl-8 text-[#101519]">
-                  Penjualan Al-Qur&apos;an &amp; Kitab Klasik Pesantren
-                </td>
-                <td className="py-2.5 px-4 text-center font-mono">46.0%</td>
-                <td className="py-2.5 px-5 text-right font-mono font-medium">
-                  {formatRupiah(confirmedSales * 0.46)}
-                </td>
-                <td className="py-2.5 px-5 text-right text-emerald-700 font-bold">Lunas / Masuk Kas</td>
-              </tr>
-              <tr className="hover:bg-neutral-2/10">
-                <td className="py-2.5 px-5 pl-8 text-[#101519]">
-                  Penjualan Buku Bacaan Islami, Novel &amp; Pelajaran
-                </td>
-                <td className="py-2.5 px-4 text-center font-mono">32.0%</td>
-                <td className="py-2.5 px-5 text-right font-mono font-medium">
-                  {formatRupiah(confirmedSales * 0.32)}
-                </td>
-                <td className="py-2.5 px-5 text-right text-emerald-700 font-bold">Lunas / Masuk Kas</td>
-              </tr>
-              <tr className="hover:bg-neutral-2/10">
-                <td className="py-2.5 px-5 pl-8 text-[#101519]">
-                  Penjualan Alat Tulis Kantor &amp; Perlengkapan Kertas
-                </td>
-                <td className="py-2.5 px-4 text-center font-mono">22.0%</td>
-                <td className="py-2.5 px-5 text-right font-mono font-medium">
-                  {formatRupiah(confirmedSales * 0.22)}
-                </td>
-                <td className="py-2.5 px-5 text-right text-emerald-700 font-bold">Lunas / Masuk Kas</td>
-              </tr>
+              {categoryBreakdown.map((cat, idx) => (
+                <tr key={idx} className="hover:bg-neutral-2/10">
+                  <td className="py-2.5 px-5 pl-8 text-[#101519]">
+                    Penjualan {cat.name}
+                  </td>
+                  <td className="py-2.5 px-4 text-center font-mono">
+                    {cat.sharePercent.toFixed(1)}%
+                  </td>
+                  <td className="py-2.5 px-5 text-right font-mono font-medium">
+                    {formatRupiah(cat.omset)}
+                  </td>
+                  <td className="py-2.5 px-5 text-right text-emerald-700 font-bold">
+                    {cat.omset > 0 ? 'Lunas / Masuk Kas' : 'Belum Ada Transaksi'}
+                  </td>
+                </tr>
+              ))}
               <tr className="bg-primary/5 font-extrabold text-[#101519]">
                 <td className="py-3 px-5 pl-8">Total Pendapatan Bruto Sah</td>
                 <td className="py-3 px-4 text-center font-mono">100.0%</td>
                 <td className="py-3 px-5 text-right font-mono text-primary text-sm">
-                  {formatRupiah(confirmedSales)}
+                  {formatRupiah(effectiveBaseRevenue)}
                 </td>
-                <td className="py-3 px-5 text-right text-primary font-bold">Sah Diverifikasi</td>
+                <td className="py-3 px-5 text-right text-primary font-bold">
+                  {confirmedSales > 0 ? 'Sah Diverifikasi' : (grossSales > 0 ? 'Tercatat di Sistem' : 'Belum Ada Penjualan')}
+                </td>
               </tr>
 
               {/* II. HARGA POKOK */}
@@ -949,7 +1357,7 @@ export const AdminReports: React.FC = () => {
                 <Layers className="w-4 h-4 text-primary" />
                 <span>Proporsi Penjualan per Kategori Produk</span>
               </h3>
-              <span className="text-xs text-body font-medium">3 Klaster Toko</span>
+              <span className="text-xs text-body font-medium">{categoryBreakdown.length} Klaster Kategori</span>
             </div>
 
             {/* Segmented Progress Bar */}
@@ -964,10 +1372,12 @@ export const AdminReports: React.FC = () => {
                   />
                 ))}
               </div>
-              <div className="flex justify-between text-[10px] text-body">
-                <span>Al-Qur&apos;an &amp; Kitab (46%)</span>
-                <span>Buku Umum (32%)</span>
-                <span>ATK (22%)</span>
+              <div className="flex flex-wrap justify-between gap-1 text-[10px] text-body">
+                {categoryBreakdown.map((cat, i) => (
+                  <span key={i} className="truncate max-w-[140px]">
+                    {cat.name} ({cat.sharePercent}%)
+                  </span>
+                ))}
               </div>
             </div>
 
@@ -1003,7 +1413,7 @@ export const AdminReports: React.FC = () => {
           <div className="p-3 bg-blue-50/70 border border-blue-200/60 rounded-xl text-xs text-primary flex items-center gap-2.5 mt-2">
             <Sparkles className="w-4 h-4 text-primary shrink-0" />
             <span>
-              <strong>Insight Kategori:</strong> Kategori Kitab &amp; Al-Qur&apos;an memberikan margin laba paling tebal (35%) dan memiliki tingkat retur terendah.
+              <strong>Insight Kategori:</strong> {categoryBreakdown[0]?.omset > 0 ? `Kategori ${categoryBreakdown[0].name} memberikan kontribusi omset tertinggi (${categoryBreakdown[0].sharePercent}%) dengan margin laba yang sehat.` : 'Belum ada transaksi kategori tercatat pada periode ini.'}
             </span>
           </div>
         </div>
@@ -1071,7 +1481,9 @@ export const AdminReports: React.FC = () => {
             <h4 className="font-bold text-xs">Peluang Alokasi Restock</h4>
           </div>
           <p className="text-xs text-body leading-relaxed">
-            Kitab kuning pesantren dan Mushaf Al-Qur&apos;an menyumbang 46% omset dengan margin tertinggi (35%). Disarankan menambah kuota restock 20% menjelang awal bulan kalender Hijriah.
+            {categoryBreakdown[0]?.omset > 0
+              ? `${categoryBreakdown[0].name} menyumbang ${categoryBreakdown[0].sharePercent}% omset toko (${formatRupiah(categoryBreakdown[0].omset)}). Direkomendasikan menjaga ketersediaan buffer stok minimum 20% di gudang.`
+              : 'Pantau ketersediaan stok produk terlaris secara berkala untuk mengantisipasi lonjakan permintaan pelanggan toko.'}
           </p>
         </div>
 
@@ -1093,7 +1505,9 @@ export const AdminReports: React.FC = () => {
             <h4 className="font-bold text-xs">Efisiensi Armada Kurir Toko</h4>
           </div>
           <p className="text-xs text-body leading-relaxed">
-            Penggunaan armada kurir toko sendiri memotong beban ongkos kirim pihak ketiga hingga 65% dan mempercepat serah terima bukti tanda tangan langsung di hari yang sama.
+            {orders.length > 0
+              ? `Tingkat serah terima paket mencapai ${deliverySuccessRate}% dengan ${storeCourierOrders.length} pesanan ditangani kurir toko dan ${externalCourierOrders.length} pesanan via ekspedisi rekanan.`
+              : 'Armada kurir toko USKI siap dikerahkan untuk pengantaran langsung dengan serah terima tanda tangan penerima real-time.'}
           </p>
         </div>
       </div>
@@ -1102,20 +1516,20 @@ export const AdminReports: React.FC = () => {
       {/* 7. MODAL PRATINJAU CETAK REKAP RESMI (PRINTABLE OFFICIAL REPORT)          */}
       {/* ========================================================================= */}
       {showPrintModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-8 space-y-6 shadow-2xl my-8 border border-hairline animate-in fade-in zoom-in-95">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-xl sm:rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 space-y-5 shadow-2xl border border-hairline animate-in fade-in zoom-in-95 touch-scroll">
             {/* Modal Controls */}
-            <div className="flex items-center justify-between border-b border-hairline pb-4 print:hidden">
+            <div className="flex items-center justify-between border-b border-hairline pb-3.5 print:hidden">
               <div className="flex items-center gap-2">
                 <Printer className="w-5 h-5 text-primary" />
-                <h3 className="text-base font-extrabold text-[#101519]">
+                <h3 className="text-sm sm:text-base font-extrabold text-[#101519]">
                   Pratinjau Dokumen Rekap Keuangan Resmi
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowPrintModal(false)}
-                className="p-1.5 rounded-lg text-body hover:bg-neutral-2 hover:text-[#101519] transition-colors"
+                className="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded-xl text-body hover:bg-neutral-2 hover:text-[#101519] transition-colors touch-manipulation"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1143,7 +1557,7 @@ export const AdminReports: React.FC = () => {
                     LAPORAN LABA RUGI OPERASIONAL
                   </p>
                   <p className="text-body">
-                    Periode: {period === '7days' ? '7 Hari Terakhir' : 'Oktober 2026'}
+                    Periode: {period === '7days' ? '7 Hari Terakhir' : period === '30days' ? '30 Hari Terakhir' : period === 'monthly' ? '6 Bulan Terakhir' : 'Tahun Berjalan (Kuartal)'}
                   </p>
                 </div>
                 <div className="text-right text-body">
