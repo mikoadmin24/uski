@@ -28,6 +28,7 @@ import {
 import { useProductStore } from '@/store/productStore';
 import { useCategoryStore } from '@/store/categoryStore';
 import { useAuthStore } from '@/store/authStore';
+import { uploadFileToStorage } from '@/lib/supabase';
 import { formatRupiah, formatDate } from '@/lib/utils';
 import { Product, InventoryMovement } from '@/types';
 
@@ -92,6 +93,8 @@ export const AdminProducts: React.FC = () => {
   const [imageUploadType, setImageUploadType] = useState<'upload' | 'url'>('upload');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState('');
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Handle URL tab sync
   useEffect(() => {
@@ -115,6 +118,7 @@ export const AdminProducts: React.FC = () => {
     setDescription('');
     setImageUrl('');
     setImagePreview(null);
+    setSelectedImageFile(null);
     setImageUploadType('upload');
     setEditingProduct(null);
   };
@@ -247,6 +251,7 @@ export const AdminProducts: React.FC = () => {
         alert('Ukuran file maksimal 5MB.');
         return;
       }
+      setSelectedImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -282,15 +287,27 @@ export const AdminProducts: React.FC = () => {
     return matchQuery && matchCat && matchTab;
   });
 
-  const handleCreateProduct = (e: React.FormEvent) => {
+  const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !skuMaster.trim() || !basePrice) return;
 
-    const finalImage =
+    setIsUploading(true);
+    let finalImage =
       (imageUploadType === 'upload' ? imagePreview : imageUrl.trim()) ||
       imagePreview ||
       imageUrl.trim() ||
       'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=800';
+
+    if (imageUploadType === 'upload' && selectedImageFile) {
+      try {
+        const cloudUrl = await uploadFileToStorage(selectedImageFile, 'product-images');
+        if (cloudUrl) {
+          finalImage = cloudUrl;
+        }
+      } catch (err) {
+        console.warn('Upload to Supabase Storage failed, using local preview fallback', err);
+      }
+    }
 
     const slug = name
       .toLowerCase()
@@ -319,18 +336,31 @@ export const AdminProducts: React.FC = () => {
       images: [finalImage],
     });
 
+    setIsUploading(false);
     handleCloseAddModal();
   };
 
-  const handleUpdateProductSubmit = (e: React.FormEvent) => {
+  const handleUpdateProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProduct || !name.trim() || !skuMaster.trim() || !basePrice) return;
 
-    const finalImage =
+    setIsUploading(true);
+    let finalImage =
       (imageUploadType === 'upload' ? imagePreview : imageUrl.trim()) ||
       imagePreview ||
       imageUrl.trim() ||
       editingProduct.images[0];
+
+    if (imageUploadType === 'upload' && selectedImageFile) {
+      try {
+        const cloudUrl = await uploadFileToStorage(selectedImageFile, 'product-images');
+        if (cloudUrl) {
+          finalImage = cloudUrl;
+        }
+      } catch (err) {
+        console.warn('Upload to Supabase Storage failed, using local preview fallback', err);
+      }
+    }
 
     updateProduct(editingProduct.id, {
       name: name.trim(),
@@ -347,6 +377,7 @@ export const AdminProducts: React.FC = () => {
       images: [finalImage],
     });
 
+    setIsUploading(false);
     handleCloseEditModal();
   };
 
@@ -1285,9 +1316,11 @@ export const AdminProducts: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-primary text-white font-bold rounded-xl hover:bg-primary-dark transition-all shadow-sm"
+                  disabled={isUploading}
+                  className="px-6 py-2.5 bg-primary text-white font-bold rounded-xl hover:bg-primary-dark transition-all shadow-sm disabled:opacity-50 flex items-center gap-2"
                 >
-                  Simpan Produk
+                  {isUploading && <RotateCw className="w-4 h-4 animate-spin" />}
+                  <span>{isUploading ? 'Mengunggah & Menyimpan...' : 'Simpan Produk'}</span>
                 </button>
               </div>
             </form>
@@ -1492,9 +1525,11 @@ export const AdminProducts: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-primary text-white font-bold rounded-xl hover:bg-primary-dark transition-all"
+                  disabled={isUploading}
+                  className="px-6 py-2.5 bg-primary text-white font-bold rounded-xl hover:bg-primary-dark transition-all disabled:opacity-50 flex items-center gap-2"
                 >
-                  Simpan Perubahan
+                  {isUploading && <RotateCw className="w-4 h-4 animate-spin" />}
+                  <span>{isUploading ? 'Menyimpan Perubahan...' : 'Simpan Perubahan'}</span>
                 </button>
               </div>
             </form>

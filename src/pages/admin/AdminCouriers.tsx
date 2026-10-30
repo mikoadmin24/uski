@@ -32,7 +32,6 @@ export const AdminCouriers: React.FC = () => {
     activeCourierId,
     setActiveCourierId,
     updateLocation,
-    advanceSimulation,
     completeDelivery,
     toggleCourierStatus,
     setGpsActive,
@@ -48,19 +47,6 @@ export const AdminCouriers: React.FC = () => {
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [realGpsActive, setRealGpsActive] = useState(false);
   const [realGpsMsg, setRealGpsMsg] = useState<string | null>(null);
-
-  // Auto-pulse simulation for demo mode (optional toggle)
-  const [isLiveSimulating, setIsLiveSimulating] = useState(false);
-
-  useEffect(() => {
-    if (!isLiveSimulating) return;
-    const interval = setInterval(() => {
-      if (activeCourier && activeCourier.active_delivery && activeCourier.active_delivery.progress_pct < 100) {
-        advanceSimulation(activeCourier.id);
-      }
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [isLiveSimulating, activeCourier?.id, activeCourier?.active_delivery?.progress_pct]);
 
   // Handle Real Device HTML5 Geolocation
   const handleActivateRealGps = () => {
@@ -247,159 +233,131 @@ export const AdminCouriers: React.FC = () => {
           </div>
         </div>
 
-        {/* Visual Map Canvas Grid */}
-        <div className="relative bg-[#1A202C] text-white p-6 sm:p-8 min-h-[360px] flex flex-col justify-between overflow-hidden">
-          {/* Decorative Map Street Grid */}
-          <div className="absolute inset-0 opacity-15 pointer-events-none">
-            <svg width="100%" height="100%">
-              <defs>
-                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#FFFFFF" strokeWidth="1" />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#grid)" />
-              {/* Simulated curved road vectors */}
-              <path
-                d="M 50 300 Q 200 150 450 200 T 800 100"
-                fill="none"
-                stroke="#63B3ED"
-                strokeWidth="4"
-                strokeDasharray="8 8"
-              />
-              <path
-                d="M 100 80 Q 300 250 600 220 T 900 320"
-                fill="none"
-                stroke="#4A5568"
-                strokeWidth="8"
-              />
-            </svg>
-          </div>
+        {/* Real Live Map & Hardware Telemetry Canvas */}
+        <div className="p-4 sm:p-6 space-y-4">
+          {/* Real Interactive Satellite & Street Map Viewer */}
+          <div className="relative rounded-3xl overflow-hidden border border-hairline shadow-lg h-80 sm:h-[420px] bg-[#1A202C]">
+            <iframe
+              title={`Live GPS Map - ${activeCourier.name}`}
+              src={`https://maps.google.com/maps?q=${activeCourier.current_location.lat},${activeCourier.current_location.lng}&z=16&output=embed`}
+              className="w-full h-full border-0"
+              loading="lazy"
+            />
 
-          {/* Map Top Status Pill */}
-          <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2 bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10">
-              <Compass className="w-4 h-4 text-accent-2 animate-spin-slow" />
-              <span className="font-mono text-[11px] text-white/90">
-                GPS: {activeCourier.current_location.lat.toFixed(5)},{' '}
-                {activeCourier.current_location.lng.toFixed(5)}
+            {/* Realtime Floating Badge on Map */}
+            <div className="absolute top-3 left-3 bg-[#101519]/90 backdrop-blur-md text-white px-3.5 py-2 rounded-2xl border border-white/20 text-xs shadow-xl flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-green-400 animate-ping" />
+              <span className="font-extrabold text-white">Satelit GPS Live</span>
+              <span className="text-white/40">|</span>
+              <span className="font-mono text-[11px] text-green-300 font-bold">
+                {activeCourier.current_location.lat.toFixed(5)}, {activeCourier.current_location.lng.toFixed(5)}
               </span>
-              <span className="text-white/40">•</span>
-              <span className="text-green-400 font-bold">±{activeCourier.current_location.accuracy_meters}m</span>
             </div>
 
-            <div className="flex items-center gap-3 bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 text-[11px]">
-              <span className="flex items-center gap-1 text-white/80">
-                <Battery className="w-3.5 h-3.5 text-green-400" />
+            <div className="absolute top-3 right-3 hidden sm:flex items-center gap-3 bg-[#101519]/90 backdrop-blur-md text-white px-3.5 py-2 rounded-2xl border border-white/20 text-xs shadow-xl">
+              <span className="flex items-center gap-1.5 text-green-300 font-bold">
+                <Battery className="w-4 h-4" />
                 {activeCourier.current_location.battery_level}%
               </span>
-              <span className="flex items-center gap-1 text-accent-1 font-bold">
-                <Wifi className="w-3.5 h-3.5" />
-                Online
+              <span className="text-white/40">|</span>
+              <span className="text-white/90 font-semibold">Akurasi: ±{activeCourier.current_location.accuracy_meters}m</span>
+            </div>
+
+            {/* Bottom floating destination pill if active delivery */}
+            {activeCourier.active_delivery && (
+              <div className="absolute bottom-3 inset-x-3 sm:inset-x-auto sm:left-3 bg-[#101519]/90 backdrop-blur-md text-white p-3 rounded-2xl border border-white/20 text-xs shadow-xl max-w-md">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-red-400 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-extrabold truncate text-white">
+                      Order #{activeCourier.active_delivery.order_number} • {activeCourier.active_delivery.recipient_name}
+                    </p>
+                    <p className="text-[11px] text-white/70 truncate">
+                      {activeCourier.active_delivery.destination_address}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Real Telemetry Metric Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div className="p-3.5 bg-neutral-2/50 rounded-2xl border border-hairline">
+              <span className="text-body text-[10px] block font-bold uppercase tracking-wider">
+                Kecepatan Bergerak
               </span>
-              <span className="text-white/50">Diperbarui: {activeCourier.current_location.last_updated}</span>
+              <span className="text-base sm:text-lg font-extrabold text-[#101519]">
+                {activeCourier.current_location.speed_kmh} km/jam
+              </span>
+            </div>
+            <div className="p-3.5 bg-neutral-2/50 rounded-2xl border border-hairline">
+              <span className="text-body text-[10px] block font-bold uppercase tracking-wider">
+                Akurasi Satelit GPS
+              </span>
+              <span className="text-base sm:text-lg font-extrabold text-green-700">
+                ±{activeCourier.current_location.accuracy_meters} meter
+              </span>
+            </div>
+            <div className="p-3.5 bg-neutral-2/50 rounded-2xl border border-hairline">
+              <span className="text-body text-[10px] block font-bold uppercase tracking-wider">
+                Daya Baterai HP Driver
+              </span>
+              <span className="text-base sm:text-lg font-extrabold text-primary">
+                {activeCourier.current_location.battery_level}%
+              </span>
+            </div>
+            <div className="p-3.5 bg-neutral-2/50 rounded-2xl border border-hairline">
+              <span className="text-body text-[10px] block font-bold uppercase tracking-wider">
+                Update Posisi Terakhir
+              </span>
+              <span className="text-base sm:text-lg font-extrabold text-[#101519]">
+                {activeCourier.current_location.last_updated}
+              </span>
             </div>
           </div>
 
-          {/* Visual Route Diagram inside Map */}
-          <div className="relative z-10 py-12 flex flex-col md:flex-row items-center justify-between gap-8 max-w-4xl mx-auto w-full">
-            {/* Origin (Gudang USKI) */}
-            <div className="flex flex-col items-center text-center">
-              <div className="w-14 h-14 rounded-2xl bg-primary/20 border-2 border-primary flex items-center justify-center text-primary shadow-lg mb-2 relative">
-                <Truck className="w-7 h-7 text-white" />
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-ping" />
-              </div>
-              <span className="font-extrabold text-xs text-white">Gudang USKI</span>
-              <span className="text-[10px] text-white/60">Pusat Margonda</span>
-            </div>
-
-            {/* Courier Position Moving Indicator */}
-            <div className="flex-1 w-full px-4 space-y-2">
-              <div className="flex items-center justify-between text-xs text-white/80 font-semibold">
-                <span className="flex items-center gap-1 text-accent-2 font-bold">
-                  <span>Kecepatan:</span>
-                  <span className="text-sm font-extrabold text-white">
-                    {activeCourier.current_location.speed_kmh} km/jam
-                  </span>
-                </span>
-                {activeCourier.active_delivery ? (
-                  <span>
-                    Sisa Jarak: <strong className="text-white">{activeCourier.active_delivery.distance_km} km</strong> (ETA: ~{activeCourier.active_delivery.eta_minutes} mnt)
-                  </span>
-                ) : (
-                  <span className="text-green-400 font-bold">Standby Siap Kirim</span>
-                )}
-              </div>
-
-              {/* Progress Bar Line */}
-              <div className="h-3 w-full bg-white/10 rounded-full overflow-hidden p-0.5 border border-white/20 relative">
-                <div
-                  className="h-full bg-gradient-to-r from-primary via-accent-2 to-green-400 rounded-full transition-all duration-700 ease-out"
-                  style={{
-                    width: `${
-                      activeCourier.active_delivery ? activeCourier.active_delivery.progress_pct : 0
-                    }%`,
-                  }}
-                />
-              </div>
-
-              <div className="flex items-center justify-between text-[11px] text-white/60">
-                <span>Titik Muat Barang</span>
-                <span className="text-accent-2 font-bold">
+          {/* Location Text & Operational Real Action Buttons */}
+          <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+            <div className="flex items-start gap-2.5">
+              <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+              <div>
+                <p className="font-extrabold text-[#101519]">
+                  {activeCourier.current_location.address_approx}
+                </p>
+                <p className="text-[11px] text-body">
                   {activeCourier.active_delivery
-                    ? `Perjalanan: ${activeCourier.active_delivery.progress_pct}%`
-                    : 'Di Gudang'}
-                </span>
-                <span>Pintu Alamat Penerima</span>
+                    ? `Kurir sedang mengantar paket ke ${activeCourier.active_delivery.recipient_name} (${activeCourier.active_delivery.destination_address})`
+                    : 'Kurir dalam status siap siaga (Standby di pangkalan gudang).'}
+                </p>
               </div>
-            </div>
-
-            {/* Destination Pin */}
-            <div className="flex flex-col items-center text-center">
-              <div className="w-14 h-14 rounded-2xl bg-red-500/20 border-2 border-red-500 flex items-center justify-center text-red-400 shadow-lg mb-2">
-                <MapPin className="w-7 h-7 text-white" />
-              </div>
-              <span className="font-extrabold text-xs text-white truncate max-w-[130px]">
-                {activeCourier.active_delivery?.recipient_name || 'Standby'}
-              </span>
-              <span className="text-[10px] text-white/60">Alamat Tujuan</span>
-            </div>
-          </div>
-
-          {/* Map Bottom Telemetry & Simulation Controls */}
-          <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-white/10 bg-black/40 -mx-6 -mb-6 p-4 px-6 backdrop-blur-sm text-xs">
-            <div className="flex items-center gap-2 text-white/90">
-              <div className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse" />
-              <span className="font-semibold truncate">
-                {activeCourier.active_delivery
-                  ? `Mengantar Order #${activeCourier.active_delivery.order_number} (${activeCourier.active_delivery.destination_address})`
-                  : 'Kurir standby di pangkalan gudang utama siap ditugaskan.'}
-              </span>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              {activeCourier.active_delivery && (
-                <>
-                  <button
-                    onClick={() => advanceSimulation(activeCourier.id)}
-                    className="px-3.5 py-1.5 bg-accent-1 text-black font-extrabold text-xs rounded-xl hover:bg-yellow-400 transition-all flex items-center gap-1.5 shadow-sm"
-                    title="Simulasikan posisi kurir maju ke depan"
-                  >
-                    <Play className="w-3.5 h-3.5" />
-                    <span>Maju GPS (+15%)</span>
-                  </button>
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+                  activeCourier.active_delivery?.destination_address ||
+                    `${activeCourier.current_location.lat},${activeCourier.current_location.lng}`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl transition-all flex items-center gap-1.5 shadow-sm"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Buka Rute di Google Maps</span>
+              </a>
 
-                  <button
-                    onClick={() => setIsLiveSimulating(!isLiveSimulating)}
-                    className={`px-3 py-1.5 rounded-xl font-bold text-xs border transition-all ${
-                      isLiveSimulating
-                        ? 'bg-red-500 text-white border-red-400'
-                        : 'bg-white/10 text-white hover:bg-white/20 border-white/20'
-                    }`}
-                  >
-                    {isLiveSimulating ? 'Stop Auto-Run' : 'Auto-Run GPS'}
-                  </button>
-                </>
-              )}
+              <a
+                href={`https://wa.me/${activeCourier.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                  `Halo ${activeCourier.name}, ini Admin USKI STORE. Posisi Anda terdeteksi di: ${activeCourier.current_location.address_approx}. Mohon info estimasi tiba.`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3.5 py-2 bg-[#25D366] hover:bg-[#20ba59] text-white font-bold rounded-xl transition-all flex items-center gap-1.5 shadow-sm"
+              >
+                <Phone className="w-3.5 h-3.5" />
+                <span>WhatsApp Driver</span>
+              </a>
             </div>
           </div>
         </div>

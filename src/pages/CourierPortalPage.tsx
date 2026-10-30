@@ -22,6 +22,7 @@ import {
 import { useAuthStore } from '@/store/authStore';
 import { useCourierStore } from '@/store/courierStore';
 import { useOrderStore } from '@/store/orderStore';
+import { uploadFileToStorage } from '@/lib/supabase';
 import { formatRupiah, formatDate } from '@/lib/utils';
 
 export const CourierPortalPage: React.FC = () => {
@@ -43,6 +44,8 @@ export const CourierPortalPage: React.FC = () => {
   // Complete delivery modal / form
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [proofPhotoPreview, setProofPhotoPreview] = useState<string | null>(null);
+  const [selectedProofFile, setSelectedProofFile] = useState<File | null>(null);
+  const [isSubmittingDelivery, setIsSubmittingDelivery] = useState(false);
   const [recipientNameInput, setRecipientNameInput] = useState('');
   const [deliveryNotes, setDeliveryNotes] = useState('');
 
@@ -105,6 +108,11 @@ export const CourierPortalPage: React.FC = () => {
   const handleProofFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 8 * 1024 * 1024) {
+        alert('Ukuran file bukti maksimal 8MB.');
+        return;
+      }
+      setSelectedProofFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setProofPhotoPreview(reader.result as string);
@@ -113,13 +121,27 @@ export const CourierPortalPage: React.FC = () => {
     }
   };
 
-  const handleFinishDelivery = (e: React.FormEvent) => {
+  const handleFinishDelivery = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentCourier.active_delivery) return;
 
+    setIsSubmittingDelivery(true);
+    let finalProofUrl = proofPhotoPreview || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&q=80&w=600';
+
+    if (selectedProofFile) {
+      try {
+        const cloudUrl = await uploadFileToStorage(selectedProofFile, 'delivery-proofs');
+        if (cloudUrl) {
+          finalProofUrl = cloudUrl;
+        }
+      } catch (err) {
+        console.warn('Upload to Supabase Storage failed, using local preview fallback', err);
+      }
+    }
+
     completeDelivery(
       currentCourier.id,
-      proofPhotoPreview || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&q=80&w=600',
+      finalProofUrl,
       `${recipientNameInput ? `Diterima oleh: ${recipientNameInput}. ` : ''}${deliveryNotes}`
     );
 
@@ -128,8 +150,10 @@ export const CourierPortalPage: React.FC = () => {
       navigator.vibrate([100, 50, 100]);
     }
 
+    setIsSubmittingDelivery(false);
     setShowCompleteModal(false);
     setProofPhotoPreview(null);
+    setSelectedProofFile(null);
     setRecipientNameInput('');
     setDeliveryNotes('');
     alert('Alhamdulillah! Status paket telah berhasil dikonfirmasi DITERIMA.');
@@ -455,10 +479,20 @@ export const CourierPortalPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5"
+                  disabled={isSubmittingDelivery}
+                  className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5"
                 >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Kirim & Selesaikan</span>
+                  {isSubmittingDelivery ? (
+                    <>
+                      <RotateCw className="w-4 h-4 animate-spin" />
+                      <span>Mengunggah Bukti...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Kirim & Selesaikan</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
