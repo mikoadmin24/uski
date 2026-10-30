@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Outlet, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Outlet, useLocation, Navigate } from 'react-router-dom';
 import { Navbar } from '@/components/common/Navbar';
 import { Footer } from '@/components/common/Footer';
 import { MobileBottomNav } from '@/components/common/MobileBottomNav';
@@ -89,7 +89,7 @@ export function App() {
           <Route index element={<AdminDashboard />} />
           <Route path="products" element={<AdminProducts />} />
           <Route path="categories" element={<AdminCategories />} />
-          <Route path="inventory" element={<AdminInventory />} />
+          <Route path="inventory" element={<Navigate to="/admin/products?tab=movements" replace />} />
           <Route path="orders" element={<AdminOrders />} />
           <Route path="couriers" element={<AdminCouriers />} />
           <Route path="payments" element={<AdminPayments />} />

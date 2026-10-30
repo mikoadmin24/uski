@@ -53,15 +53,14 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
 
   const navLinks = [
     { label: 'Ringkasan Dashboard', path: '/admin', icon: LayoutDashboard },
-    { label: 'Katalog Produk & Varian', path: '/admin/products', icon: Package },
-    { label: 'Kategori & Banner Hero', path: '/admin/categories', icon: Layers },
     {
-      label: 'Inventaris & Barcode',
-      path: '/admin/inventory',
-      icon: Barcode,
+      label: 'Katalog & Inventaris Stok',
+      path: '/admin/products',
+      icon: Package,
       badge: lowStockCount > 0 ? `${lowStockCount} Peringatan` : undefined,
       badgeColor: 'bg-red-500/20 text-red-300 border border-red-500/30',
     },
+    { label: 'Kategori & Banner Hero', path: '/admin/categories', icon: Layers },
     {
       label: 'Manajemen Pesanan',
       path: '/admin/orders',
