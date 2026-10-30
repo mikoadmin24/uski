@@ -5,6 +5,8 @@ import { mockCategories, mockBanners } from '@/data/mockData';
 interface CategoryState {
   categories: Category[];
   banners: PromoBanner[];
+  setCategoriesFromSupabase: (categories: Category[]) => void;
+  setBannersFromSupabase: (banners: PromoBanner[]) => void;
   addCategory: (category: Omit<Category, 'id' | 'sort_order'>) => Category;
   updateCategory: (id: string, updates: Partial<Category>) => void;
   deleteCategory: (id: string) => void;
@@ -38,6 +40,26 @@ const getInitialBanners = (): PromoBanner[] => {
 export const useCategoryStore = create<CategoryState>((set, get) => ({
   categories: getInitialCategories(),
   banners: getInitialBanners(),
+
+  setCategoriesFromSupabase: (categories) => {
+    if (!categories || categories.length === 0) return;
+    try {
+      localStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories));
+    } catch {
+      // ignore
+    }
+    set({ categories });
+  },
+
+  setBannersFromSupabase: (banners) => {
+    if (!banners || banners.length === 0) return;
+    try {
+      localStorage.setItem(BANNERS_KEY, JSON.stringify(banners));
+    } catch {
+      // ignore
+    }
+    set({ banners });
+  },
 
   addCategory: (data) => {
     const newCategory: Category = {

@@ -1,10 +1,12 @@
 import { create } from 'zustand';
 import { Product, InventoryMovement } from '@/types';
 import { mockProducts } from '@/data/mockData';
+import { dbService, isSupabaseConfigured } from '@/lib/supabase';
 
 interface ProductState {
   products: Product[];
   inventoryMovements: InventoryMovement[];
+  setProductsFromSupabase: (products: Product[]) => void;
   getProductBySlug: (slug: string) => Product | undefined;
   getProductById: (id: string) => Product | undefined;
   getProductByBarcodeOrSku: (query: string) => Product | undefined;
@@ -73,6 +75,16 @@ export const useProductStore = create<ProductState>((set, get) => ({
   products: getInitialProducts(),
   inventoryMovements: getInitialMovements(),
 
+  setProductsFromSupabase: (cloudProducts) => {
+    if (!cloudProducts || cloudProducts.length === 0) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudProducts));
+    } catch {
+      // ignore
+    }
+    set({ products: cloudProducts });
+  },
+
   getProductBySlug: (slug) => {
     return get().products.find((p) => p.slug === slug);
   },
@@ -110,6 +122,13 @@ export const useProductStore = create<ProductState>((set, get) => ({
     }
 
     set({ products: updated });
+
+    if (isSupabaseConfigured) {
+      dbService.products.upsert(newProduct).catch((err) =>
+        console.error('Failed to sync new product to Supabase:', err)
+      );
+    }
+
     return newProduct;
   },
 
@@ -121,6 +140,12 @@ export const useProductStore = create<ProductState>((set, get) => ({
       // ignore
     }
     set({ products: updated });
+
+    if (isSupabaseConfigured) {
+      dbService.products.upsert({ id, ...updates }).catch((err) =>
+        console.error('Failed to sync updated product to Supabase:', err)
+      );
+    }
   },
 
   deleteProduct: (id) => {
@@ -131,6 +156,12 @@ export const useProductStore = create<ProductState>((set, get) => ({
       // ignore
     }
     set({ products: updated });
+
+    if (isSupabaseConfigured) {
+      dbService.products.delete(id).catch((err) =>
+        console.error('Failed to delete product from Supabase:', err)
+      );
+    }
   },
 
   adjustStock: (productId, variantId, delta, type, notes, operator) => {
@@ -184,5 +215,14 @@ export const useProductStore = create<ProductState>((set, get) => ({
     }
 
     set({ products: updatedProducts, inventoryMovements: updatedMovements });
+
+    if (isSupabaseConfigured) {
+      dbService.inventoryMovements.insert(newMovement).catch((err) =>
+        console.error('Failed to sync inventory movement to Supabase:', err)
+      );
+      dbService.products.upsert({ id: productId, stock_quantity: newStock }).catch((err) =>
+        console.error('Failed to sync adjusted stock to Supabase:', err)
+      );
+    }
   },
 }));

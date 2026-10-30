@@ -33,6 +33,7 @@ import { AdminStaff } from '@/pages/admin/AdminStaff';
 import { AdminCouriers } from '@/pages/admin/AdminCouriers';
 import { CourierPortalPage } from '@/pages/CourierPortalPage';
 import { CourierGpsWatcher } from '@/components/courier/CourierGpsWatcher';
+import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 
 // Scroll to top on route change
 function ScrollToTop() {
@@ -58,6 +59,8 @@ function StorefrontLayout() {
 }
 
 export function App() {
+  useSupabaseSync();
+
   return (
     <BrowserRouter>
       <ScrollToTop />

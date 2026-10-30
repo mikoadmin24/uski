@@ -1,9 +1,11 @@
 import { create } from 'zustand';
 import { Order, OrderStatus, PaymentStatus } from '@/types';
 import { mockOrders } from '@/data/mockData';
+import { dbService, isSupabaseConfigured } from '@/lib/supabase';
 
 interface OrderState {
   orders: Order[];
+  setOrdersFromSupabase: (orders: Order[]) => void;
   createOrder: (orderData: Omit<Order, 'id' | 'created_at' | 'updated_at'>) => Order;
   getOrderByNumber: (orderNumber: string) => Order | undefined;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
@@ -26,6 +28,16 @@ const getInitialOrders = (): Order[] => {
 export const useOrderStore = create<OrderState>((set, get) => ({
   orders: getInitialOrders(),
 
+  setOrdersFromSupabase: (cloudOrders) => {
+    if (!cloudOrders || cloudOrders.length === 0) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudOrders));
+    } catch {
+      // ignore
+    }
+    set({ orders: cloudOrders });
+  },
+
   createOrder: (orderData) => {
     const newOrder: Order = {
       ...orderData,
@@ -42,6 +54,13 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     }
 
     set({ orders: updated });
+
+    if (isSupabaseConfigured) {
+      dbService.orders.insert(newOrder).catch((err) =>
+        console.error('Failed to sync new order to Supabase:', err)
+      );
+    }
+
     return newOrder;
   },
 
@@ -69,12 +88,19 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     }
 
     set({ orders: updated });
+
+    if (isSupabaseConfigured) {
+      dbService.orders.updateStatus(orderId, status).catch((err) =>
+        console.error('Failed to sync order status to Supabase:', err)
+      );
+    }
   },
 
   updatePaymentStatus: (orderId, status, verifierName = 'Admin', rejectionReason) => {
+    let orderStatus: OrderStatus = 'awaiting_payment';
     const updated = get().orders.map((order) => {
       if (order.id === orderId) {
-        let orderStatus: OrderStatus = order.status;
+        orderStatus = order.status;
         if (status === 'verified') {
           orderStatus = 'processing';
         } else if (status === 'rejected') {
@@ -107,6 +133,12 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     }
 
     set({ orders: updated });
+
+    if (isSupabaseConfigured) {
+      dbService.orders.updateStatus(orderId, orderStatus).catch((err) =>
+        console.error('Failed to sync payment status to Supabase:', err)
+      );
+    }
   },
 
   uploadPaymentProof: (orderId, proofUrl) => {
@@ -137,6 +169,12 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     }
 
     set({ orders: updated });
+
+    if (isSupabaseConfigured) {
+      dbService.orders.updatePaymentProof(orderId, proofUrl).catch((err) =>
+        console.error('Failed to sync payment proof to Supabase:', err)
+      );
+    }
   },
 
   updateShipmentTracking: (orderId, trackingNumber, courierName) => {
@@ -171,5 +209,11 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     }
 
     set({ orders: updated });
+
+    if (isSupabaseConfigured) {
+      dbService.orders.updateStatus(orderId, 'shipped').catch((err) =>
+        console.error('Failed to sync shipment tracking to Supabase:', err)
+      );
+    }
   },
 }));

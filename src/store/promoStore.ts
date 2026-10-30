@@ -4,6 +4,7 @@ import { mockVouchers } from '@/data/mockData';
 
 interface PromoState {
   vouchers: Voucher[];
+  setVouchersFromSupabase: (vouchers: Voucher[]) => void;
   addVoucher: (voucher: Omit<Voucher, 'id' | 'usage_count'>) => Voucher;
   updateVoucher: (id: string, updates: Partial<Voucher>) => void;
   deleteVoucher: (id: string) => void;
@@ -27,6 +28,16 @@ const getInitialVouchers = (): Voucher[] => {
 
 export const usePromoStore = create<PromoState>((set, get) => ({
   vouchers: getInitialVouchers(),
+
+  setVouchersFromSupabase: (vouchers) => {
+    if (!vouchers || vouchers.length === 0) return;
+    try {
+      localStorage.setItem(VOUCHERS_KEY, JSON.stringify(vouchers));
+    } catch {
+      // ignore
+    }
+    set({ vouchers });
+  },
 
   addVoucher: (data) => {
     const newVoucher: Voucher = {

@@ -1,10 +1,12 @@
 import { create } from 'zustand';
 import { Courier, CourierLocation, ActiveDelivery } from '@/types';
 import { useOrderStore } from './orderStore';
+import { dbService, isSupabaseConfigured } from '@/lib/supabase';
 
 interface CourierState {
   couriers: Courier[];
   activeCourierId: string;
+  setCouriersFromSupabase: (couriers: Courier[]) => void;
   setActiveCourierId: (id: string) => void;
   updateLocation: (
     courierId: string,
@@ -137,18 +139,33 @@ export const useCourierStore = create<CourierState>((set, get) => ({
   couriers: getInitialCouriers(),
   activeCourierId: initialCouriers[0].id,
 
+  setCouriersFromSupabase: (cloudCouriers) => {
+    if (!cloudCouriers || cloudCouriers.length === 0) return;
+    try {
+      localStorage.setItem(COURIER_STORAGE_KEY, JSON.stringify(cloudCouriers));
+    } catch {
+      // ignore
+    }
+    set({ couriers: cloudCouriers });
+  },
+
   setActiveCourierId: (id) => set({ activeCourierId: id }),
 
   updateLocation: (courierId, loc) => {
+    let updatedLocation: any = null;
+    let updatedActiveDelivery: any = undefined;
+
     const updated = get().couriers.map((c) => {
       if (c.id === courierId) {
+        updatedLocation = {
+          ...c.current_location,
+          ...loc,
+          last_updated: new Date().toLocaleTimeString('id-ID'),
+        };
+        updatedActiveDelivery = c.active_delivery;
         return {
           ...c,
-          current_location: {
-            ...c.current_location,
-            ...loc,
-            last_updated: new Date().toLocaleTimeString('id-ID'),
-          },
+          current_location: updatedLocation,
         };
       }
       return c;
@@ -159,6 +176,12 @@ export const useCourierStore = create<CourierState>((set, get) => ({
       // ignore
     }
     set({ couriers: updated });
+
+    if (isSupabaseConfigured && updatedLocation) {
+      dbService.couriers.updateLocation(courierId, updatedLocation, updatedActiveDelivery).catch((err) =>
+        console.error('Failed to sync courier GPS to Supabase:', err)
+      );
+    }
   },
 
   assignDelivery: (courierId, deliveryData) => {
