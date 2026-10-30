@@ -261,15 +261,15 @@ export const AdminReports: React.FC = () => {
       {/* ========================================================================= */}
       {/* 1. EXECUTIVE HEADER & ACTIONS BAR                                         */}
       {/* ========================================================================= */}
-      <div className="bg-white border border-hairline rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+      <div className="bg-white border border-hairline rounded-2xl p-4 sm:p-6 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-5">
         <div className="space-y-1.5">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="text-2xl font-black tracking-tight text-[#101519]">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-[#101519]">
               Laporan Keuangan & Analisis Laba Usaha
             </h1>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              Kondisi Keuangan: Likuid & Surplus
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Kondisi: Likuid & Surplus
             </span>
           </div>
           <p className="text-xs sm:text-sm text-body">
@@ -278,13 +278,13 @@ export const AdminReports: React.FC = () => {
         </div>
 
         {/* Global Period Selector & Quick Actions */}
-        <div className="flex flex-wrap items-center gap-2 self-start lg:self-auto">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 w-full lg:w-auto">
           {/* Period selector tabs */}
-          <div className="inline-flex p-1 bg-neutral-2 rounded-xl text-xs font-bold border border-hairline/60">
+          <div className="grid grid-cols-4 sm:flex w-full sm:w-auto p-1 bg-neutral-2 rounded-xl text-xs font-bold border border-hairline/60">
             <button
               type="button"
               onClick={() => setPeriod('7days')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
+              className={`px-2 sm:px-3 py-1.5 rounded-lg text-center transition-all ${
                 period === '7days'
                   ? 'bg-white text-primary shadow-xs'
                   : 'text-body hover:text-black'
@@ -295,7 +295,7 @@ export const AdminReports: React.FC = () => {
             <button
               type="button"
               onClick={() => setPeriod('30days')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
+              className={`px-2 sm:px-3 py-1.5 rounded-lg text-center transition-all ${
                 period === '30days'
                   ? 'bg-white text-primary shadow-xs'
                   : 'text-body hover:text-black'
@@ -306,7 +306,7 @@ export const AdminReports: React.FC = () => {
             <button
               type="button"
               onClick={() => setPeriod('monthly')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
+              className={`px-2 sm:px-3 py-1.5 rounded-lg text-center transition-all ${
                 period === 'monthly'
                   ? 'bg-white text-primary shadow-xs'
                   : 'text-body hover:text-black'
@@ -317,7 +317,7 @@ export const AdminReports: React.FC = () => {
             <button
               type="button"
               onClick={() => setPeriod('ytd')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
+              className={`px-2 sm:px-3 py-1.5 rounded-lg text-center transition-all ${
                 period === 'ytd'
                   ? 'bg-white text-primary shadow-xs'
                   : 'text-body hover:text-black'
@@ -327,25 +327,27 @@ export const AdminReports: React.FC = () => {
             </button>
           </div>
 
-          {/* Print Formal Statement Button */}
-          <button
-            type="button"
-            onClick={() => setShowPrintModal(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-neutral-2 hover:bg-neutral-1 text-[#101519] font-bold text-xs rounded-xl border border-hairline transition-colors shadow-xs"
-          >
-            <Printer className="w-4 h-4 text-body" />
-            <span>Cetak Rekap Resmi</span>
-          </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {/* Print Formal Statement Button */}
+            <button
+              type="button"
+              onClick={() => setShowPrintModal(true)}
+              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-neutral-2 hover:bg-neutral-1 text-[#101519] font-bold text-xs rounded-xl border border-hairline transition-colors shadow-xs"
+            >
+              <Printer className="w-3.5 h-3.5 text-body shrink-0" />
+              <span>Cetak Rekap</span>
+            </button>
 
-          {/* Export CSV Button */}
-          <button
-            type="button"
-            onClick={handleExportCSV}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-dark text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-[0.98]"
-          >
-            <Download className="w-4 h-4" />
-            <span>Ekspor Akuntansi (CSV)</span>
-          </button>
+            {/* Export CSV Button */}
+            <button
+              type="button"
+              onClick={handleExportCSV}
+              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-primary hover:bg-primary-dark text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-[0.98]"
+            >
+              <Download className="w-3.5 h-3.5 shrink-0" />
+              <span>Ekspor CSV</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -508,8 +510,8 @@ export const AdminReports: React.FC = () => {
         </div>
 
         {/* Chart Legend & Summary Banner */}
-        <div className="flex flex-wrap items-center justify-between gap-4 text-xs">
-          <div className="flex flex-wrap items-center gap-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
               <span className="w-3.5 h-3.5 rounded-md bg-primary shadow-xs" />
               <span className="font-bold text-[#101519]">Omset Penjualan (Bruto)</span>
@@ -520,24 +522,30 @@ export const AdminReports: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 text-body text-[11px] bg-neutral-2/60 px-3 py-1.5 rounded-xl border border-hairline">
+          <div className="flex flex-wrap items-center gap-2 text-body text-[11px] bg-neutral-2/60 px-3 py-1.5 rounded-xl border border-hairline">
             <span>
-              Total Periode Ini:{' '}
+              Total Omset:{' '}
               <strong className="text-[#101519] font-mono">{formatRupiah(totalPeriodOmset)}</strong>
             </span>
             <span className="text-hairline">|</span>
             <span>
-              Total Laba Bersih:{' '}
+              Laba Bersih:{' '}
               <strong className="text-emerald-700 font-mono">{formatRupiah(totalPeriodLaba)}</strong>
             </span>
           </div>
         </div>
 
-        {/* Interactive SVG Chart Rendering Area */}
-        <div className="pt-2">
+        {/* Mobile Horizontal Scroll Hint */}
+        <div className="sm:hidden flex items-center justify-between text-[11px] text-body px-1">
+          <span>Geser grafik ke samping:</span>
+          <span className="font-bold text-primary">👈 Geser Horizontal 👉</span>
+        </div>
+
+        {/* Interactive SVG Chart Rendering Area with Mobile Touch Scroll */}
+        <div className="pt-2 overflow-x-auto touch-scroll pb-2">
           {chartType === 'bar' ? (
             /* ================= MODE A: DUAL BAR CHART ================= */
-            <div className="h-72 w-full flex items-end justify-between gap-3 sm:gap-6 px-4 pb-8 border-b border-hairline relative">
+            <div className="h-72 min-w-[500px] sm:min-w-0 w-full flex items-end justify-between gap-3 sm:gap-6 px-4 pb-8 border-b border-hairline relative">
               {/* Background Guide Grid */}
               <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 select-none">
                 <div className="border-b border-dashed border-hairline/80 w-full flex items-center justify-between text-[10px] text-body pr-2">
@@ -625,7 +633,7 @@ export const AdminReports: React.FC = () => {
             </div>
           ) : (
             /* ================= MODE B: SMOOTH AREA & TREND CURVE ================= */
-            <div className="h-72 w-full relative pb-8 pt-4">
+            <div className="h-72 min-w-[500px] sm:min-w-0 w-full relative pb-8 pt-4">
               <svg className="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 700 240">
                 <defs>
                   <linearGradient id="omsetGradient" x1="0" y1="0" x2="0" y2="1">
@@ -769,7 +777,7 @@ export const AdminReports: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto touch-scroll">
-          <table className="w-full text-xs text-left">
+          <table className="w-full min-w-[620px] text-xs text-left">
             <thead className="bg-neutral-2/60 border-b border-hairline text-body font-bold uppercase tracking-wider">
               <tr>
                 <th className="py-3 px-5">Pos Akun Finansial</th>
@@ -1029,7 +1037,7 @@ export const AdminReports: React.FC = () => {
                     #{idx + 1}
                   </span>
                   <div className="min-w-0">
-                    <p className="font-bold text-[#101519] truncate">{p.name}</p>
+                    <p className="font-bold text-[#101519] truncate max-w-[140px] sm:max-w-xs">{p.name}</p>
                     <div className="flex items-center gap-2 text-[10px] text-body mt-0.5">
                       <span className="font-mono">{p.sku}</span>
                       <span>•</span>

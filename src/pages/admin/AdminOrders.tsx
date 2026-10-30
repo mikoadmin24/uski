@@ -403,19 +403,19 @@ export const AdminOrders: React.FC = () => {
           <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[92dvh] overflow-y-auto shadow-2xl border border-hairline flex flex-col touch-scroll">
             
             {/* Modal Sticky Header */}
-            <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md px-6 py-4 border-b border-hairline flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black">
+            <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md px-4 sm:px-6 py-3 sm:py-4 border-b border-hairline flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black shrink-0">
                   <ShoppingBag className="w-5 h-5" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-extrabold text-[#101519] font-mono">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-base sm:text-lg font-extrabold text-[#101519] font-mono">
                       #{liveSelectedOrder.order_number}
                     </h2>
                     {getStatusBadge(liveSelectedOrder.status)}
                   </div>
-                  <p className="text-xs text-body mt-0.5">
+                  <p className="text-xs text-body mt-0.5 truncate">
                     Dibuat pada {formatDate(liveSelectedOrder.created_at)} • Pemesan: <span className="font-bold text-[#101519]">{liveSelectedOrder.customer_name}</span>
                   </p>
                 </div>
@@ -426,7 +426,7 @@ export const AdminOrders: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setPrintInvoiceOrder(liveSelectedOrder)}
-                  className="px-3 py-1.5 bg-neutral-2 hover:bg-primary hover:text-white rounded-xl text-xs font-bold text-body flex items-center gap-1.5 transition-colors"
+                  className="px-2.5 sm:px-3 py-1.5 bg-neutral-2 hover:bg-primary hover:text-white rounded-xl text-xs font-bold text-body flex items-center gap-1.5 transition-colors"
                 >
                   <Printer className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Cetak Invoice</span>
@@ -434,7 +434,7 @@ export const AdminOrders: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setPrintShippingLabelOrder(liveSelectedOrder)}
-                  className="px-3 py-1.5 bg-neutral-2 hover:bg-emerald-600 hover:text-white rounded-xl text-xs font-bold text-body flex items-center gap-1.5 transition-colors"
+                  className="px-2.5 sm:px-3 py-1.5 bg-neutral-2 hover:bg-emerald-600 hover:text-white rounded-xl text-xs font-bold text-body flex items-center gap-1.5 transition-colors"
                 >
                   <Truck className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Label Thermal</span>
@@ -445,7 +445,7 @@ export const AdminOrders: React.FC = () => {
                     setSelectedOrderDetail(null);
                     setIsReassigning(false);
                   }}
-                  className="p-2 hover:bg-neutral-2 rounded-xl text-body hover:text-[#101519] transition-colors"
+                  className="p-1.5 sm:p-2 hover:bg-neutral-2 rounded-xl text-body hover:text-[#101519] transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -453,7 +453,7 @@ export const AdminOrders: React.FC = () => {
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 space-y-6 flex-1">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 flex-1">
 
               {/* Status Updater Bar */}
               <div className="bg-neutral-2/40 border border-hairline rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs">
@@ -949,25 +949,25 @@ export const AdminOrders: React.FC = () => {
             </div>
 
             {/* Modal Sticky Footer */}
-            <div className="sticky bottom-0 bg-white/95 backdrop-blur-md px-6 py-4 border-t border-hairline flex flex-wrap items-center justify-between gap-3">
-              <div className="text-xs text-body">
+            <div className="sticky bottom-0 bg-white/95 backdrop-blur-md px-4 sm:px-6 py-3 border-t border-hairline flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+              <div className="text-xs text-body text-center sm:text-left">
                 Order ID: <span className="font-mono">{liveSelectedOrder.id}</span>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setSelectedOrderDetail(null)}
-                  className="px-5 py-2 bg-neutral-2 hover:bg-neutral-3 text-[#101519] rounded-xl font-bold text-xs transition-colors"
+                  className="flex-1 sm:flex-initial px-4 py-2 bg-neutral-2 hover:bg-neutral-3 text-[#101519] rounded-xl font-bold text-xs transition-colors text-center"
                 >
                   Tutup Popup
                 </button>
                 <button
                   type="button"
                   onClick={() => setPrintShippingLabelOrder(liveSelectedOrder)}
-                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs"
+                  className="flex-1 sm:flex-initial px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs"
                 >
                   <Printer className="w-3.5 h-3.5" />
-                  <span>Cetak Label Pengiriman</span>
+                  <span>Cetak Label Thermal</span>
                 </button>
               </div>
             </div>
