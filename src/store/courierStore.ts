@@ -192,10 +192,10 @@ const initialCouriers: Courier[] = [
     active_delivery: {
       order_id: 'ord-1002',
       order_number: 'USKI-2026-0091',
-      recipient_name: 'Yayasan Pendidikan Al-Hikmah',
+      recipient_name: 'Yayasan Pendidikan Al-Hikmah (SIT Al-Hikmah)',
       recipient_phone: '0812-4455-6677',
-      destination_address: 'Komp. Sekolah Islam Terpadu Al-Hikmah, Jl. Cisalak No. 24',
-      destination_coords: { lat: -6.3550, lng: 106.8520 },
+      destination_address: 'Komp. Sekolah Islam Terpadu (SIT) Al-Hikmah, Jl. Menpor No. 05, RT 02/RW 03, Kel. Tugu, Kec. Cimanggis, Kota Depok, Jawa Barat 16951',
+      destination_coords: { lat: -6.35623, lng: 106.85073 },
       started_at: '09:45 WIB',
       eta_minutes: 14,
       distance_km: 3.2,
@@ -237,7 +237,7 @@ const initialCouriers: Courier[] = [
   },
 ];
 
-const COURIER_STORAGE_KEY = 'uski_couriers_v2';
+const COURIER_STORAGE_KEY = 'uski_couriers_v3';
 
 const getInitialCouriers = (): Courier[] => {
   try {

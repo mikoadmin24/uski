@@ -17,7 +17,6 @@ import {
   UploadCloud,
   X,
   AlertCircle,
-  Smartphone,
   ShieldCheck,
   ChevronRight,
   ArrowRightLeft,
@@ -36,7 +35,6 @@ import { useCourierStore } from '@/store/courierStore';
 import { useOrderStore } from '@/store/orderStore';
 import { formatRupiah, formatDate } from '@/lib/utils';
 import { Courier, DeliveryStatus } from '@/types';
-import { DigitalSignaturePad } from '@/components/courier/DigitalSignaturePad';
 
 const FAILED_REASONS = [
   'Rumah Kosong / Penerima Tidak Ada di Lokasi',
@@ -96,87 +94,11 @@ export const AdminCouriers: React.FC = () => {
   const [targetCourierId, setTargetCourierId] = useState<string>('');
   const [reassignReason, setReassignReason] = useState<string>('Kendala operasional lapangan / armada');
 
-  // Modal: Driver Mobile Simulator
-  const [showDriverModal, setShowDriverModal] = useState(false);
-  const [driverModalCourier, setDriverModalCourier] = useState<Courier | null>(null);
-  const [proofPhotoPreview, setProofPhotoPreview] = useState<string | null>(null);
-  const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
-  const [recipientNameInput, setRecipientNameInput] = useState('');
-  const [deliveryNotes, setDeliveryNotes] = useState('');
-  const [realGpsActive, setRealGpsActive] = useState(false);
-  const [realGpsMsg, setRealGpsMsg] = useState<string | null>(null);
-
   // Modal: Gagal Antar (Failed Delivery)
   const [showFailedModal, setShowFailedModal] = useState(false);
   const [failedCourier, setFailedCourier] = useState<Courier | null>(null);
   const [failedReason, setFailedReason] = useState<string>(FAILED_REASONS[0]);
   const [failedNotes, setFailedNotes] = useState<string>('');
-
-  // Real HTML5 Geolocation Trigger
-  const handleActivateRealGps = () => {
-    if (!navigator.geolocation) {
-      alert('Browser Anda tidak mendukung Geolocation HTML5.');
-      return;
-    }
-
-    setRealGpsMsg('Menghubungkan ke satelit GPS perangkat...');
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude, accuracy, speed } = pos.coords;
-        if (driverModalCourier) {
-          updateLocation(driverModalCourier.id, {
-            lat: Number(latitude.toFixed(5)),
-            lng: Number(longitude.toFixed(5)),
-            accuracy_meters: Math.round(accuracy),
-            speed_kmh: speed ? Math.round(speed * 3.6) : 0,
-            address_approx: `Posisi Nyata Fisik Kurir (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`,
-          });
-        }
-        setRealGpsActive(true);
-        setRealGpsMsg(`GPS Terkunci! Akurasi: ±${Math.round(accuracy)}m (Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)})`);
-      },
-      (err) => {
-        setRealGpsMsg(`Gagal membaca GPS: ${err.message}. Pastikan izin lokasi diizinkan di browser.`);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  };
-
-  const handleOpenDriverModal = (courier: Courier) => {
-    setDriverModalCourier(courier);
-    setProofPhotoPreview(courier.active_delivery?.proof_photo || null);
-    setSignatureDataUrl(courier.active_delivery?.proof_signature || null);
-    setRecipientNameInput(courier.active_delivery?.recipient_name || '');
-    setDeliveryNotes(courier.active_delivery?.delivery_notes || '');
-    setRealGpsActive(false);
-    setRealGpsMsg(null);
-    setShowDriverModal(true);
-  };
-
-  const handleDriverCompleteSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!driverModalCourier) return;
-
-    if (!proofPhotoPreview) {
-      alert('Wajib melampirkan foto bukti serah terima paket!');
-      return;
-    }
-
-    if (!signatureDataUrl) {
-      alert('Penerima wajib membubuhkan tanda tangan digital!');
-      return;
-    }
-
-    completeDelivery(
-      driverModalCourier.id,
-      proofPhotoPreview,
-      signatureDataUrl,
-      `${recipientNameInput ? `Diterima oleh: ${recipientNameInput}. ` : ''}${deliveryNotes}`
-    );
-
-    setShowDriverModal(false);
-    alert(`Pengantaran oleh ${driverModalCourier.name} berhasil diselesaikan dengan bukti foto & tanda tangan!`);
-  };
 
   // Open Reassign Modal
   const handleOpenReassignModal = (courier: Courier) => {
@@ -351,14 +273,6 @@ export const AdminCouriers: React.FC = () => {
             <span>Tugaskan Pesanan (Assign)</span>
           </button>
 
-          <button
-            onClick={() => handleOpenDriverModal(activeCourier)}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-neutral-2 hover:bg-neutral-1/40 text-[#101519] font-bold text-xs rounded-xl border border-hairline transition-all"
-          >
-            <Smartphone className="w-4 h-4 text-primary" />
-            <span>Layar HP Kurir</span>
-          </button>
-
           <a
             href={`https://www.google.com/maps?q=${activeCourier.current_location.lat},${activeCourier.current_location.lng}`}
             target="_blank"
@@ -366,7 +280,7 @@ export const AdminCouriers: React.FC = () => {
             className="flex items-center gap-1.5 px-3.5 py-2 bg-neutral-2 hover:bg-neutral-1/40 text-body font-bold text-xs rounded-xl border border-hairline transition-all"
           >
             <ExternalLink className="w-3.5 h-3.5" />
-            <span>Google Maps</span>
+            <span>Buka Google Maps</span>
           </a>
         </div>
       </div>
@@ -799,6 +713,16 @@ export const AdminCouriers: React.FC = () => {
 
                         <td className="py-3.5 px-4 text-center">
                           <div className="flex items-center justify-center gap-1.5">
+                            <a
+                              href={`https://wa.me/${c.phone.replace(/[^0-9]/g, '')}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              title="Hubungi WhatsApp Kurir"
+                              className="p-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
+                            >
+                              <MessageSquare className="w-4 h-4" />
+                            </a>
+
                             {c.active_delivery && (
                               <button
                                 title="Alihkan ke Kurir Lain (Reassign)"
@@ -811,18 +735,6 @@ export const AdminCouriers: React.FC = () => {
                                 <ArrowRightLeft className="w-4 h-4" />
                               </button>
                             )}
-
-                            <button
-                              title="Buka Layar HP Kurir"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenDriverModal(c);
-                              }}
-                              className="px-2.5 py-1 bg-neutral-2 hover:bg-primary hover:text-white rounded-lg text-[11px] font-bold text-[#101519] transition-all flex items-center gap-1"
-                            >
-                              <Smartphone className="w-3.5 h-3.5" />
-                              <span>HP Kurir</span>
-                            </button>
                           </div>
                         </td>
                       </tr>
@@ -926,7 +838,11 @@ export const AdminCouriers: React.FC = () => {
                               On Road
                             </button>
                             <button
-                              onClick={() => handleOpenDriverModal(c)}
+                              onClick={() => {
+                                if (confirm(`Konfirmasi paket #${delivery.order_number} telah sampai dan selesai diantar?`)) {
+                                  completeDelivery(c.id, undefined, undefined, 'Selesai diantar ke penerima');
+                                }
+                              }}
                               className="p-1.5 rounded-lg border bg-neutral-2 hover:bg-green-100 text-green-800 border-hairline transition-all"
                             >
                               Selesai
@@ -1364,168 +1280,6 @@ export const AdminCouriers: React.FC = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: DRIVER MOBILE SIMULATOR */}
-      {showDriverModal && driverModalCourier && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl max-h-[90dvh] overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom,0px)] touch-scroll">
-            <div className="flex items-center justify-between border-b border-hairline pb-3">
-              <div className="flex items-center gap-2">
-                <Smartphone className="w-5 h-5 text-primary" />
-                <div>
-                  <h3 className="text-base font-extrabold text-[#101519]">
-                    Simulasi Layar Handphone Kurir
-                  </h3>
-                  <p className="text-[11px] text-body">{driverModalCourier.name} • {driverModalCourier.vehicle_plate}</p>
-                </div>
-              </div>
-              <button onClick={() => setShowDriverModal(false)}>
-                <X className="w-5 h-5 text-body" />
-              </button>
-            </div>
-
-            {/* Real Geolocation Push Sensor */}
-            <div className="p-3.5 bg-primary/5 border border-primary/20 rounded-2xl space-y-2 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="font-extrabold text-[#101519] flex items-center gap-1.5">
-                  <Compass className="w-4 h-4 text-primary" />
-                  Kirimkan Titik GPS Nyata Browser
-                </span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700">
-                  Ready
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={handleActivateRealGps}
-                className="w-full py-2 bg-primary text-white font-bold rounded-xl hover:bg-primary-dark transition-all flex items-center justify-center gap-1.5 shadow-sm text-xs"
-              >
-                <Navigation className="w-3.5 h-3.5" />
-                <span>Pancarkan Posisi GPS Saat Ini</span>
-              </button>
-              {realGpsMsg && (
-                <p className="text-[10px] text-primary font-semibold mt-1 bg-white p-2 rounded-lg border border-primary/20">
-                  {realGpsMsg}
-                </p>
-              )}
-            </div>
-
-            {driverModalCourier.active_delivery ? (
-              <form onSubmit={handleDriverCompleteSubmit} className="space-y-3.5 text-xs">
-                <div className="p-3.5 bg-neutral-2/50 border border-hairline rounded-2xl space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-body font-bold">Pesanan Diantar:</span>
-                    <span className="font-mono font-extrabold text-primary">
-                      #{driverModalCourier.active_delivery.order_number}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-[#101519] block">
-                      {driverModalCourier.active_delivery.recipient_name}
-                    </span>
-                    <span className="text-body text-[11px] block">
-                      {driverModalCourier.active_delivery.destination_address}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Photo Proof */}
-                <div>
-                  <label className="font-bold text-body block mb-1">
-                    1. Foto Bukti Serah Terima Paket *
-                  </label>
-                  {proofPhotoPreview ? (
-                    <div className="relative border border-hairline rounded-2xl overflow-hidden mb-2">
-                      <img
-                        src={proofPhotoPreview}
-                        alt="Bukti Serah Terima"
-                        className="w-full h-36 object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setProofPhotoPreview(null)}
-                        className="absolute top-2 right-2 p-1 bg-black/60 text-white rounded-lg hover:bg-black"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center border-2 border-dashed border-hairline hover:border-primary rounded-2xl p-4 cursor-pointer bg-neutral-2/40 hover:bg-neutral-2/80 transition-all text-center">
-                      <Camera className="w-6 h-6 text-primary mb-1" />
-                      <span className="font-bold text-xs text-[#101519]">
-                        Ambil Foto Kamera / Upload
-                      </span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            const reader = new FileReader();
-                            reader.onloadend = () => setProofPhotoPreview(reader.result as string);
-                            reader.readAsDataURL(file);
-                          }
-                        }}
-                        className="hidden"
-                      />
-                    </label>
-                  )}
-                </div>
-
-                {/* Digital Signature Canvas */}
-                <div>
-                  <label className="font-bold text-body block mb-1">
-                    2. Tanda Tangan Digital Penerima *
-                  </label>
-                  <DigitalSignaturePad onSignatureChange={setSignatureDataUrl} height={120} />
-                </div>
-
-                {/* Recipient Name Input */}
-                <div>
-                  <label className="font-bold text-body block mb-1">
-                    3. Nama Penerima Paket *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={recipientNameInput}
-                    onChange={(e) => setRecipientNameInput(e.target.value)}
-                    placeholder="Contoh: Diterima oleh Pak Joko (Ayah Pembeli)"
-                    className="w-full h-9 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
-                  />
-                </div>
-
-                <div className="pt-3 border-t border-hairline flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowDriverModal(false)}
-                    className="w-1/3 py-2.5 bg-neutral-2 text-body font-bold rounded-xl"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Konfirmasi Paket Diterima</span>
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <div className="text-center py-6 space-y-2">
-                <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto" />
-                <h4 className="font-extrabold text-[#101519] text-sm">
-                  Kurir Sedang Standby
-                </h4>
-                <p className="text-xs text-body">
-                  Belum ada penugasan aktif. Gunakan tab Penugasan untuk memberikan tugas baru.
-                </p>
-              </div>
-            )}
           </div>
         </div>
       )}
