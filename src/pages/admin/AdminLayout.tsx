@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Outlet, Link, useNavigate } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { useAuthStore } from '@/store/authStore';
 import { ShieldAlert, Bell, Eye, Menu, UserCheck } from 'lucide-react';
@@ -8,7 +8,16 @@ import { UserRole } from '@/types';
 export const AdminLayout: React.FC = () => {
   const { user, loginAs } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const mainScrollRef = useRef<HTMLElement | null>(null);
+
+  // Auto-scroll admin content back to top when switching menu
+  useEffect(() => {
+    if (mainScrollRef.current) {
+      mainScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [location.pathname]);
 
   // Authorization check
   const isAuthorized =
@@ -46,15 +55,15 @@ export const AdminLayout: React.FC = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#F9FBFD] font-urbanist text-[#101519]">
+    <div className="flex h-screen h-[100dvh] overflow-hidden bg-[#F9FBFD] font-urbanist text-[#101519]">
       <AdminSidebar
         isOpen={isMobileSidebarOpen}
         onClose={() => setIsMobileSidebarOpen(false)}
       />
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {/* Top Backoffice Header */}
-        <header className="h-16 bg-white border-b border-hairline px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-xs">
+        <header className="h-16 shrink-0 bg-white border-b border-hairline px-4 sm:px-6 flex items-center justify-between z-30 shadow-xs">
           <div className="flex items-center gap-3">
             {/* Hamburger Button for Mobile */}
             <button
@@ -116,8 +125,11 @@ export const AdminLayout: React.FC = () => {
           </div>
         </header>
 
-        {/* Content Body */}
-        <main className="flex-1 p-4 sm:p-6 overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] touch-scroll">
+        {/* Content Body with Fluid & Unblocked Scroll */}
+        <main
+          ref={mainScrollRef}
+          className="flex-1 min-h-0 overflow-y-auto overscroll-y-auto p-4 sm:p-6 pb-[calc(3rem+env(safe-area-inset-bottom,0px))] touch-scroll"
+        >
           <Outlet />
         </main>
       </div>
