@@ -61,19 +61,19 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-hairline shadow-sm">
-      {/* Main Header */}
-      <div className="max-w-site mx-auto px-4 py-3 flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-50 bg-white border-b border-hairline shadow-sm w-full">
+      {/* Main Header Row */}
+      <div className="max-w-site mx-auto px-4 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-4">
         {/* Brand Logo */}
-        <Link to="/" className="flex items-center gap-2 group shrink-0">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white font-extrabold text-xl shadow-sm tracking-wider">
+        <Link to="/" className="flex items-center gap-2 group shrink-0 min-w-0">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary flex items-center justify-center text-white font-extrabold text-lg sm:text-xl shadow-sm tracking-wider shrink-0">
             U
           </div>
-          <div>
-            <span className="text-xl font-extrabold tracking-tight text-[#0060AE] block leading-none">
+          <div className="min-w-0">
+            <span className="text-base sm:text-xl font-extrabold tracking-tight text-[#0060AE] block leading-none truncate">
               USKI <span className="text-[#2D3033]">STORE</span>
             </span>
-            <span className="text-[10px] font-semibold tracking-wider text-body uppercase block mt-0.5">
+            <span className="text-[9px] sm:text-[10px] font-semibold tracking-wider text-body uppercase mt-0.5 truncate hidden sm:block">
               Bookstore & Stationery
             </span>
           </div>
@@ -115,8 +115,8 @@ export const Navbar: React.FC = () => {
           )}
         </div>
 
-        {/* Search Bar (Pill Shaped - Gramedia Token) */}
-        <div className="relative flex-1 max-w-2xl">
+        {/* Search Bar (Desktop & Tablet) */}
+        <div className="relative flex-1 max-w-2xl hidden md:block">
           <form onSubmit={handleSearchSubmit} className="relative">
             <input
               type="text"
@@ -175,7 +175,7 @@ export const Navbar: React.FC = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Wishlist Link */}
           <Link
             to="/account"
@@ -188,28 +188,28 @@ export const Navbar: React.FC = () => {
           {/* Cart Trigger */}
           <Link
             to="/cart"
-            className="flex items-center gap-2 px-3.5 h-11 bg-neutral-2 hover:bg-[#E3E4E5] rounded-full text-[#2D3033] font-bold text-sm transition-colors relative"
+            className="flex items-center gap-1.5 px-3 h-9 sm:h-11 sm:px-3.5 bg-neutral-2 hover:bg-[#E3E4E5] rounded-full text-[#2D3033] font-bold text-xs sm:text-sm transition-colors relative shrink-0"
           >
-            <ShoppingCart className="w-5 h-5 text-primary" />
+            <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
             <span className="hidden sm:inline font-bold">Keranjang</span>
             {itemCount > 0 && (
-              <span className="w-5 h-5 bg-primary text-white rounded-full text-xs flex items-center justify-center font-extrabold animate-pulse">
+              <span className="w-4 h-4 sm:w-5 sm:h-5 bg-primary text-white rounded-full text-[10px] sm:text-xs flex items-center justify-center font-extrabold animate-pulse">
                 {itemCount}
               </span>
             )}
           </Link>
 
           {/* User Account & Direct Login Button */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <button
               onClick={() => setRoleSwitcherOpen(!roleSwitcherOpen)}
-              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 h-10 sm:h-11 border border-primary/40 bg-primary/5 hover:bg-primary/10 rounded-full text-xs font-bold text-[#101519] transition-all shadow-xs"
+              className="flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3.5 h-9 sm:h-11 border border-primary/40 bg-primary/5 hover:bg-primary/10 rounded-full text-xs font-bold text-[#101519] transition-all shadow-xs"
               title="Menu Akun & Login Cepat"
             >
-              <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center font-bold text-[11px] shrink-0">
-                {user ? user.full_name[0] : <User className="w-3.5 h-3.5" />}
+              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary text-white flex items-center justify-center font-bold text-[10px] sm:text-[11px] shrink-0">
+                {user ? user.full_name[0] : <User className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
               </div>
-              <div className="text-left leading-tight hidden xs:block">
+              <div className="text-left leading-tight hidden sm:block">
                 <span className="block text-[9px] sm:text-[10px] text-body font-semibold">
                   {user ? 'Akun Aktif' : 'Akses'}
                 </span>
@@ -456,6 +456,20 @@ export const Navbar: React.FC = () => {
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
+      </div>
+
+      {/* Mobile Search Bar - Perfectly matches body padding px-4 */}
+      <div className="md:hidden px-4 pb-2.5 pt-0">
+        <form onSubmit={handleSearchSubmit} className="relative w-full">
+          <input
+            type="text"
+            placeholder="Cari buku, novel, ATK, kitab..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full h-10 pl-10 pr-4 bg-neutral-2 border border-hairline rounded-xl text-xs font-semibold focus:outline-none focus:border-primary focus:bg-white transition-all shadow-xs"
+          />
+          <Search className="w-4 h-4 text-body absolute left-3.5 top-1/2 -translate-y-1/2" />
+        </form>
       </div>
 
       {/* Mobile Drawer Menu */}

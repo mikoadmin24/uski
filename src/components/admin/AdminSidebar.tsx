@@ -106,7 +106,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
       )}
 
       <aside
-        className={`fixed lg:static top-0 bottom-0 left-0 z-50 w-72 max-w-[85vw] bg-[#2D3033] text-white flex flex-col shrink-0 h-full overflow-hidden transition-transform duration-300 ease-in-out pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] ${
+        className={`fixed lg:sticky top-0 h-screen w-72 max-w-[85vw] bg-[#2D3033] text-white flex flex-col shrink-0 z-50 lg:z-20 overflow-hidden transition-transform duration-300 ease-in-out pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] ${
           isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
         }`}
       >

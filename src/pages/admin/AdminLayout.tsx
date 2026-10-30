@@ -55,42 +55,42 @@ export const AdminLayout: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen h-[100dvh] overflow-hidden bg-[#F9FBFD] font-urbanist text-[#101519]">
+    <div className="min-h-screen flex bg-[#F9FBFD] font-urbanist text-[#101519]">
       <AdminSidebar
         isOpen={isMobileSidebarOpen}
         onClose={() => setIsMobileSidebarOpen(false)}
       />
 
-      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        {/* Top Backoffice Header */}
-        <header className="h-16 shrink-0 bg-white border-b border-hairline px-4 sm:px-6 flex items-center justify-between z-30 shadow-xs">
-          <div className="flex items-center gap-3">
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Backoffice Header - Sticky on Top */}
+        <header className="sticky top-0 z-30 h-16 shrink-0 bg-white/95 backdrop-blur-md border-b border-hairline px-4 sm:px-6 flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             {/* Hamburger Button for Mobile */}
             <button
               type="button"
               onClick={() => setIsMobileSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-xl border border-hairline hover:bg-neutral-2 text-[#101519] transition-colors"
+              className="lg:hidden p-2 rounded-xl border border-hairline hover:bg-neutral-2 text-[#101519] transition-colors shrink-0"
               title="Buka Menu Admin"
             >
               <Menu className="w-5 h-5" />
             </button>
 
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h2 className="text-xs sm:text-sm font-extrabold text-[#101519] truncate">
                   Panel Operasional USKI STORE
                 </h2>
-                <span className="hidden sm:inline-block px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded">
+                <span className="hidden sm:inline-block px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded shrink-0">
                   Sistem Aktif
                 </span>
               </div>
-              <p className="text-[11px] text-body hidden md:block">
+              <p className="text-[11px] text-body hidden md:block truncate">
                 Toko Buku, ATK, Kitab & Perlengkapan Umum
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Role Demo Switcher */}
             <div className="hidden sm:flex items-center gap-1.5 bg-neutral-2 px-2.5 py-1 rounded-xl border border-hairline text-[11px]">
               <UserCheck className="w-3.5 h-3.5 text-primary" />
@@ -116,7 +116,7 @@ export const AdminLayout: React.FC = () => {
             <Link
               to="/"
               target="_blank"
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-2 hover:bg-neutral-1/40 rounded-xl text-xs font-bold text-[#2D3033] transition-colors border border-hairline"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-2 hover:bg-neutral-1/40 rounded-xl text-xs font-bold text-[#2D3033] transition-colors border border-hairline shrink-0"
             >
               <Eye className="w-3.5 h-3.5 text-primary" />
               <span className="hidden sm:inline">Lihat Toko Publik</span>
@@ -125,10 +125,10 @@ export const AdminLayout: React.FC = () => {
           </div>
         </header>
 
-        {/* Content Body with Fluid & Unblocked Scroll */}
+        {/* Content Body with 100% Fluid Natural Scroll */}
         <main
           ref={mainScrollRef}
-          className="flex-1 min-h-0 overflow-y-auto overscroll-y-auto p-4 sm:p-6 pb-[calc(3rem+env(safe-area-inset-bottom,0px))] touch-scroll"
+          className="flex-1 p-4 sm:p-6 pb-[calc(4rem+env(safe-area-inset-bottom,0px))]"
         >
           <Outlet />
         </main>
