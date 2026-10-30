@@ -21,7 +21,7 @@ export const AdminInventory: React.FC = () => {
 
   const [scanQuery, setScanQuery] = useState('');
   const [scannedProduct, setScannedProduct] = useState<any | null>(null);
-  const [stockDelta, setStockDelta] = useState<number>(10);
+  const [stockDelta, setStockDelta] = useState<string>('10');
   const [adjustmentType, setAdjustmentType] = useState<InventoryMovement['type']>('purchase_in');
   const [adjustmentNotes, setAdjustmentNotes] = useState('Restock pengadaan barang masuk');
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -44,7 +44,8 @@ export const AdminInventory: React.FC = () => {
     e.preventDefault();
     if (!scannedProduct) return;
 
-    const delta = adjustmentType === 'sale_out' || adjustmentType === 'damaged' ? -Math.abs(stockDelta) : Math.abs(stockDelta);
+    const qty = Math.abs(Number(stockDelta) || 1);
+    const delta = adjustmentType === 'sale_out' || adjustmentType === 'damaged' ? -qty : qty;
 
     adjustStock(
       scannedProduct.id,
@@ -144,9 +145,10 @@ export const AdminInventory: React.FC = () => {
                   type="number"
                   min="1"
                   required
+                  placeholder="Contoh: 10"
                   value={stockDelta}
-                  onChange={(e) => setStockDelta(Number(e.target.value))}
-                  className="w-full h-10 px-3 bg-white border border-hairline rounded-xl font-semibold"
+                  onChange={(e) => setStockDelta(e.target.value)}
+                  className="w-full h-10 px-3 bg-white border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
                 />
               </div>
 
