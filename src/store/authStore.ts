@@ -80,6 +80,11 @@ const getInitialUserState = (): { user: Profile | null; isAuthenticated: boolean
         return { user: null, isAuthenticated: false };
       }
       const parsed = JSON.parse(saved);
+      // Clean up legacy mock dummy session 'usr-1' or 'admin@uskistore.id'
+      if (parsed && (parsed.id === 'usr-1' || parsed.email === 'admin@uskistore.id')) {
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        return { user: null, isAuthenticated: false };
+      }
       if (parsed && parsed.id) {
         return { user: parsed, isAuthenticated: true };
       }
@@ -88,17 +93,10 @@ const getInitialUserState = (): { user: Profile | null; isAuthenticated: boolean
     // fallback
   }
 
-  // Default active session for initial store showcase
+  // Production Default: Guests are NOT automatically logged in
   return {
-    user: {
-      id: 'usr-1',
-      email: 'admin@uskistore.id',
-      full_name: 'Super Admin USKI',
-      role: 'super_admin',
-      avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-      created_at: '2026-01-01T00:00:00Z',
-    },
-    isAuthenticated: true,
+    user: null,
+    isAuthenticated: false,
   };
 };
 

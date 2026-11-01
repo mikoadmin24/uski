@@ -14,6 +14,8 @@ import {
   ChevronRight,
   Lock,
   Package,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
@@ -25,7 +27,7 @@ import { formatRupiah } from '@/lib/utils';
 export const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const itemCount = useCartStore((state) => state.getItemCount());
-  const { user, loginAs, logout } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const { products } = useProductStore();
   const { categories } = useCategoryStore();
 
@@ -38,6 +40,7 @@ export const Navbar: React.FC = () => {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [manualEmail, setManualEmail] = useState('');
   const [manualPassword, setManualPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [regName, setRegName] = useState('');
   const [regPhone, setRegPhone] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
@@ -392,56 +395,6 @@ export const Navbar: React.FC = () => {
                   )}
                 </div>
 
-                {/* Quick Staff Role Switcher for Store Management Testing */}
-                {(user.role === 'super_admin' || user.role === 'manager' || user.role === 'admin' || user.role === 'staff') && (
-                  <div className="pt-2 border-t border-hairline space-y-1.5">
-                    <p className="text-[10px] font-extrabold text-body uppercase tracking-wider px-1">
-                      Ganti Mode Profil Toko:
-                    </p>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          loginAs('super_admin');
-                          setRoleSwitcherOpen(false);
-                          navigate('/admin');
-                        }}
-                        className={`px-2 py-1.5 rounded-lg text-[10px] font-bold text-center transition-colors ${
-                          user.role === 'super_admin' ? 'bg-purple-600 text-white' : 'bg-neutral-2 hover:bg-neutral-1/30 text-body'
-                        }`}
-                      >
-                        Super Admin
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          loginAs('manager');
-                          setRoleSwitcherOpen(false);
-                          navigate('/admin');
-                        }}
-                        className={`px-2 py-1.5 rounded-lg text-[10px] font-bold text-center transition-colors ${
-                          user.role === 'manager' ? 'bg-blue-600 text-white' : 'bg-neutral-2 hover:bg-neutral-1/30 text-body'
-                        }`}
-                      >
-                        Manajer
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          loginAs('staff');
-                          setRoleSwitcherOpen(false);
-                          navigate('/admin');
-                        }}
-                        className={`px-2 py-1.5 rounded-lg text-[10px] font-bold text-center transition-colors ${
-                          user.role === 'staff' ? 'bg-amber-600 text-white' : 'bg-neutral-2 hover:bg-neutral-1/30 text-body'
-                        }`}
-                      >
-                        Gudang
-                      </button>
-                    </div>
-                  </div>
-                )}
-
                 {/* Logout button */}
                 <div className="pt-2 border-t border-hairline">
                   <button
@@ -572,6 +525,7 @@ export const Navbar: React.FC = () => {
                 onClick={() => {
                   setShowManualLoginModal(false);
                   setAuthError(null);
+                  setShowPassword(false);
                 }}
                 className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-body hover:bg-neutral-2 hover:text-[#101519] transition-colors touch-manipulation"
               >
@@ -718,14 +672,24 @@ export const Navbar: React.FC = () => {
 
               <div>
                 <label className="font-bold text-body block mb-1">Kata Sandi *</label>
-                <input
-                  type="password"
-                  required
-                  placeholder="Minimal 6 karakter"
-                  value={manualPassword}
-                  onChange={(e) => setManualPassword(e.target.value)}
-                  className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary text-xs"
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    placeholder="Minimal 6 karakter"
+                    value={manualPassword}
+                    onChange={(e) => setManualPassword(e.target.value)}
+                    className="w-full h-10 pl-3 pr-10 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-body hover:text-[#101519] transition-colors p-1"
+                    title={showPassword ? 'Sembunyikan kata sandi' : 'Lihat kata sandi'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               <div className="pt-2">
