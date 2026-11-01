@@ -30,9 +30,11 @@ import {
 import { useProductStore } from '@/store/productStore';
 import { useCategoryStore } from '@/store/categoryStore';
 import { useAuthStore } from '@/store/authStore';
-import { uploadFileToStorage } from '@/lib/supabase';
+import { uploadFileToStorage, isSupabaseConfigured } from '@/lib/supabase';
 import { formatRupiah, formatDate } from '@/lib/utils';
 import { Product, InventoryMovement } from '@/types';
+import { RealBarcodeScannerModal } from '@/components/admin/RealBarcodeScannerModal';
+import { convertImageToWebP } from '@/lib/imageUtils';
 
 export const AdminProducts: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -58,11 +60,9 @@ export const AdminProducts: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [statusFilterTab, setStatusFilterTab] = useState<'all' | 'low_stock' | 'discount' | 'inactive'>('all');
 
-  // Barcode Scanning Input & Camera Scanner State
+  // Barcode Scanning Input & Real Camera Scanner State
   const [barcodeInput, setBarcodeInput] = useState('');
   const [showCameraScanner, setShowCameraScanner] = useState(false);
-  const [cameraScanSimulating, setCameraScanSimulating] = useState(false);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
@@ -92,11 +92,12 @@ export const AdminProducts: React.FC = () => {
   const [weightGrams, setWeightGrams] = useState<string>('');
   const [description, setDescription] = useState('');
 
-  // Image Upload & URL States
+  // Multi-Image & Automatic WebP Conversion States
+  const [productImages, setProductImages] = useState<string[]>([]);
+  const [isConvertingWebP, setIsConvertingWebP] = useState(false);
+  const [webpSavingsInfo, setWebpSavingsInfo] = useState<string | null>(null);
   const [imageUploadType, setImageUploadType] = useState<'upload' | 'url'>('upload');
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState('');
-  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   // Handle URL tab sync
@@ -120,8 +121,8 @@ export const AdminProducts: React.FC = () => {
     setWeightGrams('');
     setDescription('');
     setImageUrl('');
-    setImagePreview(null);
-    setSelectedImageFile(null);
+    setProductImages([]);
+    setWebpSavingsInfo(null);
     setImageUploadType('upload');
     setEditingProduct(null);
   };
@@ -160,7 +161,8 @@ export const AdminProducts: React.FC = () => {
     setMinStockAlert(String(product.min_stock_alert));
     setWeightGrams(String(product.weight_grams || 300));
     setDescription(product.description || '');
-    setImagePreview(product.images[0] || null);
+    setProductImages(product.images && product.images.length > 0 ? product.images : []);
+    setWebpSavingsInfo(null);
     setImageUrl('');
     setImageUploadType('upload');
   };
@@ -228,56 +230,87 @@ export const AdminProducts: React.FC = () => {
   // Camera Barcode Scanner trigger
   const handleStartCameraScan = () => {
     setShowCameraScanner(true);
-    setCameraScanSimulating(true);
-
-    // Try starting physical camera if permitted
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices
-        .getUserMedia({ video: { facingMode: 'environment' } })
-        .then((stream) => {
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-          }
-        })
-        .catch(() => {
-          // fallback to simulated barcode scanning
-        });
-    }
-
-    // Auto-detect a random product for smooth demo experience
-    setTimeout(() => {
-      const demoProd = products[0];
-      if (demoProd) {
-        setShowCameraScanner(false);
-        setCameraScanSimulating(false);
-        handleOpenStockAdjust(demoProd);
-      }
-    }, 2800);
   };
 
-  const handleCloseCameraScanner = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
-      tracks.forEach((t) => t.stop());
-    }
+  const handleRealBarcodeScanned = (decodedCode: string) => {
     setShowCameraScanner(false);
-    setCameraScanSimulating(false);
+    const found = getProductByBarcodeOrSku(decodedCode);
+    if (found) {
+      handleOpenStockAdjust(found);
+    } else {
+      const shouldAdd = window.confirm(
+        `Barcode / ISBN "${decodedCode}" berhasil terbaca langsung oleh kamera, namun belum ada di katalog produk.\n\nApakah Anda ingin menambahkan produk baru dengan Barcode/ISBN ini sekarang?`
+      );
+      if (shouldAdd) {
+        handleOpenAddModal();
+        setSkuMaster(decodedCode);
+        if (decodedCode.length === 13 && (decodedCode.startsWith('978') || decodedCode.startsWith('979'))) {
+          setIsbn(decodedCode);
+          setCategoryId('cat-1');
+        }
+      }
+    }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert('Ukuran file maksimal 5MB.');
-        return;
+  // Multi-image upload with automatic client-side WebP conversion
+  const handleMultiImageFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    setIsConvertingWebP(true);
+    setWebpSavingsInfo(null);
+
+    try {
+      let totalOriginal = 0;
+      let totalWebp = 0;
+      const newImages: string[] = [];
+
+      for (const file of files) {
+        totalOriginal += file.size;
+        // Automatic client-side WebP conversion
+        const converted = await convertImageToWebP(file, { maxWidth: 1600, quality: 0.85 });
+        totalWebp += converted.webpSize;
+
+        let finalUrl = converted.dataUrl;
+        if (isSupabaseConfigured) {
+          try {
+            const cloudUrl = await uploadFileToStorage(converted.file, 'product-images');
+            if (cloudUrl) finalUrl = cloudUrl;
+          } catch (upErr) {
+            console.warn('Storage upload fallback to WebP DataURL:', upErr);
+          }
+        }
+        newImages.push(finalUrl);
       }
-      setSelectedImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+
+      setProductImages((prev) => [...prev, ...newImages]);
+      const savedPct = totalOriginal > 0 ? Math.round(((totalOriginal - totalWebp) / totalOriginal) * 100) : 0;
+      setWebpSavingsInfo(`${files.length} foto berhasil dikonversi ke WebP (Kompresi hemat ~${savedPct}%)`);
+    } catch (err: any) {
+      console.error('WebP conversion failed:', err);
+      alert('Gagal memproses foto: ' + (err?.message || 'Format tidak didukung'));
+    } finally {
+      setIsConvertingWebP(false);
+      e.target.value = '';
     }
+  };
+
+  const handleRemoveProductImage = (index: number) => {
+    setProductImages((prev) => prev.filter((_, idx) => idx !== index));
+  };
+
+  const handleSetPrimaryProductImage = (index: number) => {
+    setProductImages((prev) => {
+      const selected = prev[index];
+      const others = prev.filter((_, idx) => idx !== index);
+      return [selected, ...others];
+    });
+  };
+
+  const handleAddImageUrl = () => {
+    if (!imageUrl.trim()) return;
+    setProductImages((prev) => [...prev, imageUrl.trim()]);
+    setImageUrl('');
   };
 
   // Filter calculations
@@ -312,22 +345,9 @@ export const AdminProducts: React.FC = () => {
     if (!name.trim() || !skuMaster.trim() || !basePrice) return;
 
     setIsUploading(true);
-    let finalImage =
-      (imageUploadType === 'upload' ? imagePreview : imageUrl.trim()) ||
-      imagePreview ||
-      imageUrl.trim() ||
-      'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=800';
-
-    if (imageUploadType === 'upload' && selectedImageFile) {
-      try {
-        const cloudUrl = await uploadFileToStorage(selectedImageFile, 'product-images');
-        if (cloudUrl) {
-          finalImage = cloudUrl;
-        }
-      } catch (err) {
-        console.warn('Upload to Supabase Storage failed, using local preview fallback', err);
-      }
-    }
+    const finalImages = productImages.length > 0
+      ? productImages
+      : ['https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=800'];
 
     const slug = name
       .toLowerCase()
@@ -354,10 +374,10 @@ export const AdminProducts: React.FC = () => {
         },
         is_active: true,
         is_featured: false,
-        images: [finalImage],
+        images: finalImages,
       });
 
-      alert('Alhamdulillah! Produk dan foto berhasil disimpan ke database Supabase.');
+      alert('Alhamdulillah! Produk dan foto berhasil disimpan ke database.');
     } catch (err: any) {
       console.error('Error adding product:', err);
       alert('Gagal menyimpan produk: ' + (err.message || 'Terjadi kesalahan'));
@@ -372,22 +392,9 @@ export const AdminProducts: React.FC = () => {
     if (!editingProduct || !name.trim() || !skuMaster.trim() || !basePrice) return;
 
     setIsUploading(true);
-    let finalImage =
-      (imageUploadType === 'upload' ? imagePreview : imageUrl.trim()) ||
-      imagePreview ||
-      imageUrl.trim() ||
-      editingProduct.images[0];
-
-    if (imageUploadType === 'upload' && selectedImageFile) {
-      try {
-        const cloudUrl = await uploadFileToStorage(selectedImageFile, 'product-images');
-        if (cloudUrl) {
-          finalImage = cloudUrl;
-        }
-      } catch (err) {
-        console.warn('Upload to Supabase Storage failed, using local preview fallback', err);
-      }
-    }
+    const finalImages = productImages.length > 0
+      ? productImages
+      : (editingProduct.images && editingProduct.images.length > 0 ? editingProduct.images : ['https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=800']);
 
     try {
       await updateProduct(editingProduct.id, {
@@ -402,9 +409,9 @@ export const AdminProducts: React.FC = () => {
         min_stock_alert: minStockAlert ? Number(minStockAlert) : 5,
         weight_grams: weightGrams ? Number(weightGrams) : 300,
         description: description.trim() || 'Deskripsi produk resmi USKI STORE.',
-        images: [finalImage],
+        images: finalImages,
       });
-      alert('Perubahan produk berhasil diperbarui ke database cloud.');
+      alert('Perubahan produk dan foto WebP berhasil diperbarui.');
     } catch (err: any) {
       console.error('Error updating product:', err);
       alert('Gagal memperbarui produk: ' + (err.message || 'Terjadi kesalahan'));
@@ -1136,47 +1143,12 @@ export const AdminProducts: React.FC = () => {
         </div>
       )}
 
-      {/* CAMERA SCANNER MODAL */}
-      {showCameraScanner && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-          <div className="bg-white rounded-xl sm:rounded-2xl max-w-sm sm:max-w-md w-full p-4 sm:p-6 space-y-4 shadow-2xl text-center max-h-[90vh] overflow-y-auto border border-hairline touch-scroll">
-            <div className="flex items-center justify-between border-b border-hairline pb-3">
-              <div className="flex items-center gap-2">
-                <Camera className="w-5 h-5 text-primary" />
-                <h3 className="text-base font-extrabold text-[#101519]">Scanner Kamera Barcode</h3>
-              </div>
-              <button
-                type="button"
-                onClick={handleCloseCameraScanner}
-                className="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded-xl text-body hover:bg-neutral-2 hover:text-[#101519] transition-colors touch-manipulation"
-              >
-                <X className="w-5 h-5 text-body" />
-              </button>
-            </div>
-
-            {/* Video Viewport / Laser Scanner Frame */}
-            <div className="relative bg-black rounded-2xl h-56 overflow-hidden flex items-center justify-center border-2 border-primary">
-              <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-              <div className="absolute inset-x-8 h-0.5 bg-red-500 shadow-[0_0_12px_red] animate-pulse" />
-              <div className="absolute inset-0 border-2 border-white/30 rounded-2xl pointer-events-none" />
-              <div className="absolute bottom-2 text-white/90 text-[10px] bg-black/60 px-2 py-0.5 rounded">
-                Arahkan kamera ke garis barcode buku / ATK
-              </div>
-            </div>
-
-            <p className="text-xs text-body animate-pulse">
-              Mendeteksi kode batang barcode...
-            </p>
-
-            <button
-              onClick={handleCloseCameraScanner}
-              className="w-full py-2.5 bg-neutral-2 text-body font-bold rounded-xl text-xs"
-            >
-              Tutup Scanner
-            </button>
-          </div>
-        </div>
-      )}
+      {/* REAL CAMERA BARCODE SCANNER MODAL */}
+      <RealBarcodeScannerModal
+        isOpen={showCameraScanner}
+        onClose={() => setShowCameraScanner(false)}
+        onScan={handleRealBarcodeScanned}
+      />
 
       {/* PRINT BARCODE LABEL STICKER MODAL */}
       {printLabelProduct && (
@@ -1432,10 +1404,18 @@ export const AdminProducts: React.FC = () => {
                 />
               </div>
 
-              {/* Foto Produk */}
-              <div className="space-y-2 pt-1">
-                <div className="flex items-center justify-between">
-                  <label className="font-bold text-body">Foto Produk *</label>
+              {/* Foto Produk Multi-WebP */}
+              <div className="space-y-3 pt-1 border-t border-hairline">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <label className="font-extrabold text-[#101519] flex items-center gap-1.5">
+                      <ImageIcon className="w-4 h-4 text-primary" />
+                      <span>Foto Produk ({productImages.length} Foto)</span>
+                    </label>
+                    <p className="text-[11px] text-body">
+                      Bisa pilih lebih dari 1 foto. Otomatis dikonversi ke format <strong>WebP</strong> (ringan & cepat).
+                    </p>
+                  </div>
                   <div className="flex items-center gap-1 bg-neutral-2 p-1 rounded-xl border border-hairline text-[11px]">
                     <button
                       type="button"
@@ -1447,7 +1427,7 @@ export const AdminProducts: React.FC = () => {
                       }`}
                     >
                       <UploadCloud className="w-3.5 h-3.5" />
-                      <span>Upload dari File</span>
+                      <span>Upload File</span>
                     </button>
                     <button
                       type="button"
@@ -1464,54 +1444,95 @@ export const AdminProducts: React.FC = () => {
                   </div>
                 </div>
 
-                {imageUploadType === 'upload' ? (
-                  <div>
-                    {imagePreview ? (
-                      <div className="relative border-2 border-hairline rounded-2xl p-4 bg-neutral-2/30 flex items-center gap-4">
-                        <img
-                          src={imagePreview}
-                          alt="Preview Produk"
-                          className="w-20 h-24 object-cover rounded-xl border border-hairline shadow-sm bg-white shrink-0"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold text-[#101519] text-xs">Foto Produk Berhasil Dimuat</p>
-                          <div className="flex items-center gap-3 mt-2.5">
-                            <label className="cursor-pointer text-xs font-bold text-primary hover:underline">
-                              Ganti Foto
-                              <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                            </label>
-                            <span className="text-hairline">•</span>
-                            <button
-                              type="button"
-                              onClick={() => setImagePreview(null)}
-                              className="text-xs font-bold text-badge-text hover:underline"
-                            >
-                              Hapus Foto
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <label className="flex flex-col items-center justify-center border-2 border-dashed border-hairline hover:border-primary rounded-2xl p-6 cursor-pointer bg-neutral-2/40 hover:bg-neutral-2/80 transition-all text-center group">
-                        <div className="w-12 h-12 rounded-2xl bg-white border border-hairline flex items-center justify-center shadow-xs mb-2 group-hover:scale-105 transition-transform">
-                          <UploadCloud className="w-6 h-6 text-primary" />
-                        </div>
-                        <span className="font-bold text-xs text-[#101519]">
-                          Klik untuk Upload Foto dari Komputer atau HP
-                        </span>
-                        <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                      </label>
-                    )}
+                {webpSavingsInfo && (
+                  <div className="p-2.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-semibold flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>{webpSavingsInfo}</span>
                   </div>
+                )}
+
+                {imageUploadType === 'upload' ? (
+                  <label className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-5 transition-all text-center cursor-pointer ${
+                    isConvertingWebP ? 'bg-primary/5 border-primary animate-pulse' : 'border-hairline hover:border-primary bg-neutral-2/40 hover:bg-neutral-2/80'
+                  }`}>
+                    <div className="w-10 h-10 rounded-xl bg-white border border-hairline flex items-center justify-center shadow-xs mb-1.5">
+                      <UploadCloud className="w-5 h-5 text-primary" />
+                    </div>
+                    <span className="font-bold text-xs text-[#101519]">
+                      {isConvertingWebP ? 'Sedang Mengonversi ke Format WebP...' : 'Klik untuk Pilih Foto (Bisa Banyak Sekaligus)'}
+                    </span>
+                    <span className="text-[11px] text-body mt-0.5">
+                      JPG, PNG, JPEG otomatis dikonversi ke WebP berkualitas tinggi
+                    </span>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      disabled={isConvertingWebP}
+                      onChange={handleMultiImageFiles}
+                      className="hidden"
+                    />
+                  </label>
                 ) : (
-                  <div>
+                  <div className="flex gap-2">
                     <input
                       type="url"
                       value={imageUrl}
                       onChange={(e) => setImageUrl(e.target.value)}
-                      placeholder="https://images.unsplash.com/photo-..."
-                      className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold text-xs focus:outline-none focus:border-primary"
+                      placeholder="Tempel URL gambar (https://...)"
+                      className="flex-1 h-9 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold text-xs focus:outline-none focus:border-primary"
                     />
+                    <button
+                      type="button"
+                      onClick={handleAddImageUrl}
+                      disabled={!imageUrl.trim()}
+                      className="px-4 py-1.5 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary-hover disabled:opacity-50 transition-colors"
+                    >
+                      Tambah
+                    </button>
+                  </div>
+                )}
+
+                {/* Grid Galeri Multi-Foto */}
+                {productImages.length > 0 && (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5 pt-1">
+                    {productImages.map((imgSrc, idx) => (
+                      <div
+                        key={idx}
+                        className={`relative group rounded-xl overflow-hidden border-2 transition-all bg-neutral-2 ${
+                          idx === 0 ? 'border-primary shadow-xs ring-2 ring-primary/20' : 'border-hairline'
+                        }`}
+                      >
+                        <img src={imgSrc} alt={`Foto ${idx + 1}`} className="w-full h-24 object-cover" />
+                        
+                        {idx === 0 ? (
+                          <span className="absolute top-1 left-1 bg-primary text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-xs">
+                            UTAMA
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleSetPrimaryProductImage(idx)}
+                            className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black/70 hover:bg-primary text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs"
+                          >
+                            Set Utama
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveProductImage(idx)}
+                          className="absolute top-1 right-1 w-6 h-6 bg-rose-600 hover:bg-rose-700 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-xs"
+                          title="Hapus foto ini"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+
+                        <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] font-mono px-1 rounded">
+                          webp
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -1684,45 +1705,137 @@ export const AdminProducts: React.FC = () => {
                 />
               </div>
 
-              {/* Foto Produk */}
-              <div className="space-y-2 pt-1">
-                <div className="flex items-center justify-between">
-                  <label className="font-bold text-body">Foto Produk</label>
+              {/* Foto Produk Multi-WebP */}
+              <div className="space-y-3 pt-1 border-t border-hairline">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <label className="font-extrabold text-[#101519] flex items-center gap-1.5">
+                      <ImageIcon className="w-4 h-4 text-primary" />
+                      <span>Foto Produk ({productImages.length} Foto)</span>
+                    </label>
+                    <p className="text-[11px] text-body">
+                      Kelola banyak foto produk. Otomatis dikonversi ke format <strong>WebP</strong>.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 bg-neutral-2 p-1 rounded-xl border border-hairline text-[11px]">
+                    <button
+                      type="button"
+                      onClick={() => setImageUploadType('upload')}
+                      className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold transition-all ${
+                        imageUploadType === 'upload'
+                          ? 'bg-white text-primary shadow-xs'
+                          : 'text-body hover:text-[#101519]'
+                      }`}
+                    >
+                      <UploadCloud className="w-3.5 h-3.5" />
+                      <span>Upload File</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setImageUploadType('url')}
+                      className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold transition-all ${
+                        imageUploadType === 'url'
+                          ? 'bg-white text-primary shadow-xs'
+                          : 'text-body hover:text-[#101519]'
+                      }`}
+                    >
+                      <LinkIcon className="w-3.5 h-3.5" />
+                      <span>Tempel URL</span>
+                    </button>
+                  </div>
                 </div>
-                <div>
-                  {imagePreview ? (
-                    <div className="relative border-2 border-hairline rounded-2xl p-4 bg-neutral-2/30 flex items-center gap-4">
-                      <img
-                        src={imagePreview}
-                        alt="Preview Produk"
-                        className="w-20 h-24 object-cover rounded-xl border border-hairline shadow-sm bg-white shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-[#101519] text-xs">Foto Saat Ini</p>
-                        <div className="flex items-center gap-3 mt-2.5">
-                          <label className="cursor-pointer text-xs font-bold text-primary hover:underline">
-                            Ganti Foto
-                            <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                          </label>
-                          <span className="text-hairline">•</span>
+
+                {webpSavingsInfo && (
+                  <div className="p-2.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-semibold flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>{webpSavingsInfo}</span>
+                  </div>
+                )}
+
+                {imageUploadType === 'upload' ? (
+                  <label className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-5 transition-all text-center cursor-pointer ${
+                    isConvertingWebP ? 'bg-primary/5 border-primary animate-pulse' : 'border-hairline hover:border-primary bg-neutral-2/40 hover:bg-neutral-2/80'
+                  }`}>
+                    <div className="w-10 h-10 rounded-xl bg-white border border-hairline flex items-center justify-center shadow-xs mb-1.5">
+                      <UploadCloud className="w-5 h-5 text-primary" />
+                    </div>
+                    <span className="font-bold text-xs text-[#101519]">
+                      {isConvertingWebP ? 'Sedang Mengonversi ke Format WebP...' : 'Tambah Foto Lain (Bisa Banyak Sekaligus)'}
+                    </span>
+                    <span className="text-[11px] text-body mt-0.5">
+                      JPG, PNG, JPEG otomatis dikonversi ke WebP berkualitas tinggi
+                    </span>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      disabled={isConvertingWebP}
+                      onChange={handleMultiImageFiles}
+                      className="hidden"
+                    />
+                  </label>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      placeholder="Tempel URL gambar (https://...)"
+                      className="flex-1 h-9 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold text-xs focus:outline-none focus:border-primary"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddImageUrl}
+                      disabled={!imageUrl.trim()}
+                      className="px-4 py-1.5 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary-hover disabled:opacity-50 transition-colors"
+                    >
+                      Tambah
+                    </button>
+                  </div>
+                )}
+
+                {/* Grid Galeri Multi-Foto */}
+                {productImages.length > 0 && (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5 pt-1">
+                    {productImages.map((imgSrc, idx) => (
+                      <div
+                        key={idx}
+                        className={`relative group rounded-xl overflow-hidden border-2 transition-all bg-neutral-2 ${
+                          idx === 0 ? 'border-primary shadow-xs ring-2 ring-primary/20' : 'border-hairline'
+                        }`}
+                      >
+                        <img src={imgSrc} alt={`Foto ${idx + 1}`} className="w-full h-24 object-cover" />
+                        
+                        {idx === 0 ? (
+                          <span className="absolute top-1 left-1 bg-primary text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-xs">
+                            UTAMA
+                          </span>
+                        ) : (
                           <button
                             type="button"
-                            onClick={() => setImagePreview(null)}
-                            className="text-xs font-bold text-badge-text hover:underline"
+                            onClick={() => handleSetPrimaryProductImage(idx)}
+                            className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black/70 hover:bg-primary text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs"
                           >
-                            Hapus Foto
+                            Set Utama
                           </button>
-                        </div>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveProductImage(idx)}
+                          className="absolute top-1 right-1 w-6 h-6 bg-rose-600 hover:bg-rose-700 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-xs"
+                          title="Hapus foto ini"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+
+                        <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] font-mono px-1 rounded">
+                          webp
+                        </span>
                       </div>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center border-2 border-dashed border-hairline hover:border-primary rounded-2xl p-6 cursor-pointer bg-neutral-2/40 hover:bg-neutral-2/80 transition-all text-center">
-                      <UploadCloud className="w-6 h-6 text-primary mb-1" />
-                      <span className="font-bold text-xs text-[#101519]">Upload Foto Baru dari Komputer</span>
-                      <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                    </label>
-                  )}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div>
