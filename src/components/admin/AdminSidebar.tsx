@@ -22,7 +22,6 @@ import { useAuthStore } from '@/store/authStore';
 import { useOrderStore } from '@/store/orderStore';
 import { useProductStore } from '@/store/productStore';
 import { useCustomOrderStore } from '@/store/customOrderStore';
-import { useCourierStore } from '@/store/courierStore';
 
 interface AdminSidebarProps {
   isOpen?: boolean;
@@ -48,7 +47,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
   const { orders } = useOrderStore();
   const { products } = useProductStore();
   const { requests } = useCustomOrderStore();
-  const { couriers } = useCourierStore();
 
   const userRole = user?.role || 'staff';
   const isSuperAdmin = userRole === 'super_admin';
@@ -56,7 +54,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
   const isStaff = userRole === 'staff';
 
   // Dynamic real-time badge counters
-  const activeCouriersCount = couriers.filter((c) => c.status === 'delivering').length;
   const pendingOrdersCount = orders.filter(
     (o) => o.status === 'awaiting_payment' || o.status === 'processing'
   ).length;
@@ -96,18 +93,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
         },
       ],
     },
-    {
-      title: 'LOGISTIK & PENGADAAN',
-      items: [
-        {
-          label: 'Armada & Kurir Toko',
-          path: '/admin/couriers',
-          icon: Truck,
-          badge: couriers.length > 0 ? `${couriers.length} Kurir` : undefined,
-          badgeColor: 'bg-primary/20 text-primary',
-        },
-        ...(isAdminOrManager
-          ? [
+    ...(isAdminOrManager
+      ? [
+          {
+            title: 'PENGADAAN & GROSIR',
+            items: [
               {
                 label: 'Permintaan Custom & RFQ',
                 path: '/admin/bulk-orders',
@@ -115,22 +105,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
                 badge: pendingRfqCount > 0 ? String(pendingRfqCount) : undefined,
                 badgeColor: 'bg-blue-400 text-[#101519]',
               },
-            ]
-          : []),
-      ],
-    },
-    ...(isAdminOrManager
-      ? [
+            ],
+          },
           {
-            title: 'KEUANGAN & TRANSAKSI',
+            title: 'KEUANGAN & LAPORAN',
             items: [
-              {
-                label: 'Verifikasi Pembayaran',
-                path: '/admin/payments',
-                icon: CreditCard,
-                badge: awaitingVerificationCount > 0 ? String(awaitingVerificationCount) : undefined,
-                badgeColor: 'bg-accent-2 text-[#101519]',
-              },
               {
                 label: 'Laporan Penjualan & Laba',
                 path: '/admin/reports',

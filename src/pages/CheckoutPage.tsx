@@ -3,13 +3,15 @@ import { useNavigate, Link } from 'react-router-dom';
 import {
   ShieldCheck,
   Truck,
-  CreditCard,
   QrCode,
   Building,
-  MapPin,
   Check,
   AlertCircle,
-  Lock,
+  MessageSquare,
+  ArrowRight,
+  ShoppingBag,
+  MapPin,
+  Scale,
 } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
@@ -39,26 +41,37 @@ export const CheckoutPage: React.FC = () => {
   const [postalCode, setPostalCode] = useState(primaryAddress?.postal_code || '16424');
   const [notes, setNotes] = useState('');
 
-  // Shipping & Payment selection
-  const [shippingMethod, setShippingMethod] = useState<{ id: string; name: string; fee: number }>({
-    id: 'toko',
-    name: 'Kurir Toko USKI (Pengantaran Langsung dari Toko)',
-    fee: 10000,
-  });
+  // 1. Logika Berat & Ongkos Kirim Otomatis (Rp 10.000 per 1 kg)
+  const totalWeightGrams = items.reduce((acc, it) => acc + (it.product.weight_grams || 350) * it.quantity, 0);
+  const totalWeightKg = Math.max(1, Math.ceil(totalWeightGrams / 1000));
+  const kurirTokoOngkir = totalWeightKg * 10000;
 
+  // Hanya 2 Opsi Jasa Kirim: Kurir Toko USKI vs Ambil Sendiri di Toko
+  const [shippingType, setShippingType] = useState<'toko' | 'pickup'>('toko');
+
+  const activeShippingFee = shippingType === 'toko' ? kurirTokoOngkir : 0;
+  const activeShippingName = shippingType === 'toko'
+    ? `Kurir Toko USKI (${totalWeightKg} kg × Rp 10.000/kg)`
+    : 'Ambil Sendiri di Toko USKI STORE (Gratis)';
+
+  // Direct Indonesian Payment Method (No External Payment Gateway)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('manual_qris');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const subtotal = getSubtotal();
   const discount = getDiscount();
-  const totalAmount = Math.max(0, subtotal - discount + shippingMethod.fee);
+  const totalAmount = Math.max(0, subtotal - discount + activeShippingFee);
 
   if (items.length === 0) {
     return (
       <div className="max-w-site mx-auto px-4 py-16 text-center space-y-4">
+        <div className="w-14 h-14 bg-neutral-2 rounded-2xl flex items-center justify-center mx-auto text-body">
+          <ShoppingBag className="w-7 h-7" />
+        </div>
         <h2 className="text-xl font-extrabold text-[#101519]">Keranjang Belanja Anda Kosong</h2>
-        <Link to="/products" className="inline-block px-6 py-2.5 bg-primary text-white font-bold text-xs rounded-xl">
+        <p className="text-xs text-body">Silakan pilih buku, kitab, atau ATK dari katalog terlebih dahulu.</p>
+        <Link to="/products" className="inline-block px-6 py-2.5 bg-primary text-white font-bold text-xs rounded-xl shadow-sm">
           Kembali ke Katalog
         </Link>
       </div>
@@ -71,7 +84,7 @@ export const CheckoutPage: React.FC = () => {
 
     // Validation
     if (!customerName.trim() || !customerPhone.trim() || !streetAddress.trim() || !city.trim()) {
-      setErrorMessage('Harap lengkapi semua data kontak dan alamat pengiriman.');
+      setErrorMessage('Harap lengkapi nama, nomor WhatsApp aktif, dan alamat pengiriman.');
       return;
     }
 
@@ -130,21 +143,57 @@ export const CheckoutPage: React.FC = () => {
         items: orderItems,
         subtotal,
         discount_amount: discount,
-        shipping_fee: shippingMethod.fee,
+        shipping_fee: activeShippingFee,
         total_amount: totalAmount,
         voucher_code: appliedVoucher?.code,
         status: 'awaiting_payment',
         payment_method: paymentMethod,
         payment_status: 'pending',
-        shipping_method: shippingMethod.name,
+        shipping_method: activeShippingName,
         shipping_address: orderAddress,
         notes,
       });
 
-      // 5. Clear cart
+      // 5. Generate formatted WhatsApp message
+      const paymentMethodLabels: Record<string, string> = {
+        manual_qris: 'QRIS Instant (BCA / GoPay / OVO / Dana / ShopeePay / LinkAja)',
+        bank_transfer: 'Transfer Bank Manual (BCA / BSI / Mandiri)',
+        cod: 'Bayar di Tempat (COD Tunai)',
+      };
+
+      const waText = 
+`*KONFIRMASI PESANAN - USKI STORE*
+Halo Admin USKI Store, saya ingin konfirmasi pesanan baru:
+
+*No. Pesanan:* ${orderNumber}
+*Nama Pemesan:* ${customerName}
+*No. WhatsApp:* ${customerPhone}
+*Alamat Kirim:* ${streetAddress}, Kec. ${district}, ${city}, ${province} ${postalCode ? `(${postalCode})` : ''}
+${notes ? `*Catatan Khusus:* ${notes}\n` : ''}
+*Daftar Produk:*
+${orderItems.map((it, idx) => `${idx + 1}. ${it.product_name}${it.variant_name ? ` (${it.variant_name})` : ''} x${it.quantity} = ${formatRupiah(it.subtotal)}`).join('\n')}
+
+----------------------------------
+*Subtotal Produk:* ${formatRupiah(subtotal)}
+${discount > 0 ? `*Diskon Kupon (${appliedVoucher?.code}):* -${formatRupiah(discount)}\n` : ''}*Ongkos Kirim:* ${formatRupiah(activeShippingFee)} (${activeShippingName})
+*TOTAL TAGIHAN:* ${formatRupiah(totalAmount)}
+*Metode Bayar:* ${paymentMethodLabels[paymentMethod] || paymentMethod}
+----------------------------------
+Mohon segera diproses ya kak. Terima kasih!`;
+
+      const targetWaNumber = '6285967249718';
+      const waUrl = `https://wa.me/${targetWaNumber}?text=${encodeURIComponent(waText)}`;
+
+      // 6. Clear Cart
       clearCart();
 
-      // 6. Navigate to confirmation & payment instruction
+      // 7. Open WhatsApp directly and navigate to Order Confirmation
+      try {
+        window.open(waUrl, '_blank');
+      } catch {
+        // Pop-up blocked fallback
+      }
+
       navigate(`/order-confirmation/${newOrder.order_number}`);
     } catch {
       setErrorMessage('Terjadi kendala saat memproses pesanan. Silakan coba kembali.');
@@ -154,42 +203,50 @@ export const CheckoutPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-site mx-auto px-4 py-6">
-      <div className="pb-6 border-b border-hairline">
-        <h1 className="text-2xl font-extrabold tracking-tight text-[#101519]">
-          Checkout & Pengiriman
+    <div className="max-w-site mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-28 lg:pb-10">
+      {/* Page Header */}
+      <div className="pb-4 sm:pb-6 border-b border-hairline">
+        <div className="flex items-center gap-2 text-xs text-body mb-1">
+          <Link to="/cart" className="hover:text-primary transition-colors">Keranjang</Link>
+          <ArrowRight className="w-3 h-3 text-hairline" />
+          <span className="font-bold text-[#101519]">Checkout Langsung</span>
+        </div>
+        <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-[#101519]">
+          Pemesanan & Alamat Pengiriman
         </h1>
-        <p className="text-xs text-body mt-1">
-          Lengkapi detail alamat dan pilih metode pembayaran untuk menyelesaikan pesanan Anda
+        <p className="text-xs text-body mt-0.5">
+          Pesanan diteruskan langsung ke WhatsApp CS resmi USKI Store untuk diproses tanpa ribet
         </p>
       </div>
 
       {errorMessage && (
-        <div className="mt-4 p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl flex items-center gap-2">
+        <div className="mt-4 p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{errorMessage}</span>
         </div>
       )}
 
-      <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-6">
+      <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-5">
         {/* Left Form: Details, Shipping & Payment (8 cols) */}
-        <div className="lg:col-span-8 space-y-6">
+        <div className="lg:col-span-8 space-y-5">
+          
           {/* 1. Customer Contact */}
-          <div className="bg-white border border-hairline rounded-3xl p-6 space-y-4">
-            <h3 className="text-sm font-extrabold uppercase tracking-wider text-[#101519] flex items-center gap-2">
+          <div className="bg-white border border-hairline rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-4 shadow-xs">
+            <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-[#101519] flex items-center gap-2">
               <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">1</span>
-              Informasi Kontak Pelanggan
+              Informasi Pemesan
             </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
               <div>
                 <label className="font-bold text-body block mb-1">Nama Lengkap *</label>
                 <input
                   type="text"
                   required
+                  placeholder="Nama Lengkap Anda"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full h-11 px-3 bg-neutral-2 border border-hairline rounded-xl text-xs font-semibold text-[#101519] focus:outline-none focus:border-primary"
+                  className="w-full h-11 px-3.5 bg-neutral-2 border border-hairline rounded-xl text-xs font-semibold text-[#101519] focus:outline-none focus:border-primary"
                 />
               </div>
 
@@ -198,45 +255,47 @@ export const CheckoutPage: React.FC = () => {
                 <input
                   type="tel"
                   required
+                  placeholder="08xxxxxxxxxx"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
-                  className="w-full h-11 px-3 bg-neutral-2 border border-hairline rounded-xl text-xs font-semibold text-[#101519] focus:outline-none focus:border-primary"
+                  className="w-full h-11 px-3.5 bg-neutral-2 border border-hairline rounded-xl text-xs font-semibold text-[#101519] focus:outline-none focus:border-primary"
                 />
               </div>
 
               <div className="sm:col-span-2">
-                <label className="font-bold text-body block mb-1">Alamat Email (Untuk Bukti Tagihan / Invoice)</label>
+                <label className="font-bold text-body block mb-1">Alamat Email (Opsional)</label>
                 <input
                   type="email"
+                  placeholder="nama@email.com"
                   value={customerEmail}
                   onChange={(e) => setCustomerEmail(e.target.value)}
-                  className="w-full h-11 px-3 bg-neutral-2 border border-hairline rounded-xl text-xs font-semibold text-[#101519] focus:outline-none focus:border-primary"
+                  className="w-full h-11 px-3.5 bg-neutral-2 border border-hairline rounded-xl text-xs font-semibold text-[#101519] focus:outline-none focus:border-primary"
                 />
               </div>
             </div>
           </div>
 
           {/* 2. Shipping Address */}
-          <div className="bg-white border border-hairline rounded-3xl p-6 space-y-4">
-            <h3 className="text-sm font-extrabold uppercase tracking-wider text-[#101519] flex items-center gap-2">
+          <div className="bg-white border border-hairline rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-4 shadow-xs">
+            <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-[#101519] flex items-center gap-2">
               <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">2</span>
-              Alamat Pengiriman Barang
+              Alamat Lengkap Pengiriman
             </h3>
 
-            <div className="space-y-4 text-xs">
+            <div className="space-y-3.5 text-xs">
               <div>
-                <label className="font-bold text-body block mb-1">Alamat Lengkap / Nama Jalan & Nomor Rumah *</label>
+                <label className="font-bold text-body block mb-1">Alamat Jalan / Gedung / Patokan Rumah *</label>
                 <textarea
                   rows={2}
                   required
                   value={streetAddress}
                   onChange={(e) => setStreetAddress(e.target.value)}
-                  placeholder="Contoh: Jl. Margonda Raya No. 102, RT 02/05, Patokan dekat Masjid"
-                  className="w-full p-3 bg-neutral-2 border border-hairline rounded-xl text-xs font-semibold text-[#101519] focus:outline-none focus:border-primary"
+                  placeholder="Contoh: Jl. Margonda Raya No. 102, RT 02/05, dekat Masjid Al-Falah"
+                  className="w-full p-3 bg-neutral-2 border border-hairline rounded-xl text-xs font-semibold text-[#101519] focus:outline-none focus:border-primary resize-none"
                 />
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 <div>
                   <label className="font-bold text-body block mb-1">Kecamatan *</label>
                   <input
@@ -279,67 +338,97 @@ export const CheckoutPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="font-bold text-body block mb-1">Catatan Tambahan untuk Kurir / Toko (Opsional)</label>
+                <label className="font-bold text-body block mb-1">Catatan Tambahan untuk Toko (Opsional)</label>
                 <input
                   type="text"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Contoh: Titipkan di satpam jika tidak ada orang di rumah"
+                  placeholder="Contoh: Titipkan di pos satpam bila tidak ada orang"
                   className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl text-xs font-semibold"
                 />
               </div>
             </div>
           </div>
 
-          {/* 3. Shipping Method Selector */}
-          <div className="bg-white border border-hairline rounded-3xl p-6 space-y-4">
-            <h3 className="text-sm font-extrabold uppercase tracking-wider text-[#101519] flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">3</span>
-              Pilihan Jasa Ekspedisi & Logistik
-            </h3>
+          {/* 3. Shipping Method Selector: Hanya Kurir Toko & Ambil Sendiri */}
+          <div className="bg-white border border-hairline rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-4 shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-hairline pb-3">
+              <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-[#101519] flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">3</span>
+                Pilihan Pengiriman
+              </h3>
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+                <Scale className="w-3.5 h-3.5" />
+                <span>
+                  Berat Paket: {totalWeightGrams >= 1000 ? `${(totalWeightGrams / 1000).toFixed(1)} kg (${totalWeightKg} kg)` : `${totalWeightGrams} gram (Dihitung 1 kg)`}
+                </span>
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              {[
-                { id: 'toko', name: 'Kurir Toko USKI (Pengantaran Langsung dari Toko)', fee: 10000 },
-                { id: 'jnt', name: 'J&T Express Reguler (2-3 Hari)', fee: 14000 },
-                { id: 'sicepat', name: 'SiCepat Reguler (1-2 Hari)', fee: 16000 },
-                { id: 'cargo', name: 'Kargo Sentral (Hemat untuk Buku & ATK Berat)', fee: 28000 },
-                { id: 'pickup', name: 'Ambil Sendiri di Toko USKI STORE (Gratis)', fee: 0 },
-              ].map((opt) => (
-                <label
-                  key={opt.id}
-                  onClick={() => setShippingMethod(opt)}
-                  className={`p-3.5 rounded-2xl border cursor-pointer flex items-center justify-between transition-all ${
-                    shippingMethod.id === opt.id
-                      ? 'border-primary bg-primary/5 text-primary ring-1 ring-primary'
-                      : 'border-hairline bg-white hover:border-body'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Truck className="w-4 h-4 shrink-0" />
-                    <div>
-                      <span className="font-bold text-[#101519] block">{opt.name}</span>
-                      <span className="text-body text-[11px]">{opt.fee === 0 ? 'Bebas Ongkir' : formatRupiah(opt.fee)}</span>
-                    </div>
+              {/* Pilihan A: Kurir Toko USKI */}
+              <label
+                onClick={() => setShippingType('toko')}
+                className={`p-4 rounded-2xl border cursor-pointer flex items-center justify-between transition-all min-h-[58px] touch-manipulation ${
+                  shippingType === 'toko'
+                    ? 'border-primary bg-primary/5 text-primary ring-1 ring-primary shadow-xs'
+                    : 'border-hairline bg-white hover:border-body'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                    <Truck className="w-5 h-5" />
                   </div>
-                  {shippingMethod.id === opt.id && <Check className="w-4 h-4 text-primary" />}
-                </label>
-              ))}
+                  <div>
+                    <span className="font-bold text-[#101519] block text-xs sm:text-sm">Kurir Toko USKI</span>
+                    <span className="text-body text-[11px] block">Tarif otomatis: Rp 10.000 / kg</span>
+                    <span className="font-extrabold text-primary text-xs mt-0.5 block">{formatRupiah(kurirTokoOngkir)} ({totalWeightKg} kg)</span>
+                  </div>
+                </div>
+                {shippingType === 'toko' && <Check className="w-4 h-4 text-primary shrink-0" />}
+              </label>
+
+              {/* Pilihan B: Ambil Sendiri di Toko */}
+              <label
+                onClick={() => setShippingType('pickup')}
+                className={`p-4 rounded-2xl border cursor-pointer flex items-center justify-between transition-all min-h-[58px] touch-manipulation ${
+                  shippingType === 'pickup'
+                    ? 'border-primary bg-primary/5 text-primary ring-1 ring-primary shadow-xs'
+                    : 'border-hairline bg-white hover:border-body'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                    <MapPin className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-[#101519] block text-xs sm:text-sm">Ambil Sendiri di Toko</span>
+                    <span className="text-body text-[11px] block">Datang langsung ke toko USKI STORE</span>
+                    <span className="font-extrabold text-emerald-600 text-xs mt-0.5 block">Gratis (Bebas Ongkir)</span>
+                  </div>
+                </div>
+                {shippingType === 'pickup' && <Check className="w-4 h-4 text-primary shrink-0" />}
+              </label>
             </div>
           </div>
 
           {/* 4. Payment Method Selector */}
-          <div className="bg-white border border-hairline rounded-3xl p-6 space-y-4">
-            <h3 className="text-sm font-extrabold uppercase tracking-wider text-[#101519] flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">4</span>
-              Metode Pembayaran Resmi
-            </h3>
+          <div className="bg-white border border-hairline rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-4 shadow-xs">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-[#101519] flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">4</span>
+                Pilihan Cara Pembayaran
+              </h3>
+              <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full font-bold">
+                Langsung via WA
+              </span>
+            </div>
 
-            <div className="space-y-3 text-xs">
+            <div className="space-y-2.5 text-xs">
               {/* QRIS */}
               <label
                 onClick={() => setPaymentMethod('manual_qris')}
-                className={`p-4 rounded-2xl border cursor-pointer flex items-center justify-between transition-all ${
+                className={`p-3.5 sm:p-4 rounded-2xl border cursor-pointer flex items-center justify-between transition-all min-h-[52px] touch-manipulation ${
                   paymentMethod === 'manual_qris'
                     ? 'border-primary bg-primary/5 ring-1 ring-primary'
                     : 'border-hairline hover:border-body'
@@ -350,17 +439,17 @@ export const CheckoutPage: React.FC = () => {
                     <QrCode className="w-5 h-5" />
                   </div>
                   <div>
-                    <span className="font-bold text-[#101519] block text-sm">QRIS Instant (Rekomendasi)</span>
-                    <span className="text-body text-[11px]">Bisa scan via BCA, GoPay, OVO, Dana, ShopeePay, LinkAja</span>
+                    <span className="font-bold text-[#101519] block text-xs sm:text-sm">QRIS Instant (BCA / E-Wallet)</span>
+                    <span className="text-body text-[11px]">Scan praktis via BCA Mobile, GoPay, OVO, Dana, ShopeePay</span>
                   </div>
                 </div>
-                {paymentMethod === 'manual_qris' && <Check className="w-4 h-4 text-primary" />}
+                {paymentMethod === 'manual_qris' && <Check className="w-4 h-4 text-primary shrink-0" />}
               </label>
 
               {/* Bank Transfer */}
               <label
                 onClick={() => setPaymentMethod('bank_transfer')}
-                className={`p-4 rounded-2xl border cursor-pointer flex items-center justify-between transition-all ${
+                className={`p-3.5 sm:p-4 rounded-2xl border cursor-pointer flex items-center justify-between transition-all min-h-[52px] touch-manipulation ${
                   paymentMethod === 'bank_transfer'
                     ? 'border-primary bg-primary/5 ring-1 ring-primary'
                     : 'border-hairline hover:border-body'
@@ -371,38 +460,17 @@ export const CheckoutPage: React.FC = () => {
                     <Building className="w-5 h-5" />
                   </div>
                   <div>
-                    <span className="font-bold text-[#101519] block text-sm">Transfer Bank Manual</span>
-                    <span className="text-body text-[11px]">Rekening resmi BCA, Mandiri, BSI, BRI dengan verifikasi bukti bayar</span>
+                    <span className="font-bold text-[#101519] block text-xs sm:text-sm">Transfer Rekening Bank Toko</span>
+                    <span className="text-body text-[11px]">Rekening resmi BCA, Mandiri, atau BSI USKI Store</span>
                   </div>
                 </div>
-                {paymentMethod === 'bank_transfer' && <Check className="w-4 h-4 text-primary" />}
-              </label>
-
-              {/* Midtrans Gateway */}
-              <label
-                onClick={() => setPaymentMethod('midtrans_va')}
-                className={`p-4 rounded-2xl border cursor-pointer flex items-center justify-between transition-all ${
-                  paymentMethod === 'midtrans_va'
-                    ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                    : 'border-hairline hover:border-body'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                    <CreditCard className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="font-bold text-[#101519] block text-sm">Payment Gateway (Midtrans)</span>
-                    <span className="text-body text-[11px]">Virtual Account otomatis verifikasi & Kartu Kredit</span>
-                  </div>
-                </div>
-                {paymentMethod === 'midtrans_va' && <Check className="w-4 h-4 text-primary" />}
+                {paymentMethod === 'bank_transfer' && <Check className="w-4 h-4 text-primary shrink-0" />}
               </label>
 
               {/* COD */}
               <label
                 onClick={() => setPaymentMethod('cod')}
-                className={`p-4 rounded-2xl border cursor-pointer flex items-center justify-between transition-all ${
+                className={`p-3.5 sm:p-4 rounded-2xl border cursor-pointer flex items-center justify-between transition-all min-h-[52px] touch-manipulation ${
                   paymentMethod === 'cod'
                     ? 'border-primary bg-primary/5 ring-1 ring-primary'
                     : 'border-hairline hover:border-body'
@@ -413,11 +481,11 @@ export const CheckoutPage: React.FC = () => {
                     <Truck className="w-5 h-5" />
                   </div>
                   <div>
-                    <span className="font-bold text-[#101519] block text-sm">Bayar di Tempat (COD)</span>
-                    <span className="text-body text-[11px]">Bayar tunai langsung saat barang diterima oleh kurir</span>
+                    <span className="font-bold text-[#101519] block text-xs sm:text-sm">Bayar di Tempat (COD Tunai)</span>
+                    <span className="text-body text-[11px]">Serahkan uang pas langsung saat pesanan diantarkan ke alamat</span>
                   </div>
                 </div>
-                {paymentMethod === 'cod' && <Check className="w-4 h-4 text-primary" />}
+                {paymentMethod === 'cod' && <Check className="w-4 h-4 text-primary shrink-0" />}
               </label>
             </div>
           </div>
@@ -425,9 +493,9 @@ export const CheckoutPage: React.FC = () => {
 
         {/* Right: Order Summary Sticky Card (4 cols) */}
         <div className="lg:col-span-4">
-          <div className="bg-white border border-hairline rounded-3xl p-6 space-y-6 sticky top-24">
-            <h3 className="text-base font-extrabold text-[#101519] border-b border-hairline pb-3">
-              Rincian Pembayaran
+          <div className="bg-white border border-hairline rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-5 sticky top-24 shadow-xs">
+            <h3 className="text-sm font-extrabold text-[#101519] border-b border-hairline pb-3">
+              Ringkasan Pesanan ({items.length} Macam)
             </h3>
 
             {/* Cart Items Recap */}
@@ -455,20 +523,22 @@ export const CheckoutPage: React.FC = () => {
             {/* Price Calculations */}
             <div className="space-y-2 text-xs border-t border-hairline pt-4">
               <div className="flex justify-between text-body">
-                <span>Subtotal ({items.length} Item)</span>
+                <span>Subtotal Produk</span>
                 <span className="font-bold text-[#101519]">{formatRupiah(subtotal)}</span>
               </div>
 
               {discount > 0 && (
-                <div className="flex justify-between text-green-600">
+                <div className="flex justify-between text-emerald-600">
                   <span>Diskon Kupon ({appliedVoucher?.code})</span>
                   <span className="font-bold">- {formatRupiah(discount)}</span>
                 </div>
               )}
 
               <div className="flex justify-between text-body">
-                <span>Ongkos Kirim ({shippingMethod.name})</span>
-                <span className="font-bold text-[#101519]">{formatRupiah(shippingMethod.fee)}</span>
+                <span>Ongkos Kirim ({activeShippingName})</span>
+                <span className="font-bold text-[#101519]">
+                  {activeShippingFee === 0 ? 'Gratis' : formatRupiah(activeShippingFee)}
+                </span>
               </div>
             </div>
 
@@ -478,23 +548,43 @@ export const CheckoutPage: React.FC = () => {
               <span className="text-2xl font-extrabold text-primary">{formatRupiah(totalAmount)}</span>
             </div>
 
-            {/* Submit Order Button */}
+            {/* Submit Order Button (Desktop/Tablet) */}
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-12 bg-primary hover:bg-primary-dark text-white font-extrabold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+              className="w-full min-h-[48px] py-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 touch-manipulation"
             >
-              <Lock className="w-4 h-4" />
-              <span>{isSubmitting ? 'Memproses Pesanan...' : 'Buat Pesanan & Bayar'}</span>
+              <MessageSquare className="w-4 h-4 shrink-0" />
+              <span>{isSubmitting ? 'Memproses Pesanan...' : 'Pesan Sekarang via WhatsApp'}</span>
             </button>
 
             <div className="text-[11px] text-body text-center space-y-1">
-              <p className="flex items-center justify-center gap-1">
-                <ShieldCheck className="w-4 h-4 text-green-600" />
-                <span>Transaksi Terenkripsi & Terlindungi Server</span>
+              <p className="flex items-center justify-center gap-1 text-emerald-700 font-semibold">
+                <ShieldCheck className="w-4 h-4" />
+                <span>Langsung Chat Admin • Bebas Biaya Admin</span>
               </p>
-              <p>Nomor pesanan resmi akan diterbitkan setelah konfirmasi.</p>
+              <p className="text-[10px] text-body">
+                Sistem akan membuat nomor order resmi dan langsung membuka WhatsApp dengan rincian yang harus dibayarkan.
+              </p>
             </div>
+          </div>
+        </div>
+
+        {/* Mobile Sticky Bottom Floating Action Bar */}
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-hairline p-3 z-40 shadow-xl">
+          <div className="flex items-center justify-between gap-3 max-w-site mx-auto">
+            <div>
+              <span className="text-[10px] text-body block">Total Bayar:</span>
+              <span className="text-base font-extrabold text-primary">{formatRupiah(totalAmount)}</span>
+            </div>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex-1 min-h-[44px] py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-2 shadow-sm touch-manipulation disabled:opacity-50"
+            >
+              <MessageSquare className="w-4 h-4 shrink-0" />
+              <span>{isSubmitting ? 'Memproses...' : 'Pesan via WhatsApp'}</span>
+            </button>
           </div>
         </div>
       </form>

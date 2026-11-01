@@ -256,7 +256,7 @@ export const BulkOrderQuotationPage: React.FC = () => {
                   PUSAT DISTRIBUSI BUKU UMUM, PELAJARAN, AL-QUR'AN, KITAB & ATK INSTANSI
                 </p>
                 <p className="text-[11px] text-body">
-                  Jl. Margonda Raya No. 102, Depok, Jawa Barat | WhatsApp: 0812-3456-7890 | Email: cs@uskistore.id
+                  Jl. Margonda Raya No. 102, Depok, Jawa Barat | WhatsApp: 0859-6724-9718 | Email: cs@uskistore.id
                 </p>
               </div>
             </div>

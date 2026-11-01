@@ -193,6 +193,8 @@ export interface Order {
   shipping_address: Address;
   payment?: PaymentRecord;
   shipment?: ShipmentRecord;
+  courier_id?: string;
+  courier_name?: string;
   notes?: string;
   created_at: string;
   updated_at: string;

@@ -273,20 +273,20 @@ export const AdminOrders: React.FC = () => {
           { id: 'all', label: `Semua Pesanan (${orders.length})` },
           {
             id: 'processing',
-            label: `📦 Perlu Dikemas / Packing (${orders.filter((o) => o.status === 'processing').length})`,
+            label: `Perlu Dikemas / Packing (${orders.filter((o) => o.status === 'processing').length})`,
             highlight: true,
           },
           {
             id: 'awaiting_payment',
-            label: `⏳ Menunggu Bayar (${orders.filter((o) => o.status === 'awaiting_payment').length})`,
+            label: `Menunggu Bayar (${orders.filter((o) => o.status === 'awaiting_payment').length})`,
           },
           {
             id: 'shipped',
-            label: `🚚 Sedang Dikirim (${orders.filter((o) => o.status === 'shipped').length})`,
+            label: `Sedang Dikirim (${orders.filter((o) => o.status === 'shipped').length})`,
           },
           {
             id: 'delivered',
-            label: `✅ Selesai (${orders.filter((o) => o.status === 'delivered').length})`,
+            label: `Selesai (${orders.filter((o) => o.status === 'delivered').length})`,
           },
         ].map((tab) => (
           <button
@@ -562,12 +562,12 @@ export const AdminOrders: React.FC = () => {
                     onChange={(e) => updateOrderStatus(liveSelectedOrder.id, e.target.value as OrderStatus)}
                     className="h-8 px-3 bg-white border border-hairline rounded-lg font-bold text-primary focus:outline-none focus:border-primary shadow-xs"
                   >
-                    <option value="awaiting_payment">⏳ Menunggu Pembayaran</option>
-                    <option value="awaiting_verification">🔍 Menunggu Verifikasi Pembayaran</option>
-                    <option value="processing">📦 Sedang Diproses / Dikemas</option>
-                    <option value="shipped">🚚 Sedang Dikirim (Shipped)</option>
-                    <option value="delivered">✅ Pesanan Selesai (Delivered)</option>
-                    <option value="cancelled">❌ Batalkan Pesanan</option>
+                    <option value="awaiting_payment">Menunggu Pembayaran</option>
+                    <option value="awaiting_verification">Menunggu Verifikasi Pembayaran</option>
+                    <option value="processing">Sedang Diproses / Dikemas</option>
+                    <option value="shipped">Sedang Dikirim (Shipped)</option>
+                    <option value="delivered">Pesanan Selesai (Delivered)</option>
+                    <option value="cancelled">Batalkan Pesanan</option>
                   </select>
                 </div>
 
@@ -997,8 +997,9 @@ export const AdminOrders: React.FC = () => {
                       <p className="font-bold text-sm text-[#101519]">
                         {liveSelectedOrder.shipping_address.recipient_name}
                       </p>
-                      <p className="text-body font-mono text-[11px]">
-                        📞 {liveSelectedOrder.shipping_address.phone_number}
+                      <p className="text-body font-mono text-[11px] flex items-center gap-1">
+                        <Phone className="w-3.5 h-3.5 text-primary" />
+                        <span>{liveSelectedOrder.shipping_address.phone_number}</span>
                       </p>
                       <p className="text-[#101519] leading-relaxed pt-1">
                         {liveSelectedOrder.shipping_address.street_address}
@@ -1270,7 +1271,7 @@ export const AdminOrders: React.FC = () => {
               {/* Sender (Pengirim) */}
               <div className="border-b border-black pb-2 space-y-0.5 text-[11px]">
                 <span className="font-bold uppercase text-[9px] text-gray-600 block">PENGIRIM:</span>
-                <p className="font-bold">USKI STORE (0812-3456-7890)</p>
+                <p className="font-bold">USKI STORE (0859-6724-9718)</p>
                 <p className="text-[10px] text-gray-700">Jl. Margonda Raya No. 102, Depok, Jawa Barat</p>
               </div>
 

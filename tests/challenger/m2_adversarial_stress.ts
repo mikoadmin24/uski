@@ -30,17 +30,17 @@ const CYAN = '\x1b[36m';
 const RESET = '\x1b[0m';
 const BOLD = '\x1b[1m';
 
-let passed = 0;
-let failed = 0;
+let stressPassed = 0;
+let stressFailed = 0;
 
 function assert(condition: boolean, testName: string, detail?: string) {
   if (condition) {
     console.log(`  ${GREEN}✔ PASS${RESET} ${testName}`);
-    passed++;
+    stressPassed++;
   } else {
     console.error(`  ${RED}✖ FAIL${RESET} ${testName}`);
     if (detail) console.error(`    ${RED}Detail:${RESET} ${detail}`);
-    failed++;
+    stressFailed++;
   }
 }
 

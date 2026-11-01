@@ -54,7 +54,7 @@ export const StaticPolicyPage: React.FC = () => {
               <ul className="list-disc pl-5 space-y-1">
                 <li>Menyertakan video unboxing tanpa jeda saat membuka paket pertama kali.</li>
                 <li>Pengajuan klaim maksimal 2x24 jam sejak status resi dinyatakan "Delivered".</li>
-                <li>Hubungi customer service WhatsApp kami di 0812-3456-7890.</li>
+                <li>Hubungi customer service WhatsApp kami di 0859-6724-9718.</li>
               </ul>
             </div>
           ),
@@ -71,7 +71,7 @@ export const StaticPolicyPage: React.FC = () => {
               <div className="pt-2 space-y-2">
                 <p className="flex items-center gap-2 font-bold text-[#101519]">
                   <Phone className="w-4 h-4 text-primary" />
-                  CS WhatsApp: 0812-3456-7890
+                  CS WhatsApp: 0859-6724-9718
                 </p>
                 <p className="flex items-center gap-2 font-bold text-[#101519]">
                   <Mail className="w-4 h-4 text-primary" />

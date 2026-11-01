@@ -653,7 +653,7 @@ export const AdminProducts: React.FC = () => {
           {/* Products Table */}
           <div className="bg-white border border-hairline rounded-3xl overflow-hidden shadow-sm">
             <div className="md:hidden px-4 py-2 bg-neutral-2/50 border-b border-hairline text-[10px] text-body flex items-center justify-between font-semibold">
-              <span>👈 Geser tabel ke kanan untuk melihat stok & aksi 👉</span>
+              <span>Geser tabel ke samping untuk melihat stok & aksi</span>
             </div>
             <div className="overflow-x-auto touch-scroll">
               <table className="w-full text-xs text-left min-w-[700px]">
@@ -810,7 +810,7 @@ export const AdminProducts: React.FC = () => {
           </div>
 
           <div className="md:hidden px-4 py-2 bg-neutral-2/50 border border-hairline rounded-xl text-[10px] text-body flex items-center justify-between font-semibold">
-            <span>👈 Geser tabel riwayat ke kanan untuk melihat rincian 👉</span>
+            <span>Geser tabel riwayat ke samping untuk melihat rincian</span>
           </div>
           <div className="overflow-x-auto touch-scroll">
             <table className="w-full text-xs text-left min-w-[700px]">
@@ -1079,10 +1079,10 @@ export const AdminProducts: React.FC = () => {
                   onChange={(e) => setAdjustmentType(e.target.value as any)}
                   className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary text-xs"
                 >
-                  <option value="purchase_in">🟢 Barang Masuk / Restock Supplier (+)</option>
-                  <option value="damaged">🔴 Barang Rusak / Cacat (-)</option>
-                  <option value="manual_adjustment">🔵 Penyesuaian Fisik (Stok Opname Total)</option>
-                  <option value="sale_out">🟠 Penjualan Manual Toko (-)</option>
+                  <option value="purchase_in">Barang Masuk / Restock Supplier (+)</option>
+                  <option value="damaged">Barang Rusak / Cacat (-)</option>
+                  <option value="manual_adjustment">Penyesuaian Fisik (Stok Opname Total)</option>
+                  <option value="sale_out">Penjualan Manual Toko (-)</option>
                 </select>
               </div>
 

@@ -958,7 +958,7 @@ interface ChartPoint {
         {/* Mobile Horizontal Scroll Hint */}
         <div className="sm:hidden flex items-center justify-between text-[11px] text-body px-1">
           <span>Geser grafik ke samping:</span>
-          <span className="font-bold text-primary">👈 Geser Horizontal 👉</span>
+          <span className="font-bold text-primary">Geser Horizontal</span>
         </div>
 
         {/* Interactive SVG Chart Rendering Area with Mobile Touch Scroll */}
@@ -1546,7 +1546,7 @@ interface ChartPoint {
                   Pusat Kitab, Mushaf Al-Qur&apos;an, Buku Pelajaran &amp; Alat Tulis Kantor (ATK)
                 </p>
                 <p className="text-[10px] text-body">
-                  Kota Depok, Jawa Barat • WhatsApp: 0812-3456-7890 • Email: finance@uskistore.com
+                  Kota Depok, Jawa Barat • WhatsApp: 0859-6724-9718 • Email: finance@uskistore.com
                 </p>
               </div>
 

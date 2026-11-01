@@ -30,8 +30,6 @@ import { AdminSettings } from '@/pages/admin/AdminSettings';
 import { AdminCategories } from '@/pages/admin/AdminCategories';
 import { AdminPromos } from '@/pages/admin/AdminPromos';
 import { AdminStaff } from '@/pages/admin/AdminStaff';
-import { AdminCouriers } from '@/pages/admin/AdminCouriers';
-import { CourierPortalPage } from '@/pages/CourierPortalPage';
 import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 
 // Scroll to top on route change
@@ -79,11 +77,9 @@ export function App() {
           <Route path="/policies/:type" element={<StaticPolicyPage />} />
           <Route path="/contact" element={<StaticPolicyPage />} />
           <Route path="/about" element={<StaticPolicyPage />} />
+          <Route path="/courier" element={<Navigate to="/" replace />} />
           <Route path="*" element={<HomePage />} />
         </Route>
-
-        {/* Dedicated Courier Mobile Driver Portal */}
-        <Route path="/courier" element={<CourierPortalPage />} />
 
         {/* Admin Backoffice Routes */}
         <Route path="/admin" element={<AdminLayout />}>
@@ -92,8 +88,8 @@ export function App() {
           <Route path="categories" element={<AdminCategories />} />
           <Route path="inventory" element={<Navigate to="/admin/products?tab=movements" replace />} />
           <Route path="orders" element={<AdminOrders />} />
-          <Route path="couriers" element={<AdminCouriers />} />
-          <Route path="payments" element={<AdminPayments />} />
+          <Route path="couriers" element={<Navigate to="/admin/orders" replace />} />
+          <Route path="payments" element={<Navigate to="/admin/orders" replace />} />
           <Route path="bulk-orders" element={<AdminBulkOrders />} />
           <Route path="promos" element={<AdminPromos />} />
           <Route path="reports" element={<AdminReports />} />

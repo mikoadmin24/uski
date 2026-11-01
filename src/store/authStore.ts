@@ -22,7 +22,7 @@ const initialStaff: Profile[] = [
     id: 'staff-1',
     email: 'admin@uskistore.id',
     full_name: 'Ustadz Ahmad Farhan (Super Admin)',
-    phone_number: '0812-3456-7890',
+    phone_number: '0859-6724-9718',
     role: 'super_admin',
     created_at: '2026-01-01T00:00:00Z',
   },
@@ -49,14 +49,6 @@ const initialStaff: Profile[] = [
     phone_number: '0811-2233-4455',
     role: 'admin',
     created_at: '2026-02-01T00:00:00Z',
-  },
-  {
-    id: 'staff-4',
-    email: 'kurir@uskistore.id',
-    full_name: 'Bambang Supriyadi (Kurir Toko USKI)',
-    phone_number: '0857-1122-3344',
-    role: 'courier',
-    created_at: '2026-02-10T00:00:00Z',
   },
 ];
 
@@ -125,9 +117,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } else if (role === 'staff') {
       name = 'Ridwan Kamil (Staf Gudang & Inventaris)';
       email = 'gudang@uskistore.id';
-    } else if (role === 'courier') {
-      name = 'Bambang Supriyadi (Kurir Toko)';
-      email = 'kurir@uskistore.id';
     }
 
     set({

@@ -292,18 +292,6 @@ export const ProductDetailPage: React.FC = () => {
                   <span>Beli Sekarang</span>
                 </button>
               </div>
-
-              {/* Direct WhatsApp Quick Order */}
-              <a
-                href={`https://wa.me/6281234567890?text=${encodeURIComponent(
-                  `Halo USKI STORE, saya ingin memesan:\n• Produk: ${product.name}\n• Varian: ${selectedVariant?.name || 'Standar'}\n• Jumlah: ${quantity} pcs\n• Harga: ${formatRupiah(currentPrice * quantity)}\nMohon info ketersediaan stok dan opsi pengiriman. Terima kasih!`
-                )}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full h-11 bg-[#25D366] hover:bg-[#20ba59] text-white font-bold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm"
-              >
-                <span>💬 Beli Cepat via WhatsApp</span>
-              </a>
             </div>
 
             {/* Bulk RFQ prompt */}

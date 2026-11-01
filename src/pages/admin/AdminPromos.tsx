@@ -615,12 +615,12 @@ export const AdminPromos: React.FC = () => {
                     onChange={(e) => setTargetAudience(e.target.value as VoucherTargetAudience)}
                     className="w-full h-10 px-3 bg-white border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
                   >
-                    <option value="all">👥 Semua Pelanggan (Publik / Tanpa Batasan)</option>
-                    <option value="new_customer">⭐ Khusus Pelanggan Baru (Transaksi Pertama)</option>
-                    <option value="santri_pesantren">🕌 Khusus Santri, Asrama & Pondok Pesantren</option>
-                    <option value="guru_pengajar">🎓 Khusus Guru, Ustadz & Tenaga Pendidik</option>
-                    <option value="vip_member">💎 Khusus Member VIP / Pelanggan Setia</option>
-                    <option value="specific_phones">📱 Khusus Nomor WhatsApp Tertentu</option>
+                    <option value="all">Semua Pelanggan (Publik / Tanpa Batasan)</option>
+                    <option value="new_customer">Khusus Pelanggan Baru (Transaksi Pertama)</option>
+                    <option value="santri_pesantren">Khusus Santri, Asrama & Pondok Pesantren</option>
+                    <option value="guru_pengajar">Khusus Guru, Ustadz & Tenaga Pendidik</option>
+                    <option value="vip_member">Khusus Member VIP / Pelanggan Setia</option>
+                    <option value="specific_phones">Khusus Nomor WhatsApp Tertentu</option>
                   </select>
                 </div>
 

@@ -285,12 +285,12 @@ export const AdminBulkOrders: React.FC = () => {
                     onChange={(e) => updateStatus(liveSelectedReq.id, e.target.value as CustomRequestStatus)}
                     className="h-8 px-3 bg-white border border-hairline rounded-lg font-bold text-primary focus:outline-none focus:border-primary shadow-xs"
                   >
-                    <option value="pending_review">⏳ Menunggu Review</option>
-                    <option value="checking_supplier">🔍 Cek Stok Supplier / Distributor</option>
-                    <option value="quote_sent">📩 Penawaran Harga Terkirim</option>
-                    <option value="approved">✅ Disetujui Pemesan</option>
-                    <option value="converted_to_order">📦 Jadi Pesanan Resmi</option>
-                    <option value="rejected">❌ Ditolak / Dibatalkan</option>
+                    <option value="pending_review">Menunggu Review</option>
+                    <option value="checking_supplier">Cek Stok Supplier / Distributor</option>
+                    <option value="quote_sent">Penawaran Harga Terkirim</option>
+                    <option value="approved">Disetujui Pemesan</option>
+                    <option value="converted_to_order">Jadi Pesanan Resmi</option>
+                    <option value="rejected">Ditolak / Dibatalkan</option>
                   </select>
                 </div>
 

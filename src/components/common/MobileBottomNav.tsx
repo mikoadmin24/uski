@@ -19,13 +19,13 @@ export const MobileBottomNav: React.FC = () => {
 
   const isSuperAdminOrManager = user && (user.role === 'super_admin' || user.role === 'manager' || user.role === 'admin');
   const isStaff = user && user.role === 'staff';
-  const isCourier = user && user.role === 'courier';
 
-  // Hide generic mobile bottom nav on product detail page to make way for sticky buy/cart bar
+  // Hide generic mobile bottom nav on product detail & checkout pages to make way for sticky action bars
   const isProductDetailPage =
     location.pathname.startsWith('/products/') && location.pathname.split('/').filter(Boolean).length >= 2;
+  const isCheckoutPage = location.pathname === '/checkout';
 
-  if (isProductDetailPage) {
+  if (isProductDetailPage || isCheckoutPage) {
     return null;
   }
 
@@ -33,14 +33,12 @@ export const MobileBottomNav: React.FC = () => {
     ? { label: user?.role === 'manager' ? 'Manajer' : 'Admin', path: '/admin', icon: Shield, highlight: true }
     : isStaff
     ? { label: 'Gudang', path: '/admin', icon: Package, highlight: true }
-    : isCourier
-    ? { label: 'Kurir', path: '/courier', icon: Navigation, highlight: true }
     : { label: 'Akun', path: '/account', icon: User };
 
   const navItems: NavItem[] = [
     { label: 'Beranda', path: '/', icon: Home },
     { label: 'Kategori', path: '/products', icon: Grid },
-    { label: 'Custom', path: '/bulk-order', icon: FileSpreadsheet, highlight: !isSuperAdminOrManager && !isStaff && !isCourier },
+    { label: 'Custom', path: '/bulk-order', icon: FileSpreadsheet, highlight: !isSuperAdminOrManager && !isStaff },
     { label: 'Keranjang', path: '/cart', icon: ShoppingCart, badge: itemCount },
     accountItem,
   ];

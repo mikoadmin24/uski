@@ -6,12 +6,14 @@ import {
   Upload,
   Clock,
   ArrowRight,
-  ShieldAlert,
-  Building,
   QrCode,
   FileCheck,
   X,
   ZoomIn,
+  MessageSquare,
+  Building,
+  Truck,
+  ExternalLink,
 } from 'lucide-react';
 import { useOrderStore } from '@/store/orderStore';
 import { formatRupiah, formatDate } from '@/lib/utils';
@@ -31,7 +33,7 @@ export const OrderConfirmationPage: React.FC = () => {
     return (
       <div className="max-w-site mx-auto px-4 py-16 text-center space-y-4">
         <h2 className="text-xl font-extrabold text-[#101519]">Pesanan Tidak Ditemukan</h2>
-        <Link to="/" className="inline-block px-6 py-2.5 bg-primary text-white font-bold text-xs rounded-xl">
+        <Link to="/" className="inline-block px-6 py-2.5 bg-primary text-white font-bold text-xs rounded-xl shadow-sm">
           Kembali ke Beranda
         </Link>
       </div>
@@ -47,7 +49,6 @@ export const OrderConfirmationPage: React.FC = () => {
   const handleSimulateUpload = (e: React.FormEvent) => {
     e.preventDefault();
     if (!proofFile) {
-      // simulate realistic proof url
       const sampleProof = 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80&w=800';
       uploadPaymentProof(order.id, sampleProof);
     } else {
@@ -56,35 +57,76 @@ export const OrderConfirmationPage: React.FC = () => {
     setUploadSuccess(true);
   };
 
+  // Generate WhatsApp message and URL for direct conversation
+  const paymentMethodLabels: Record<string, string> = {
+    manual_qris: 'QRIS Instant (BCA / GoPay / OVO / Dana / ShopeePay / LinkAja)',
+    bank_transfer: 'Transfer Bank Manual (BCA / BSI / Mandiri)',
+    cod: 'Bayar di Tempat (COD Tunai)',
+  };
+
+  const waText = 
+`*KONFIRMASI PESANAN - USKI STORE*
+Halo Admin USKI Store, saya ingin konfirmasi pesanan:
+
+*No. Pesanan:* ${order.order_number}
+*Nama Pemesan:* ${order.customer_name}
+*No. WhatsApp:* ${order.customer_phone}
+*Alamat Kirim:* ${order.shipping_address.street_address}, ${order.shipping_address.city}
+${order.notes ? `*Catatan:* ${order.notes}\n` : ''}
+*Daftar Produk:*
+${order.items.map((it, idx) => `${idx + 1}. ${it.product_name}${it.variant_name ? ` (${it.variant_name})` : ''} x${it.quantity} = ${formatRupiah(it.subtotal)}`).join('\n')}
+
+*Total Tagihan:* ${formatRupiah(order.total_amount)}
+*Pilihan Bayar:* ${paymentMethodLabels[order.payment_method] || order.payment_method}
+
+Mohon bantu proses konfirmasi pesanan saya. Terima kasih!`;
+
+  const waUrl = `https://wa.me/6285967249718?text=${encodeURIComponent(waText)}`;
+
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8 space-y-6 overflow-x-hidden w-full">
+    <div className="max-w-3xl mx-auto px-3 sm:px-4 py-6 sm:py-8 space-y-5 sm:space-y-6 overflow-x-hidden w-full">
       {/* Top Banner Alert */}
-      <div className="bg-white border border-hairline rounded-3xl p-6 sm:p-8 text-center space-y-3">
-        <div className="w-14 h-14 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
-          <CheckCircle2 className="w-8 h-8" />
+      <div className="bg-white border border-hairline rounded-2xl sm:rounded-3xl p-5 sm:p-8 text-center space-y-3 shadow-xs">
+        <div className="w-12 sm:w-14 h-12 sm:h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+          <CheckCircle2 className="w-7 sm:w-8 h-7 sm:h-8" />
         </div>
-        <h1 className="text-2xl font-extrabold text-[#101519]">
-          Pesanan Berhasil Dibuat!
+        <h1 className="text-xl sm:text-2xl font-extrabold text-[#101519]">
+          Pesanan Berhasil Dicatat!
         </h1>
         <p className="text-xs sm:text-sm text-body">
           Nomor Pesanan: <span className="font-mono font-bold text-primary">{order.order_number}</span>
         </p>
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-xs font-semibold">
-          <Clock className="w-3.5 h-3.5" />
-          <span>Status: {order.status === 'awaiting_verification' ? 'Menunggu Verifikasi Admin' : 'Menunggu Pembayaran'}</span>
+
+        {/* WhatsApp Direct Action Button */}
+        <div className="pt-2">
+          <a
+            href={waUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="w-full sm:w-auto px-6 py-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-xs sm:text-sm rounded-xl inline-flex items-center justify-center gap-2 shadow-sm transition-all touch-manipulation"
+          >
+            <MessageSquare className="w-4 h-4 shrink-0" />
+            <span>Chat CS USKI Store via WhatsApp</span>
+            <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+          </a>
+          <p className="text-[11px] text-body mt-2">
+            Klik tombol hijau di atas jika WhatsApp belum terbuka secara otomatis.
+          </p>
         </div>
       </div>
 
       {/* Payment Instructions Card */}
-      <div className="bg-white border border-hairline rounded-3xl p-6 sm:p-8 space-y-6">
+      <div className="bg-white border border-hairline rounded-2xl sm:rounded-3xl p-4 sm:p-7 space-y-5 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-hairline pb-4">
           <div>
-            <h2 className="text-base font-extrabold text-[#101519]">Instruksi Pembayaran</h2>
-            <p className="text-xs text-body">Silakan selesaikan pembayaran sebelum batas waktu 24 jam</p>
+            <h2 className="text-sm sm:text-base font-extrabold text-[#101519]">Instruksi Pembayaran</h2>
+            <p className="text-xs text-body">
+              Metode: <strong className="text-[#101519]">{paymentMethodLabels[order.payment_method] || order.payment_method}</strong>
+            </p>
           </div>
           <div className="text-left sm:text-right">
-            <span className="text-xs text-body block">Total Tagihan:</span>
-            <span className="text-xl font-extrabold text-primary">{formatRupiah(order.total_amount)}</span>
+            <span className="text-[11px] text-body block">Total Tagihan:</span>
+            <span className="text-lg sm:text-xl font-extrabold text-primary">{formatRupiah(order.total_amount)}</span>
           </div>
         </div>
 
@@ -98,7 +140,7 @@ export const OrderConfirmationPage: React.FC = () => {
               <img
                 src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=00020101021126570014ID.LINKAJA.WWW01189360091100215000000215204581253033605802ID5910USKI%20STORE6005DEPOK62070703A016304"
                 alt="QRIS Toko USKI STORE"
-                className="w-48 h-48 mx-auto object-contain"
+                className="w-44 h-44 sm:w-48 sm:h-48 mx-auto object-contain"
               />
               <div className="mt-2 flex items-center justify-center gap-1 text-[11px] font-bold text-primary group-hover:underline">
                 <ZoomIn className="w-3.5 h-3.5" />
@@ -107,7 +149,7 @@ export const OrderConfirmationPage: React.FC = () => {
               <p className="text-[10px] text-body mt-0.5">NMID: ID1020268892100 (USKI STORE)</p>
             </div>
             <p className="text-xs text-[#2D3033] max-w-md mx-auto">
-              Buka aplikasi BCA Mobile, GoPay, OVO, Dana, LinkAja, atau ShopeePay Anda, lalu scan QRIS resmi di atas dan transfer tepat sebesar <strong className="text-primary">{formatRupiah(order.total_amount)}</strong>.
+              Scan barcode QRIS di atas melalui BCA Mobile, GoPay, OVO, Dana, LinkAja, atau ShopeePay dan bayar tepat sebesar <strong className="text-primary">{formatRupiah(order.total_amount)}</strong>.
             </p>
           </div>
         )}
@@ -116,10 +158,10 @@ export const OrderConfirmationPage: React.FC = () => {
         {order.payment_method === 'bank_transfer' && (
           <div className="space-y-4">
             <p className="text-xs text-body">
-              Pilih salah satu nomor rekening resmi toko USKI STORE berikut untuk melakukan transfer:
+              Silakan transfer ke salah satu rekening bank resmi USKI STORE:
             </p>
 
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {[
                 { bank: 'BCA', number: '7120982311', name: 'USKI STORE OFFICIAL' },
                 { bank: 'Bank Syariah Indonesia (BSI)', number: '7190023412', name: 'USKI STORE OFFICIAL' },
@@ -127,20 +169,20 @@ export const OrderConfirmationPage: React.FC = () => {
               ].map((acc) => (
                 <div
                   key={acc.number}
-                  className="p-4 bg-neutral-2/60 rounded-2xl border border-hairline flex items-center justify-between gap-3"
+                  className="p-3.5 sm:p-4 bg-neutral-2/60 rounded-2xl border border-hairline flex items-center justify-between gap-3"
                 >
                   <div>
                     <span className="text-xs font-bold text-primary block">{acc.bank}</span>
-                    <span className="font-mono text-base font-extrabold text-[#101519]">{acc.number}</span>
-                    <span className="text-xs text-body block">a.n {acc.name}</span>
+                    <span className="font-mono text-sm sm:text-base font-extrabold text-[#101519]">{acc.number}</span>
+                    <span className="text-[11px] text-body block">a.n {acc.name}</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => handleCopy(acc.number)}
-                    className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-hairline hover:border-primary rounded-xl text-xs font-bold text-[#101519] shadow-sm transition-all min-h-[40px] touch-manipulation shrink-0"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-hairline hover:border-primary rounded-xl text-xs font-bold text-[#101519] shadow-xs transition-all min-h-[40px] touch-manipulation shrink-0"
                   >
                     <Copy className="w-3.5 h-3.5 text-primary" />
-                    <span>{copiedAccount === acc.number ? 'Tersalin!' : 'Salin'}</span>
+                    <span>{copiedAccount === acc.number ? 'Tersalin' : 'Salin'}</span>
                   </button>
                 </div>
               ))}
@@ -148,48 +190,39 @@ export const OrderConfirmationPage: React.FC = () => {
           </div>
         )}
 
-        {/* Midtrans Simulation notice */}
-        {order.payment_method === 'midtrans_va' && (
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl text-xs text-blue-900 space-y-2">
-            <p className="font-bold">Payment Gateway Midtrans Terhubung</p>
-            <p>
-              Nomor Virtual Account telah dibuat. Setelah transfer, status transaksi akan diperbarui secara otomatis via webhook server terverifikasi.
-            </p>
-          </div>
-        )}
-
         {/* COD notice */}
         {order.payment_method === 'cod' && (
           <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 space-y-1">
-            <p className="font-bold">Pembayaran Tunai di Tempat (COD)</p>
-            <p>Siapkan uang pas sebesar {formatRupiah(order.total_amount)} untuk diserahkan kepada kurir saat pesanan tiba.</p>
+            <p className="font-bold flex items-center gap-1.5">
+              <Truck className="w-4 h-4 text-amber-700" />
+              <span>Pembayaran Tunai di Tempat (COD)</span>
+            </p>
+            <p>Siapkan uang pas sejumlah <strong className="text-amber-900">{formatRupiah(order.total_amount)}</strong> saat kurir mengantarkan paket ke alamat Anda.</p>
           </div>
         )}
 
-        {/* Form Upload Bukti Pembayaran */}
+        {/* Form Upload Bukti Pembayaran (Optional/Alternative) */}
         {order.payment_method !== 'cod' && (
-          <div className="pt-6 border-t border-hairline space-y-4">
-            <h3 className="text-sm font-extrabold text-[#101519] flex items-center gap-2">
+          <div className="pt-5 border-t border-hairline space-y-3">
+            <h3 className="text-xs sm:text-sm font-extrabold text-[#101519] flex items-center gap-2">
               <Upload className="w-4 h-4 text-primary" />
-              Unggah Bukti Pembayaran
+              Kirim Bukti Transfer (Opsional via Website atau WA)
             </h3>
 
             {order.payment?.proof_image_url || uploadSuccess ? (
-              <div className="p-4 bg-green-50 border border-green-200 rounded-2xl flex items-center gap-3 text-xs text-green-800">
-                <FileCheck className="w-5 h-5 text-green-600 shrink-0" />
+              <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3 text-xs text-emerald-800">
+                <FileCheck className="w-5 h-5 text-emerald-600 shrink-0" />
                 <div>
-                  <p className="font-bold">Bukti Pembayaran Berhasil Diunggah!</p>
-                  <p>Staf kami sedang memeriksa mutasi bank Anda. Status pesanan akan otomatis berubah setelah diverifikasi.</p>
+                  <p className="font-bold">Bukti Pembayaran Tersimpan!</p>
+                  <p className="text-[11px]">CS kami akan memverifikasi mutasi bank dan memproses pesanan Anda.</p>
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleSimulateUpload} className="space-y-3">
-                <div className="border-2 border-dashed border-hairline hover:border-primary rounded-2xl p-6 text-center space-y-2 bg-neutral-2/30">
-                  <Upload className="w-8 h-8 text-body mx-auto" />
+              <form onSubmit={handleSimulateUpload} className="space-y-2.5">
+                <div className="border border-dashed border-hairline hover:border-primary rounded-xl p-4 text-center space-y-1.5 bg-neutral-2/30">
                   <p className="text-xs font-semibold text-[#101519]">
-                    Pilih foto struk transfer ATM, screenshot m-banking atau resi QRIS
+                    Unggah struk ATM / screenshot m-banking di sini atau langsung kirimkan ke WhatsApp
                   </p>
-                  <p className="text-[11px] text-body">Format: JPG, PNG, atau PDF (Maks. 5MB)</p>
                   <input
                     type="file"
                     accept="image/*,application/pdf"
@@ -204,10 +237,10 @@ export const OrderConfirmationPage: React.FC = () => {
 
                 <button
                   type="submit"
-                  className="w-full min-h-[44px] py-3 bg-primary hover:bg-primary-dark text-white font-extrabold text-xs sm:text-sm rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 touch-manipulation"
+                  className="w-full min-h-[42px] py-2.5 bg-primary hover:bg-primary-dark text-white font-extrabold text-xs rounded-xl transition-all shadow-xs flex items-center justify-center gap-2 touch-manipulation"
                 >
                   <Upload className="w-4 h-4" />
-                  <span>Kirim Bukti Pembayaran</span>
+                  <span>Simpan Bukti Pembayaran</span>
                 </button>
               </form>
             )}
@@ -216,33 +249,33 @@ export const OrderConfirmationPage: React.FC = () => {
       </div>
 
       {/* Order Summary & Delivery Address */}
-      <div className="bg-white border border-hairline rounded-3xl p-6 space-y-4 text-xs">
-        <h3 className="text-sm font-extrabold text-[#101519] border-b border-hairline pb-2">
-          Detail Pengiriman
+      <div className="bg-white border border-hairline rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-4 text-xs shadow-xs">
+        <h3 className="text-xs sm:text-sm font-extrabold text-[#101519] border-b border-hairline pb-2">
+          Detail Pesanan & Pengiriman
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <div>
-            <span className="text-body block">Penerima:</span>
+            <span className="text-body block text-[11px]">Penerima:</span>
             <span className="font-bold text-[#101519]">{order.shipping_address.recipient_name} ({order.shipping_address.phone_number})</span>
-            <span className="text-body block mt-1">{order.shipping_address.street_address}, {order.shipping_address.city}, {order.shipping_address.province}</span>
+            <span className="text-body block mt-0.5">{order.shipping_address.street_address}, {order.shipping_address.city}, {order.shipping_address.province}</span>
           </div>
           <div>
-            <span className="text-body block">Ekspedisi Pilihan:</span>
+            <span className="text-body block text-[11px]">Ekspedisi / Pengiriman:</span>
             <span className="font-bold text-[#101519]">{order.shipping_method}</span>
-            <span className="text-body block mt-1">Tanggal Pesanan: {formatDate(order.created_at)}</span>
+            <span className="text-body block mt-0.5">Tanggal Pesanan: {formatDate(order.created_at)}</span>
           </div>
         </div>
 
-        <div className="pt-4 border-t border-hairline flex flex-wrap items-center justify-between gap-3">
+        <div className="pt-3 border-t border-hairline flex flex-wrap items-center justify-between gap-3">
           <Link
             to={`/track-order?ref=${order.order_number}`}
-            className="text-primary font-bold hover:underline"
+            className="text-primary font-bold hover:underline py-1"
           >
             Lacak Pesanan Ini
           </Link>
           <Link
             to="/"
-            className="min-h-[40px] px-5 py-2.5 bg-neutral-2 hover:bg-neutral-3 text-[#2D3033] font-bold rounded-xl transition-colors inline-flex items-center touch-manipulation"
+            className="min-h-[40px] px-4 py-2 bg-neutral-2 hover:bg-neutral-3 text-[#2D3033] font-bold rounded-xl transition-colors inline-flex items-center touch-manipulation text-xs"
           >
             Kembali ke Beranda
           </Link>
@@ -274,11 +307,11 @@ export const OrderConfirmationPage: React.FC = () => {
               />
               <p className="text-xs font-bold text-[#101519] mt-2">NMID: ID1020268892100 (USKI STORE)</p>
               <p className="text-[11px] text-body mt-1">
-                Total Pembayaran: <strong className="text-primary">{formatRupiah(order.total_amount)}</strong>
+                Total Tagihan: <strong className="text-primary">{formatRupiah(order.total_amount)}</strong>
               </p>
             </div>
             <p className="text-xs text-body leading-relaxed">
-              Scan barcode di atas menggunakan aplikasi e-wallet atau mobile banking apa pun yang mendukung QRIS nasional.
+              Scan barcode menggunakan aplikasi BCA Mobile, GoPay, OVO, Dana, LinkAja, atau ShopeePay.
             </p>
             <button
               type="button"

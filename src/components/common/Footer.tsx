@@ -75,7 +75,7 @@ export const Footer: React.FC = () => {
               </p>
               <p className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-primary shrink-0" />
-                +62 812-3456-7890 (WhatsApp Customer Service)
+                +62 859-6724-9718 (WhatsApp Customer Service)
               </p>
               <p className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-primary shrink-0" />

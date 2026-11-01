@@ -130,7 +130,7 @@ export const AdminStaff: React.FC = () => {
       {/* Staff Table */}
       <div className="bg-white border border-hairline rounded-3xl overflow-hidden shadow-sm">
         <div className="md:hidden px-4 py-2 bg-neutral-2/50 border-b border-hairline text-[10px] text-body flex items-center justify-between font-semibold">
-          <span>👈 Geser tabel ke kanan untuk melihat rincian staf 👉</span>
+          <span>Geser tabel ke samping untuk melihat rincian staf</span>
         </div>
         <div className="overflow-x-auto touch-scroll">
           <table className="w-full text-xs text-left min-w-[650px]">

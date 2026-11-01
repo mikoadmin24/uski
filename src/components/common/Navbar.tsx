@@ -287,28 +287,6 @@ export const Navbar: React.FC = () => {
                     </div>
                   </button>
                 </div>
-              ) : user.role === 'courier' ? (
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <Link
-                    to="/courier"
-                    className="flex items-center gap-1.5 px-3 sm:px-4 h-9 sm:h-11 bg-green-600 text-white hover:bg-green-700 rounded-full text-xs font-bold transition-all shadow-xs"
-                    title="Buka Portal Kurir"
-                  >
-                    <Navigation className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    <span className="hidden sm:inline">Portal Kurir</span>
-                    <span className="sm:hidden">Kurir</span>
-                  </Link>
-
-                  <button
-                    onClick={() => setRoleSwitcherOpen(!roleSwitcherOpen)}
-                    className="flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 border border-green-500/30 bg-green-50 hover:bg-green-100 rounded-full text-xs font-bold text-green-700 transition-all"
-                    title="Menu Akun Kurir"
-                  >
-                    <div className="w-6 h-6 rounded-full bg-green-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
-                      {user.full_name ? user.full_name[0] : 'K'}
-                    </div>
-                  </button>
-                </div>
               ) : (
                 <button
                   onClick={() => setRoleSwitcherOpen(!roleSwitcherOpen)}
@@ -372,20 +350,6 @@ export const Navbar: React.FC = () => {
 
                 {/* Navigation links */}
                 <div className="space-y-1 text-xs">
-                  {user.role === 'courier' && (
-                    <Link
-                      to="/courier"
-                      onClick={() => setRoleSwitcherOpen(false)}
-                      className="flex items-center justify-between p-2.5 rounded-xl bg-green-50 text-green-900 font-bold hover:bg-green-100 transition-colors"
-                    >
-                      <span className="flex items-center gap-2">
-                        <Navigation className="w-4 h-4 text-green-700" />
-                        <span>Portal Pengantaran Kurir</span>
-                      </span>
-                      <ChevronRight className="w-4 h-4" />
-                    </Link>
-                  )}
-
                   {(user.role === 'super_admin' || user.role === 'admin' || user.role === 'manager' || user.role === 'staff') && (
                     <Link
                       to="/admin"
@@ -432,12 +396,12 @@ export const Navbar: React.FC = () => {
                 </div>
 
                 {/* Quick Staff Role Switcher for Store Management Testing */}
-                {(user.role === 'super_admin' || user.role === 'manager' || user.role === 'admin' || user.role === 'staff' || user.role === 'courier') && (
+                {(user.role === 'super_admin' || user.role === 'manager' || user.role === 'admin' || user.role === 'staff') && (
                   <div className="pt-2 border-t border-hairline space-y-1.5">
                     <p className="text-[10px] font-extrabold text-body uppercase tracking-wider px-1">
                       Ganti Mode Profil Toko:
                     </p>
-                    <div className="grid grid-cols-2 gap-1.5">
+                    <div className="grid grid-cols-3 gap-1.5">
                       <button
                         type="button"
                         onClick={() => {
@@ -445,11 +409,11 @@ export const Navbar: React.FC = () => {
                           setRoleSwitcherOpen(false);
                           navigate('/admin');
                         }}
-                        className={`px-2 py-1.5 rounded-lg text-[10px] font-bold text-left transition-colors ${
+                        className={`px-2 py-1.5 rounded-lg text-[10px] font-bold text-center transition-colors ${
                           user.role === 'super_admin' ? 'bg-purple-600 text-white' : 'bg-neutral-2 hover:bg-neutral-1/30 text-body'
                         }`}
                       >
-                        🛡️ Super Admin
+                        Super Admin
                       </button>
                       <button
                         type="button"
@@ -458,11 +422,11 @@ export const Navbar: React.FC = () => {
                           setRoleSwitcherOpen(false);
                           navigate('/admin');
                         }}
-                        className={`px-2 py-1.5 rounded-lg text-[10px] font-bold text-left transition-colors ${
+                        className={`px-2 py-1.5 rounded-lg text-[10px] font-bold text-center transition-colors ${
                           user.role === 'manager' ? 'bg-blue-600 text-white' : 'bg-neutral-2 hover:bg-neutral-1/30 text-body'
                         }`}
                       >
-                        📊 Manajer Toko
+                        Manajer
                       </button>
                       <button
                         type="button"
@@ -471,24 +435,11 @@ export const Navbar: React.FC = () => {
                           setRoleSwitcherOpen(false);
                           navigate('/admin');
                         }}
-                        className={`px-2 py-1.5 rounded-lg text-[10px] font-bold text-left transition-colors ${
+                        className={`px-2 py-1.5 rounded-lg text-[10px] font-bold text-center transition-colors ${
                           user.role === 'staff' ? 'bg-amber-600 text-white' : 'bg-neutral-2 hover:bg-neutral-1/30 text-body'
                         }`}
                       >
-                        📦 Staf Gudang
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          loginAs('courier');
-                          setRoleSwitcherOpen(false);
-                          navigate('/courier');
-                        }}
-                        className={`px-2 py-1.5 rounded-lg text-[10px] font-bold text-left transition-colors ${
-                          user.role === 'courier' ? 'bg-green-600 text-white' : 'bg-neutral-2 hover:bg-neutral-1/30 text-body'
-                        }`}
-                      >
-                        🚚 Kurir Toko
+                        Gudang
                       </button>
                     </div>
                   </div>
@@ -573,7 +524,7 @@ export const Navbar: React.FC = () => {
               </button>
             ) : (
               <Link
-                to={user.role === 'customer' ? '/account' : user.role === 'courier' ? '/courier' : '/admin'}
+                to={user.role === 'customer' ? '/account' : '/admin'}
                 onClick={() => setMobileMenuOpen(false)}
                 className="block py-2 text-sm font-bold text-primary hover:underline flex items-center gap-1.5"
               >
@@ -734,8 +685,7 @@ export const Navbar: React.FC = () => {
                           isAuthenticated: true,
                         });
                         setShowManualLoginModal(false);
-                        if (role === 'super_admin' || role === 'admin') navigate('/admin');
-                        else if (role === 'courier') navigate('/courier');
+                        if (role === 'super_admin' || role === 'admin' || role === 'manager' || role === 'staff') navigate('/admin');
                         else navigate('/account');
                         setAuthLoading(false);
                         return;
@@ -753,16 +703,11 @@ export const Navbar: React.FC = () => {
                         isAuthenticated: true,
                       });
                       setShowManualLoginModal(false);
-                      if (staffMatch.role === 'courier') navigate('/courier');
-                      else navigate('/admin');
+                      navigate('/admin');
                     } else if (em.includes('admin')) {
                       loginAs('super_admin');
                       setShowManualLoginModal(false);
                       navigate('/admin');
-                    } else if (em.includes('kurir') || em.includes('courier')) {
-                      loginAs('courier');
-                      setShowManualLoginModal(false);
-                      navigate('/courier');
                     } else {
                       useAuthStore.setState({
                         user: {

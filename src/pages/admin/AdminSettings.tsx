@@ -4,7 +4,7 @@ import { isSupabaseConfigured } from '@/lib/supabase';
 
 export const AdminSettings: React.FC = () => {
   const [storeName, setStoreName] = useState('USKI STORE');
-  const [phone, setPhone] = useState('0812-3456-7890');
+  const [phone, setPhone] = useState('0859-6724-9718');
   const [email, setEmail] = useState('cs@uskistore.id');
   const [address, setAddress] = useState('Jl. Margonda Raya No. 102, Depok, Jawa Barat');
   const [bcaAccount, setBcaAccount] = useState('7120982311');
@@ -76,7 +76,7 @@ export const AdminSettings: React.FC = () => {
         {!isSupabaseConfigured && (
           <div className="p-4 bg-white rounded-2xl border border-amber-200 space-y-2 text-xs text-[#2D3033]">
             <p className="font-bold text-amber-900">
-              💡 Cara Menghubungkan Supabase Project Anda dalam 3 Langkah:
+              Cara Menghubungkan Supabase Project Anda dalam 3 Langkah:
             </p>
             <ol className="list-decimal list-inside space-y-1 text-[11px] leading-relaxed text-body">
               <li>

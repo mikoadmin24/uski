@@ -98,16 +98,16 @@ export const AdminPayments: React.FC = () => {
             { id: 'all', label: `Semua Transaksi (${orders.length})` },
             {
               id: 'pending',
-              label: `⏳ Perlu Verifikasi (${orders.filter((o) => o.payment_status === 'pending').length})`,
+              label: `Perlu Verifikasi (${orders.filter((o) => o.payment_status === 'pending').length})`,
               highlight: true,
             },
             {
               id: 'verified',
-              label: `✅ Lunas Sah (${orders.filter((o) => o.payment_status === 'verified').length})`,
+              label: `Lunas Sah (${orders.filter((o) => o.payment_status === 'verified').length})`,
             },
             {
               id: 'rejected',
-              label: `❌ Ditolak (${orders.filter((o) => o.payment_status === 'rejected').length})`,
+              label: `Ditolak (${orders.filter((o) => o.payment_status === 'rejected').length})`,
             },
           ].map((tab) => (
             <button
