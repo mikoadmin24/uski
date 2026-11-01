@@ -87,10 +87,14 @@ export const useProductStore = create<ProductState>((set, get) => ({
   getProductByBarcodeOrSku: (query) => {
     const q = query.trim().toUpperCase();
     if (!q) return undefined;
+    const cleanDigits = q.replace(/[^0-9]/g, '');
+
     return get().products.find(
       (p) =>
+        p.id.toUpperCase() === q ||
         p.sku_master.toUpperCase() === q ||
-        (p.isbn && p.isbn.replace(/[^0-9]/g, '') === q.replace(/[^0-9]/g, '')) ||
+        (cleanDigits.length >= 8 && p.sku_master.replace(/[^0-9]/g, '') === cleanDigits) ||
+        (p.isbn && cleanDigits.length >= 8 && p.isbn.replace(/[^0-9]/g, '') === cleanDigits) ||
         (p.variants && p.variants.some((v) => v.sku.toUpperCase() === q))
     );
   },

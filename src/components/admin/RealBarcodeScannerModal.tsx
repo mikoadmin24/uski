@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
-import { Camera, X, Flashlight, RefreshCw, Barcode, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Camera, X, Flashlight, RefreshCw, Barcode, CheckCircle2, AlertCircle, Image as ImageIcon, Sparkles, UploadCloud } from 'lucide-react';
+import { useProductStore } from '@/store/productStore';
 
 interface RealBarcodeScannerModalProps {
   isOpen: boolean;
@@ -13,18 +14,22 @@ export const RealBarcodeScannerModal: React.FC<RealBarcodeScannerModalProps> = (
   onClose,
   onScan,
 }) => {
+  const { products } = useProductStore();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
   const [cameras, setCameras] = useState<Array<{ id: string; label: string }>>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>('');
   const [manualCode, setManualCode] = useState('');
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
+  const [showHelperList, setShowHelperList] = useState(false);
 
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerContainerId = 'real-barcode-scanner-viewport';
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Sound feedback on successful barcode read
+  // Audio beep feedback
   const playBeep = () => {
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
@@ -35,20 +40,30 @@ export const RealBarcodeScannerModal: React.FC<RealBarcodeScannerModalProps> = (
       osc.type = 'sine';
       osc.frequency.setValueAtTime(880, ctx.currentTime);
       gain.gain.setValueAtTime(0.3, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.18);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start();
-      osc.stop(ctx.currentTime + 0.15);
+      osc.stop(ctx.currentTime + 0.18);
     } catch {
-      // Audio context might be restricted before interaction
+      // Audio context might be restricted
     }
   };
 
+  const handleScanSuccess = async (decodedText: string) => {
+    const cleanText = decodedText.trim();
+    if (!cleanText) return;
+
+    playBeep();
+    setLastScannedCode(cleanText);
+    setIsScanning(false);
+
+    await stopScanner();
+    onScan(cleanText);
+  };
+
   useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
+    if (!isOpen) return;
 
     let isMounted = true;
     setErrorMessage(null);
@@ -56,31 +71,29 @@ export const RealBarcodeScannerModal: React.FC<RealBarcodeScannerModalProps> = (
 
     async function initScanner() {
       try {
-        const availableCameras = await Html5Qrcode.getCameras();
+        const availableCameras = await Html5Qrcode.getCameras().catch(() => []);
         if (!isMounted) return;
 
         if (availableCameras && availableCameras.length > 0) {
           setCameras(availableCameras);
-          // Prefer back/rear camera for physical product barcode scanning
           const backCam = availableCameras.find((c) =>
             c.label.toLowerCase().includes('back') ||
             c.label.toLowerCase().includes('rear') ||
-            c.label.toLowerCase().includes('environment')
+            c.label.toLowerCase().includes('environment') ||
+            c.label.toLowerCase().includes('belakang')
           );
           const initialCamId = backCam ? backCam.id : availableCameras[0].id;
           setSelectedCameraId(initialCamId);
           startCamera(initialCamId);
         } else {
-          // Fallback to environment facingMode
           startCamera({ facingMode: 'environment' });
         }
       } catch (err: any) {
-        console.warn('Failed to enumerate cameras:', err);
+        console.warn('Camera enumeration note:', err);
         startCamera({ facingMode: 'environment' });
       }
     }
 
-    // Small delay to ensure modal DOM is mounted
     const timer = setTimeout(() => {
       initScanner();
     }, 150);
@@ -96,25 +109,36 @@ export const RealBarcodeScannerModal: React.FC<RealBarcodeScannerModalProps> = (
     try {
       await stopScanner();
 
+      // Configure multi-format scanner with hardware acceleration enabled
       const scanner = new Html5Qrcode(scannerContainerId, {
         formatsToSupport: [
           Html5QrcodeSupportedFormats.EAN_13,
           Html5QrcodeSupportedFormats.EAN_8,
           Html5QrcodeSupportedFormats.CODE_128,
           Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.CODE_93,
+          Html5QrcodeSupportedFormats.CODABAR,
           Html5QrcodeSupportedFormats.UPC_A,
           Html5QrcodeSupportedFormats.UPC_E,
           Html5QrcodeSupportedFormats.QR_CODE,
           Html5QrcodeSupportedFormats.ITF,
+          Html5QrcodeSupportedFormats.DATA_MATRIX,
         ],
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true,
+        },
         verbose: false,
       });
 
       scannerRef.current = scanner;
 
+      // Dynamic wide scanning box for book ISBN and retail barcodes
       const config = {
-        fps: 15,
-        qrbox: { width: 280, height: 160 },
+        fps: 20,
+        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => ({
+          width: Math.floor(viewfinderWidth * 0.92),
+          height: Math.floor(Math.max(160, viewfinderHeight * 0.72)),
+        }),
         aspectRatio: 1.333,
       };
 
@@ -122,16 +146,10 @@ export const RealBarcodeScannerModal: React.FC<RealBarcodeScannerModalProps> = (
         cameraSource,
         config,
         (decodedText) => {
-          // BARCODE SUCCESSFULLY DECODED IN REAL TIME!
-          playBeep();
-          setLastScannedCode(decodedText);
-          setIsScanning(false);
-          stopScanner().then(() => {
-            onScan(decodedText.trim());
-          });
+          handleScanSuccess(decodedText);
         },
         () => {
-          // Frame evaluation callback, ignore frames with no barcode
+          // Frame evaluation
         }
       );
 
@@ -142,7 +160,7 @@ export const RealBarcodeScannerModal: React.FC<RealBarcodeScannerModalProps> = (
       setIsScanning(false);
       setErrorMessage(
         err?.message ||
-        'Kamera tidak dapat diakses. Harap periksa izin akses kamera di browser Anda.'
+        'Kamera tidak dapat diakses langsung. Anda dapat gunakan tombol "Foto Barcode" atau ketik manual di bawah.'
       );
     }
   };
@@ -180,33 +198,50 @@ export const RealBarcodeScannerModal: React.FC<RealBarcodeScannerModalProps> = (
       });
       setTorchOn(!torchOn);
     } catch {
-      alert('Senter/Flash tidak didukung oleh browser atau perangkat kamera ini.');
+      alert('Senter/Flash tidak didukung oleh perangkat kamera ini.');
+    }
+  };
+
+  // Decode barcode directly from captured photo or gallery image
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsProcessingPhoto(true);
+    try {
+      const scanner = scannerRef.current || new Html5Qrcode(scannerContainerId, { verbose: false });
+      const decodedText = await scanner.scanFile(file, true);
+      if (decodedText) {
+        handleScanSuccess(decodedText);
+      }
+    } catch (err: any) {
+      alert('Barcode tidak terbaca dari foto tersebut. Harap pastikan garis barcode tajam, fokus, dan tidak terpotong.');
+    } finally {
+      setIsProcessingPhoto(false);
+      e.target.value = '';
     }
   };
 
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!manualCode.trim()) return;
-    playBeep();
-    stopScanner().then(() => {
-      onScan(manualCode.trim());
-    });
+    handleScanSuccess(manualCode.trim());
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
       <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl border border-hairline flex flex-col">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-hairline flex items-center justify-between bg-neutral-2/40">
+        <div className="px-5 py-3.5 border-b border-hairline flex items-center justify-between bg-neutral-2/40">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
               <Camera className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-extrabold text-sm text-[#101519]">Scan Barcode / ISBN Langsung</h3>
-              <p className="text-[11px] text-body">Arahkan kamera ke barcode produk fisik atau buku</p>
+              <h3 className="font-extrabold text-sm text-[#101519]">Scanner Barcode & ISBN</h3>
+              <p className="text-[11px] text-body">Arahkan kamera atau foto langsung garis barcode</p>
             </div>
           </div>
           <button
@@ -220,7 +255,7 @@ export const RealBarcodeScannerModal: React.FC<RealBarcodeScannerModalProps> = (
           </button>
         </div>
 
-        {/* Viewport Scanner */}
+        {/* Camera Viewport */}
         <div className="relative bg-black min-h-[300px] flex items-center justify-center overflow-hidden">
           <div
             id={scannerContainerId}
@@ -230,77 +265,127 @@ export const RealBarcodeScannerModal: React.FC<RealBarcodeScannerModalProps> = (
           {/* Scanner Overlay Visual Guidelines */}
           {isScanning && (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <div className="relative w-64 h-36 border-2 border-emerald-400/80 rounded-2xl shadow-[0_0_0_9999px_rgba(0,0,0,0.45)] flex items-center justify-center overflow-hidden">
+              <div className="relative w-[88%] h-44 border-2 border-emerald-400 rounded-2xl shadow-[0_0_0_9999px_rgba(0,0,0,0.45)] flex items-center justify-center overflow-hidden">
                 {/* Red Laser Sweep Line */}
-                <div className="absolute inset-x-0 h-0.5 bg-red-500 shadow-[0_0_8px_#ef4444] animate-bounce" />
-                <span className="text-[11px] font-bold text-white/90 bg-black/60 px-2 py-0.5 rounded-full mt-auto mb-2">
-                  Posisikan Barcode di Sini
+                <div className="absolute inset-x-0 h-0.5 bg-red-500 shadow-[0_0_10px_#ef4444] animate-pulse" />
+                <span className="text-[11px] font-bold text-white bg-black/60 px-3 py-1 rounded-full mt-auto mb-2 backdrop-blur-xs">
+                  Posisikan Barcode di Kotak Ini
                 </span>
               </div>
             </div>
           )}
 
-          {/* Error Message Display */}
-          {errorMessage && (
-            <div className="absolute inset-0 bg-neutral-900/90 text-white p-6 flex flex-col items-center justify-center text-center space-y-3 z-20">
-              <AlertCircle className="w-10 h-10 text-amber-400" />
-              <p className="text-xs font-semibold">{errorMessage}</p>
-              <button
-                type="button"
-                onClick={() => startCamera({ facingMode: 'environment' })}
-                className="px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary-hover transition-colors"
-              >
-                Coba Akses Kamera Lagi
-              </button>
+          {/* Processing Photo Indicator */}
+          {isProcessingPhoto && (
+            <div className="absolute inset-0 bg-neutral-900/90 text-white flex flex-col items-center justify-center p-6 text-center space-y-3 z-30">
+              <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+              <p className="font-bold text-xs">Menganalisis barcode dari foto...</p>
             </div>
           )}
 
-          {/* Scanned Success Notification Flash */}
+          {/* Error Message Display */}
+          {errorMessage && (
+            <div className="absolute inset-0 bg-neutral-900/95 text-white p-6 flex flex-col items-center justify-center text-center space-y-3 z-20">
+              <AlertCircle className="w-10 h-10 text-amber-400" />
+              <p className="text-xs font-semibold leading-relaxed">{errorMessage}</p>
+              <div className="flex flex-wrap gap-2 justify-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => startCamera({ facingMode: 'environment' })}
+                  className="px-3 py-1.5 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary-hover transition-colors"
+                >
+                  Coba Akses Kamera Lagi
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-colors flex items-center gap-1.5"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  <span>Ambil Foto Barcode</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Scanned Success Flash */}
           {lastScannedCode && (
             <div className="absolute inset-0 bg-emerald-600/95 text-white flex flex-col items-center justify-center p-6 text-center space-y-2 z-30 animate-in fade-in zoom-in duration-200">
               <CheckCircle2 className="w-12 h-12" />
-              <h4 className="font-extrabold text-base">Barcode Berhasil Dibaca!</h4>
+              <h4 className="font-extrabold text-base">Barcode Berhasil Terbaca!</h4>
               <p className="font-mono text-sm font-bold bg-white/20 px-3 py-1 rounded-lg">
                 {lastScannedCode}
               </p>
             </div>
           )}
 
-          {/* Bottom Floating Controls */}
+          {/* Top Floating Controls */}
           {isScanning && (
-            <div className="absolute bottom-3 inset-x-0 flex items-center justify-center gap-3 z-10">
-              {cameras.length > 1 && (
-                <button
-                  type="button"
-                  onClick={handleSwitchCamera}
-                  className="px-3 py-1.5 bg-black/60 hover:bg-black/80 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 backdrop-blur-sm border border-white/20 transition-colors"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Ganti Kamera</span>
-                </button>
-              )}
+            <div className="absolute top-3 inset-x-3 flex items-center justify-between z-10">
               <button
                 type="button"
-                onClick={handleToggleTorch}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl flex items-center gap-1.5 backdrop-blur-sm border transition-colors ${
-                  torchOn
-                    ? 'bg-amber-400 text-black border-amber-300'
-                    : 'bg-black/60 hover:bg-black/80 text-white border-white/20'
-                }`}
+                onClick={() => fileInputRef.current?.click()}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md transition-colors"
               >
-                <Flashlight className="w-3.5 h-3.5" />
-                <span>{torchOn ? 'Matikan Senter' : 'Senter'}</span>
+                <Camera className="w-3.5 h-3.5" />
+                <span>Foto Barcode</span>
               </button>
+
+              <div className="flex items-center gap-2">
+                {cameras.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={handleSwitchCamera}
+                    className="p-2 bg-black/60 hover:bg-black/80 text-white rounded-xl backdrop-blur-sm border border-white/20 transition-colors"
+                    title="Ganti Kamera Belakang / Depan"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleToggleTorch}
+                  className={`p-2 rounded-xl backdrop-blur-sm border transition-colors ${
+                    torchOn
+                      ? 'bg-amber-400 text-black border-amber-300'
+                      : 'bg-black/60 hover:bg-black/80 text-white border-white/20'
+                  }`}
+                  title="Nyalakan Senter / Flash"
+                >
+                  <Flashlight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Manual Barcode Input Fallback */}
-        <div className="p-4 border-t border-hairline bg-white space-y-2">
-          <label className="text-[11px] font-bold text-body flex items-center gap-1.5">
-            <Barcode className="w-3.5 h-3.5 text-primary" />
-            <span>Atau ketik Barcode / ISBN / SKU manual:</span>
-          </label>
+        {/* Hidden Camera Shutter / Gallery Picker */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handlePhotoUpload}
+          className="hidden"
+        />
+
+        {/* Action Controls & Manual Input */}
+        <div className="p-4 border-t border-hairline bg-white space-y-3">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-bold text-body flex items-center gap-1.5">
+              <Barcode className="w-4 h-4 text-primary" />
+              Ketik Barcode / ISBN / SKU:
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowHelperList(!showHelperList)}
+              className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1"
+            >
+              <Sparkles className="w-3 h-3" />
+              <span>{showHelperList ? 'Tutup Daftar' : 'Lihat Produk Toko'}</span>
+            </button>
+          </div>
+
           <form onSubmit={handleManualSubmit} className="flex gap-2">
             <input
               type="text"
@@ -314,9 +399,31 @@ export const RealBarcodeScannerModal: React.FC<RealBarcodeScannerModalProps> = (
               disabled={!manualCode.trim()}
               className="px-4 py-1.5 bg-primary hover:bg-primary-hover disabled:opacity-50 text-white font-bold text-xs rounded-xl transition-colors shadow-xs"
             >
-              Gunakan
+              Cari
             </button>
           </form>
+
+          {/* Quick Helper List of Current Products */}
+          {showHelperList && (
+            <div className="p-2.5 bg-neutral-2/60 rounded-xl border border-hairline space-y-1.5 max-h-40 overflow-y-auto text-xs">
+              <span className="text-[10px] font-bold text-body block uppercase">
+                Klik salah satu untuk simulasi tes scan:
+              </span>
+              {products.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => handleScanSuccess(p.isbn || p.sku_master)}
+                  className="w-full text-left p-1.5 hover:bg-white rounded-lg flex items-center justify-between transition-colors font-medium"
+                >
+                  <span className="truncate pr-2">{p.name}</span>
+                  <span className="font-mono text-primary font-bold text-[11px] shrink-0">
+                    {p.isbn || p.sku_master}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
