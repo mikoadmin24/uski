@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Grid, FileSpreadsheet, ShoppingCart, User, Shield, Navigation, Package } from 'lucide-react';
+import { Home, Grid, FileSpreadsheet, ShoppingCart, User, Shield, Package } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
 

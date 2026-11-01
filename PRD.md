@@ -5,7 +5,7 @@
 | :--- | :--- |
 | **Product Name** | USKI STORE |
 | **Product Type** | E-commerce website / Progressive Web App (PWA) |
-| **Reference Design** | [Gramedia Design System on DesignMD](https://designmd.me/s/gramedia-r9li6) / [www.gramedia.com-DESIGN.md](file:///d:/uski%20store/www.gramedia.com-DESIGN.md) |
+| **Reference Design** | [Gramedia Design System on DesignMD](https://designmd.me/s/gramedia-r9li6) |
 | **Primary Language** | Bahasa Indonesia |
 | **Currency** | Indonesian Rupiah (IDR) |
 | **Primary Market** | Indonesia |
@@ -67,7 +67,6 @@ Categories are manageable from the admin dashboard without modifying source code
 
 ## 2.1 Source of Truth
 Read the design specification at:
-* Local Document: [www.gramedia.com-DESIGN.md](file:///d:/uski%20store/www.gramedia.com-DESIGN.md)
 * Online Reference: https://designmd.me/s/gramedia-r9li6
 
 Use it as the primary visual reference, together with any local DESIGN.md or Markdown files already present in the project. Inspect the actual project before changing its styling. Do not create an unrelated design system or replace existing approved layouts.

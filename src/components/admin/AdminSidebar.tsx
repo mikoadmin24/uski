@@ -4,9 +4,7 @@ import {
   LayoutDashboard,
   Package,
   Layers,
-  Barcode,
   ShoppingBag,
-  CreditCard,
   FileSpreadsheet,
   Tag,
   BarChart3,
@@ -14,9 +12,6 @@ import {
   Settings,
   ArrowLeft,
   X,
-  AlertTriangle,
-  Navigation,
-  Truck,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useOrderStore } from '@/store/orderStore';
@@ -56,9 +51,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
   // Dynamic real-time badge counters
   const pendingOrdersCount = orders.filter(
     (o) => o.status === 'awaiting_payment' || o.status === 'processing'
-  ).length;
-  const awaitingVerificationCount = orders.filter(
-    (o) => o.status === 'awaiting_verification'
   ).length;
   const pendingRfqCount = requests.filter(
     (r) => r.status === 'pending_review' || r.status === 'checking_supplier'
