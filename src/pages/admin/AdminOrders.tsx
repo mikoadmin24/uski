@@ -8,15 +8,10 @@ import {
   Eye,
   MessageSquare,
   CheckCircle2,
-  Clock,
   MapPin,
-  Phone,
   Package,
   Store,
   Check,
-  Send,
-  AlertCircle,
-  FileText,
 } from 'lucide-react';
 import { useOrderStore } from '@/store/orderStore';
 import { formatRupiah, formatDate } from '@/lib/utils';

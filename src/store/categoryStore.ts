@@ -25,8 +25,7 @@ const getInitialCategories = (): Category[] => {
     if (!saved) return [];
     const parsed: Category[] = JSON.parse(saved);
     if (!Array.isArray(parsed)) return [];
-    const mockIds = new Set(['cat-1', 'cat-2', 'cat-3', 'cat-4', 'cat-5', 'cat-6', 'cat-7', 'cat-8', 'cat-9', 'cat-10']);
-    return parsed.filter((c) => !mockIds.has(c.id));
+    return parsed;
   } catch {
     return [];
   }
@@ -38,8 +37,7 @@ const getInitialBanners = (): PromoBanner[] => {
     if (!saved) return [];
     const parsed: PromoBanner[] = JSON.parse(saved);
     if (!Array.isArray(parsed)) return [];
-    const mockBannerIds = new Set(['banner-1', 'banner-2', 'banner-3']);
-    return parsed.filter((b) => !mockBannerIds.has(b.id));
+    return parsed;
   } catch {
     return [];
   }

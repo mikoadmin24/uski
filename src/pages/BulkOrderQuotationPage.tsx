@@ -1,15 +1,8 @@
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
-  FileCheck2,
   CheckCircle2,
-  XCircle,
   Clock,
-  Building,
-  Calendar,
-  Truck,
-  ArrowRight,
-  ShieldCheck,
   AlertCircle,
   Printer,
   X,

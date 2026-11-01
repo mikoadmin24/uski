@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Outlet, useLocation, Navigate } from 'react-router-dom';
 import { Navbar } from '@/components/common/Navbar';
 import { Footer } from '@/components/common/Footer';
@@ -72,10 +72,11 @@ export function App() {
           <Route path="/bulk-order/:reference" element={<BulkOrderQuotationPage />} />
           <Route path="/track-order" element={<OrderTrackingPage />} />
           <Route path="/account" element={<AccountPage />} />
+          <Route path="/policies" element={<Navigate to="/policies/shipping" replace />} />
           <Route path="/policies/:type" element={<StaticPolicyPage />} />
           <Route path="/contact" element={<StaticPolicyPage />} />
           <Route path="/about" element={<StaticPolicyPage />} />
-          <Route path="/courier" element={<Navigate to="/" replace />} />
+          <Route path="/courier" element={<Navigate to="/account" replace />} />
           <Route path="*" element={<HomePage />} />
         </Route>
 

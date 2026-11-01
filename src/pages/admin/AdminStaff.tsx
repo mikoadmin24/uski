@@ -1,20 +1,12 @@
 import React, { useState } from 'react';
 import {
-  Users,
   Shield,
   Plus,
-  Edit,
   Trash2,
-  CheckCircle2,
-  UserCheck,
-  UserX,
-  Mail,
-  Phone,
   X,
-  Lock,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
-import { UserRole, Profile } from '@/types';
+import { UserRole } from '@/types';
 import { formatDate } from '@/lib/utils';
 
 export const AdminStaff: React.FC = () => {

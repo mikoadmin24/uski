@@ -12,7 +12,6 @@ export const CartPage: React.FC = () => {
     removeItem,
     clearCart,
     appliedVoucher,
-    applyVoucher,
     removeVoucher,
     getSubtotal,
     getDiscount,
@@ -88,7 +87,7 @@ export const CartPage: React.FC = () => {
               {/* Product Thumbnail & Details */}
               <div className="flex gap-4 items-center flex-1 min-w-0">
                 <img
-                  src={item.product.images[0]}
+                  src={item.product.images?.[0] || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=400'}
                   alt={item.product.name}
                   className="w-16 h-20 sm:w-20 sm:h-24 object-cover rounded-xl border border-hairline shrink-0"
                 />

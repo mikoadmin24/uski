@@ -27,8 +27,7 @@ const getInitialRequests = (): CustomRequest[] => {
     if (!saved) return [];
     const parsed: CustomRequest[] = JSON.parse(saved);
     if (!Array.isArray(parsed)) return [];
-    const mockIds = new Set(['cr-1', 'cr-2', 'cr-3']);
-    return parsed.filter((r) => !mockIds.has(r.id));
+    return parsed;
   } catch {
     return [];
   }

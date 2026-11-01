@@ -8,6 +8,7 @@ interface OrderState {
   createOrder: (orderData: Omit<Order, 'id' | 'created_at' | 'updated_at'>) => Order;
   addOrder: (orderData: Omit<Order, 'id' | 'created_at' | 'updated_at'>) => Order;
   getOrderByNumber: (orderNumber: string) => Order | undefined;
+  getUserOrders: (userId?: string, email?: string, phone?: string) => Order[];
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   updatePaymentStatus: (orderId: string, status: PaymentStatus, verifierName?: string, rejectionReason?: string) => void;
   uploadPaymentProof: (orderId: string, proofUrl: string) => void;
@@ -22,8 +23,7 @@ const getInitialOrders = (): Order[] => {
     if (!saved) return [];
     const parsed: Order[] = JSON.parse(saved);
     if (!Array.isArray(parsed)) return [];
-    // Ensure no old dummy mock orders are retained
-    return parsed.filter((o) => !o.id?.startsWith('ord-10'));
+    return parsed;
   } catch {
     return [];
   }
@@ -67,6 +67,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       const payload = {
         ...newOrder,
         customer_id: isUuid(newOrder.customer_id) ? newOrder.customer_id : undefined,
+        customer_email: newOrder.customer_email?.trim() || 'pembeli@uskistore.id',
       };
 
       dbService.orders.insert(payload).catch((err) =>
@@ -82,6 +83,29 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   getOrderByNumber: (orderNumber) => {
     const cleanNum = orderNumber.trim().toUpperCase();
     return get().orders.find((o) => o.order_number.toUpperCase() === cleanNum);
+  },
+
+  getUserOrders: (userId?: string, email?: string, phone?: string) => {
+    if (!userId && !email && !phone) return [];
+    const cleanEmail = email?.trim().toLowerCase();
+    const cleanPhone = phone?.trim();
+    const cleanPhoneDigits = cleanPhone?.replace(/\D/g, '') || '';
+
+    return get().orders.filter((o) => {
+      // 1. Authoritative account ID match
+      if (userId && o.customer_id && o.customer_id === userId) return true;
+      // 2. Email match (case-insensitive)
+      if (cleanEmail && o.customer_email && o.customer_email.trim().toLowerCase() === cleanEmail) return true;
+      // 3. Phone match (exact or normalized digits)
+      if (cleanPhone && o.customer_phone) {
+        if (o.customer_phone.trim() === cleanPhone) return true;
+        const orderPhoneDigits = o.customer_phone.replace(/\D/g, '');
+        if (cleanPhoneDigits.length >= 8 && orderPhoneDigits.length >= 8 && cleanPhoneDigits === orderPhoneDigits) {
+          return true;
+        }
+      }
+      return false;
+    });
   },
 
   updateOrderStatus: (orderId, status) => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Package,
@@ -7,9 +7,7 @@ import {
   Edit,
   Trash2,
   CheckCircle2,
-  XCircle,
   Tag,
-  AlertCircle,
   X,
   UploadCloud,
   Link as LinkIcon,
@@ -21,10 +19,12 @@ import {
   ArrowUpDown,
   History,
   Download,
-  Box,
   RotateCw,
   Eye,
-  ExternalLink,
+  Star,
+  Flame,
+  Sparkles,
+  Award,
 } from 'lucide-react';
 import { useProductStore } from '@/store/productStore';
 import { useCategoryStore } from '@/store/categoryStore';
@@ -57,7 +57,7 @@ export const AdminProducts: React.FC = () => {
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [statusFilterTab, setStatusFilterTab] = useState<'all' | 'low_stock' | 'discount' | 'inactive'>('all');
+  const [statusFilterTab, setStatusFilterTab] = useState<'all' | 'low_stock' | 'discount' | 'featured' | 'best_seller' | 'new_arrival' | 'inactive'>('all');
 
   // Barcode Scanning Input & Real Camera Scanner State
   const [barcodeInput, setBarcodeInput] = useState('');
@@ -76,7 +76,6 @@ export const AdminProducts: React.FC = () => {
   const [stockDelta, setStockDelta] = useState('10');
   const [adjustmentType, setAdjustmentType] = useState<InventoryMovement['type']>('purchase_in');
   const [adjustmentNotes, setAdjustmentNotes] = useState('Restock pengadaan barang baru');
-  const [stockSuccessMsg, setStockSuccessMsg] = useState<string | null>(null);
 
   // Add / Edit Product Form States
   const [name, setName] = useState('');
@@ -90,6 +89,10 @@ export const AdminProducts: React.FC = () => {
   const [minStockAlert, setMinStockAlert] = useState<string>('');
   const [weightGrams, setWeightGrams] = useState<string>('');
   const [description, setDescription] = useState('');
+  // Homepage Badges Form States
+  const [isFeatured, setIsFeatured] = useState(false);
+  const [isBestSeller, setIsBestSeller] = useState(false);
+  const [isNewArrival, setIsNewArrival] = useState(false);
 
   // Multi-Image & Automatic WebP Conversion States
   const [productImages, setProductImages] = useState<string[]>([]);
@@ -123,6 +126,9 @@ export const AdminProducts: React.FC = () => {
     setProductImages([]);
     setWebpSavingsInfo(null);
     setImageUploadType('upload');
+    setIsFeatured(false);
+    setIsBestSeller(false);
+    setIsNewArrival(false);
     setEditingProduct(null);
   };
 
@@ -164,6 +170,9 @@ export const AdminProducts: React.FC = () => {
     setWebpSavingsInfo(null);
     setImageUrl('');
     setImageUploadType('upload');
+    setIsFeatured(Boolean(product.is_featured));
+    setIsBestSeller(Boolean(product.is_best_seller));
+    setIsNewArrival(Boolean(product.is_new_arrival));
   };
 
   const handleCloseEditModal = () => {
@@ -182,7 +191,6 @@ export const AdminProducts: React.FC = () => {
     setStockDelta('10');
     setAdjustmentType('purchase_in');
     setAdjustmentNotes('Restock pengadaan barang baru');
-    setStockSuccessMsg(null);
   };
 
   const handleExecuteStockAdjust = (e: React.FormEvent) => {
@@ -315,6 +323,9 @@ export const AdminProducts: React.FC = () => {
   // Filter calculations
   const lowStockCount = products.filter((p) => p.stock_quantity <= p.min_stock_alert).length;
   const discountCount = products.filter((p) => p.sale_price && p.sale_price < p.base_price).length;
+  const featuredCount = products.filter((p) => p.is_featured).length;
+  const bestSellerCount = products.filter((p) => p.is_best_seller).length;
+  const newArrivalCount = products.filter((p) => p.is_new_arrival).length;
   const inactiveCount = products.filter((p) => !p.is_active).length;
 
   const filteredProducts = products.filter((p) => {
@@ -332,6 +343,12 @@ export const AdminProducts: React.FC = () => {
       matchTab = p.stock_quantity <= p.min_stock_alert;
     } else if (statusFilterTab === 'discount') {
       matchTab = Boolean(p.sale_price && p.sale_price < p.base_price);
+    } else if (statusFilterTab === 'featured') {
+      matchTab = Boolean(p.is_featured);
+    } else if (statusFilterTab === 'best_seller') {
+      matchTab = Boolean(p.is_best_seller);
+    } else if (statusFilterTab === 'new_arrival') {
+      matchTab = Boolean(p.is_new_arrival);
     } else if (statusFilterTab === 'inactive') {
       matchTab = !p.is_active;
     }
@@ -372,7 +389,9 @@ export const AdminProducts: React.FC = () => {
           'Garansi': 'Toko Resmi',
         },
         is_active: true,
-        is_featured: false,
+        is_featured: isFeatured,
+        is_best_seller: isBestSeller,
+        is_new_arrival: isNewArrival,
         images: finalImages,
       });
 
@@ -408,6 +427,9 @@ export const AdminProducts: React.FC = () => {
         min_stock_alert: minStockAlert ? Number(minStockAlert) : 5,
         weight_grams: weightGrams ? Number(weightGrams) : 300,
         description: description.trim() || 'Deskripsi produk resmi USKI STORE.',
+        is_featured: isFeatured,
+        is_best_seller: isBestSeller,
+        is_new_arrival: isNewArrival,
         images: finalImages,
       });
       alert('Perubahan produk dan foto WebP berhasil diperbarui.');
@@ -422,7 +444,7 @@ export const AdminProducts: React.FC = () => {
 
   // CSV Export functions
   const handleExportProductsCSV = () => {
-    const headers = ['SKU Master', 'ISBN', 'Nama Produk', 'Kategori', 'Harga Dasar', 'Harga Diskon', 'Stok', 'Batas Min', 'Status'];
+    const headers = ['SKU Master', 'ISBN', 'Nama Produk', 'Kategori', 'Harga Dasar', 'Harga Diskon', 'Stok', 'Batas Min', 'Status', 'Unggulan', 'Terlaris', 'Terbaru'];
     const rows = products.map((p) => [
       `"${p.sku_master}"`,
       `"${p.isbn || '-'}"`,
@@ -433,6 +455,9 @@ export const AdminProducts: React.FC = () => {
       p.stock_quantity,
       p.min_stock_alert,
       p.is_active ? 'Aktif' : 'Nonaktif',
+      p.is_featured ? 'Ya' : 'Tidak',
+      p.is_best_seller ? 'Ya' : 'Tidak',
+      p.is_new_arrival ? 'Ya' : 'Tidak',
     ]);
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
     const link = document.createElement('a');
@@ -618,6 +643,42 @@ export const AdminProducts: React.FC = () => {
             </button>
 
             <button
+              onClick={() => setStatusFilterTab('featured')}
+              className={`px-4 py-2 rounded-xl font-bold whitespace-nowrap flex items-center gap-1.5 transition-all ${
+                statusFilterTab === 'featured'
+                  ? 'bg-amber-600 text-white shadow-sm'
+                  : 'bg-white text-amber-700 border border-amber-200 hover:bg-amber-50'
+              }`}
+            >
+              <Star className="w-3.5 h-3.5 fill-current" />
+              <span>Unggulan ({featuredCount})</span>
+            </button>
+
+            <button
+              onClick={() => setStatusFilterTab('best_seller')}
+              className={`px-4 py-2 rounded-xl font-bold whitespace-nowrap flex items-center gap-1.5 transition-all ${
+                statusFilterTab === 'best_seller'
+                  ? 'bg-rose-600 text-white shadow-sm'
+                  : 'bg-white text-rose-700 border border-rose-200 hover:bg-rose-50'
+              }`}
+            >
+              <Flame className="w-3.5 h-3.5 fill-current" />
+              <span>Terlaris ({bestSellerCount})</span>
+            </button>
+
+            <button
+              onClick={() => setStatusFilterTab('new_arrival')}
+              className={`px-4 py-2 rounded-xl font-bold whitespace-nowrap flex items-center gap-1.5 transition-all ${
+                statusFilterTab === 'new_arrival'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-white text-blue-700 border border-blue-200 hover:bg-blue-50'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Terbaru ({newArrivalCount})</span>
+            </button>
+
+            <button
               onClick={() => setStatusFilterTab('inactive')}
               className={`px-4 py-2 rounded-xl font-bold whitespace-nowrap transition-all ${
                 statusFilterTab === 'inactive'
@@ -670,6 +731,7 @@ export const AdminProducts: React.FC = () => {
                     <th className="py-3 px-4">Kategori</th>
                     <th className="py-3 px-4">Harga Jual</th>
                     <th className="py-3 px-4 text-center">Stok & Mutasi Cepat</th>
+                    <th className="py-3 px-4 text-center">Lencana Beranda</th>
                     <th className="py-3 px-4 text-center">Status</th>
                     <th className="py-3 px-4 text-center">Aksi</th>
                   </tr>
@@ -677,7 +739,7 @@ export const AdminProducts: React.FC = () => {
                 <tbody className="divide-y divide-hairline">
                   {filteredProducts.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-12 text-center text-body">
+                      <td colSpan={8} className="py-12 text-center text-body">
                         Tidak ada produk yang cocok dengan pencarian atau filter yang dipilih.
                       </td>
                     </tr>
@@ -690,13 +752,35 @@ export const AdminProducts: React.FC = () => {
                       >
                         <td className="py-3.5 px-4 flex items-center gap-3">
                           <img
-                            src={p.images[0]}
+                            src={p.images?.[0] || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=400'}
                             alt={p.name}
                             className="w-10 h-12 object-cover rounded-lg border border-hairline shrink-0 bg-neutral-2"
                           />
                           <div className="min-w-0">
                             <p className="font-bold text-[#101519] truncate max-w-xs group-hover:underline">{p.name}</p>
                             <p className="text-[11px] text-body">{p.author || p.brand?.name || '-'}</p>
+
+                            {/* Active Badge Indicators */}
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {p.is_featured && (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded text-[9px] font-bold" title="Produk Unggulan">
+                                  <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
+                                  Unggulan
+                                </span>
+                              )}
+                              {p.is_best_seller && (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 rounded text-[9px] font-bold" title="Produk Terlaris">
+                                  <Flame className="w-2.5 h-2.5 fill-rose-500 text-rose-500" />
+                                  Terlaris
+                                </span>
+                              )}
+                              {p.is_new_arrival && (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded text-[9px] font-bold" title="Produk Terbaru">
+                                  <Sparkles className="w-2.5 h-2.5 text-blue-500" />
+                                  Terbaru
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </td>
 
@@ -734,6 +818,50 @@ export const AdminProducts: React.FC = () => {
                             >
                               <span>{p.stock_quantity} pcs</span>
                               <ArrowUpDown className="w-3 h-3 text-body" />
+                            </button>
+                          </div>
+                        </td>
+
+                        {/* Lencana Beranda Quick 1-Click Toggles */}
+                        <td className="py-3.5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                          <div className="inline-flex items-center justify-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => updateProduct(p.id, { is_featured: !p.is_featured })}
+                              title={`Produk Unggulan: ${p.is_featured ? 'Aktif (Klik untuk nonaktifkan)' : 'Nonaktif (Klik untuk aktifkan)'}`}
+                              className={`p-1.5 rounded-lg border transition-all ${
+                                p.is_featured
+                                  ? 'bg-amber-50 text-amber-600 border-amber-300 shadow-xs'
+                                  : 'bg-white text-neutral-300 border-hairline hover:text-amber-500 hover:border-amber-200'
+                              }`}
+                            >
+                              <Star className={`w-3.5 h-3.5 ${p.is_featured ? 'fill-amber-500 text-amber-500' : ''}`} />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => updateProduct(p.id, { is_best_seller: !p.is_best_seller })}
+                              title={`Produk Terlaris: ${p.is_best_seller ? 'Aktif (Klik untuk nonaktifkan)' : 'Nonaktif (Klik untuk aktifkan)'}`}
+                              className={`p-1.5 rounded-lg border transition-all ${
+                                p.is_best_seller
+                                  ? 'bg-rose-50 text-rose-600 border-rose-300 shadow-xs'
+                                  : 'bg-white text-neutral-300 border-hairline hover:text-rose-500 hover:border-rose-200'
+                              }`}
+                            >
+                              <Flame className={`w-3.5 h-3.5 ${p.is_best_seller ? 'fill-rose-500 text-rose-500' : ''}`} />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => updateProduct(p.id, { is_new_arrival: !p.is_new_arrival })}
+                              title={`Produk Terbaru: ${p.is_new_arrival ? 'Aktif (Klik untuk nonaktifkan)' : 'Nonaktif (Klik untuk aktifkan)'}`}
+                              className={`p-1.5 rounded-lg border transition-all ${
+                                p.is_new_arrival
+                                  ? 'bg-blue-50 text-blue-600 border-blue-300 shadow-xs'
+                                  : 'bg-white text-neutral-300 border-hairline hover:text-blue-500 hover:border-blue-200'
+                              }`}
+                            >
+                              <Sparkles className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </td>
@@ -906,16 +1034,36 @@ export const AdminProducts: React.FC = () => {
               <div className="flex flex-col sm:flex-row gap-5">
                 <div className="w-full sm:w-44 shrink-0">
                   <img
-                    src={selectedProductDetail.images[0]}
+                    src={selectedProductDetail.images?.[0] || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=400'}
                     alt={selectedProductDetail.name}
                     className="w-full h-56 object-cover rounded-2xl border border-hairline shadow-xs bg-neutral-100"
                   />
-                  <div className="mt-2 text-center">
+                  <div className="mt-2 text-center space-y-1">
                     <span className={`px-2.5 py-1 rounded-full font-bold text-[10px] inline-block ${
                       selectedProductDetail.is_active ? 'bg-green-100 text-green-700' : 'bg-neutral-2 text-body'
                     }`}>
                       {selectedProductDetail.is_active ? '● Produk Aktif di Toko' : '○ Non-Aktif'}
                     </span>
+                    <div className="flex flex-wrap justify-center gap-1 pt-0.5">
+                      {selectedProductDetail.is_featured && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-[9px] font-bold">
+                          <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
+                          Unggulan
+                        </span>
+                      )}
+                      {selectedProductDetail.is_best_seller && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 rounded-full text-[9px] font-bold">
+                          <Flame className="w-2.5 h-2.5 fill-rose-500 text-rose-500" />
+                          Terlaris
+                        </span>
+                      )}
+                      {selectedProductDetail.is_new_arrival && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-full text-[9px] font-bold">
+                          <Sparkles className="w-2.5 h-2.5 text-blue-500" />
+                          Terbaru
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -1057,7 +1205,7 @@ export const AdminProducts: React.FC = () => {
             {/* Product summary */}
             <div className="p-3 bg-neutral-2/50 border border-hairline rounded-2xl flex items-center gap-3">
               <img
-                src={stockAdjustProduct.images[0]}
+                src={stockAdjustProduct.images?.[0] || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=400'}
                 alt={stockAdjustProduct.name}
                 className="w-12 h-14 object-cover rounded-xl border border-hairline bg-white shrink-0"
               />
@@ -1546,6 +1694,96 @@ export const AdminProducts: React.FC = () => {
                 />
               </div>
 
+              {/* Lencana & Tampilan Beranda */}
+              <div className="space-y-2 pt-2 border-t border-hairline">
+                <div>
+                  <label className="font-extrabold text-[#101519] flex items-center gap-1.5">
+                    <Award className="w-4 h-4 text-primary" />
+                    <span>Lencana & Tampilan Beranda (Homepage Badges)</span>
+                  </label>
+                  <p className="text-[11px] text-body">
+                    Tandai produk untuk ditampilkan pada kurasi khusus dan carousel halaman utama toko
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                  {/* 1. Produk Unggulan */}
+                  <label
+                    className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
+                      isFeatured
+                        ? 'bg-amber-50/70 border-amber-300 ring-1 ring-amber-300 shadow-xs'
+                        : 'bg-neutral-2/40 border-hairline hover:bg-neutral-2/70'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isFeatured}
+                      onChange={(e) => setIsFeatured(e.target.checked)}
+                      className="mt-0.5 rounded border-hairline text-amber-500 focus:ring-amber-400 w-4 h-4"
+                    />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <Star className={`w-3.5 h-3.5 ${isFeatured ? 'fill-amber-500 text-amber-500' : 'text-body'}`} />
+                        <span className="font-bold text-xs text-[#101519]">Produk Unggulan</span>
+                      </div>
+                      <p className="text-[10px] text-body mt-0.5 leading-snug">
+                        Tampil di carousel "Koleksi Unggulan USKI"
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* 2. Produk Terlaris */}
+                  <label
+                    className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
+                      isBestSeller
+                        ? 'bg-rose-50/70 border-rose-300 ring-1 ring-rose-300 shadow-xs'
+                        : 'bg-neutral-2/40 border-hairline hover:bg-neutral-2/70'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isBestSeller}
+                      onChange={(e) => setIsBestSeller(e.target.checked)}
+                      className="mt-0.5 rounded border-hairline text-rose-600 focus:ring-rose-500 w-4 h-4"
+                    />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <Flame className={`w-3.5 h-3.5 ${isBestSeller ? 'fill-rose-500 text-rose-500' : 'text-body'}`} />
+                        <span className="font-bold text-xs text-[#101519]">Produk Terlaris</span>
+                      </div>
+                      <p className="text-[10px] text-body mt-0.5 leading-snug">
+                        Tampil di carousel "Pilihan Terlaris"
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* 3. Produk Terbaru */}
+                  <label
+                    className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
+                      isNewArrival
+                        ? 'bg-blue-50/70 border-blue-300 ring-1 ring-blue-300 shadow-xs'
+                        : 'bg-neutral-2/40 border-hairline hover:bg-neutral-2/70'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isNewArrival}
+                      onChange={(e) => setIsNewArrival(e.target.checked)}
+                      className="mt-0.5 rounded border-hairline text-blue-600 focus:ring-blue-500 w-4 h-4"
+                    />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <Sparkles className={`w-3.5 h-3.5 ${isNewArrival ? 'text-blue-500' : 'text-body'}`} />
+                        <span className="font-bold text-xs text-[#101519]">Produk Terbaru</span>
+                      </div>
+                      <p className="text-[10px] text-body mt-0.5 leading-snug">
+                        Tampil di carousel "Rilisan Terbaru"
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
               <div className="pt-4 border-t border-hairline flex justify-end gap-3">
                 <button
                   type="button"
@@ -1845,6 +2083,96 @@ export const AdminProducts: React.FC = () => {
                   onChange={(e) => setDescription(e.target.value)}
                   className="w-full p-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
                 />
+              </div>
+
+              {/* Lencana & Tampilan Beranda */}
+              <div className="space-y-2 pt-2 border-t border-hairline">
+                <div>
+                  <label className="font-extrabold text-[#101519] flex items-center gap-1.5">
+                    <Award className="w-4 h-4 text-primary" />
+                    <span>Lencana & Tampilan Beranda (Homepage Badges)</span>
+                  </label>
+                  <p className="text-[11px] text-body">
+                    Tandai produk untuk ditampilkan pada kurasi khusus dan carousel halaman utama toko
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                  {/* 1. Produk Unggulan */}
+                  <label
+                    className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
+                      isFeatured
+                        ? 'bg-amber-50/70 border-amber-300 ring-1 ring-amber-300 shadow-xs'
+                        : 'bg-neutral-2/40 border-hairline hover:bg-neutral-2/70'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isFeatured}
+                      onChange={(e) => setIsFeatured(e.target.checked)}
+                      className="mt-0.5 rounded border-hairline text-amber-500 focus:ring-amber-400 w-4 h-4"
+                    />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <Star className={`w-3.5 h-3.5 ${isFeatured ? 'fill-amber-500 text-amber-500' : 'text-body'}`} />
+                        <span className="font-bold text-xs text-[#101519]">Produk Unggulan</span>
+                      </div>
+                      <p className="text-[10px] text-body mt-0.5 leading-snug">
+                        Tampil di carousel "Koleksi Unggulan USKI"
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* 2. Produk Terlaris */}
+                  <label
+                    className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
+                      isBestSeller
+                        ? 'bg-rose-50/70 border-rose-300 ring-1 ring-rose-300 shadow-xs'
+                        : 'bg-neutral-2/40 border-hairline hover:bg-neutral-2/70'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isBestSeller}
+                      onChange={(e) => setIsBestSeller(e.target.checked)}
+                      className="mt-0.5 rounded border-hairline text-rose-600 focus:ring-rose-500 w-4 h-4"
+                    />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <Flame className={`w-3.5 h-3.5 ${isBestSeller ? 'fill-rose-500 text-rose-500' : 'text-body'}`} />
+                        <span className="font-bold text-xs text-[#101519]">Produk Terlaris</span>
+                      </div>
+                      <p className="text-[10px] text-body mt-0.5 leading-snug">
+                        Tampil di carousel "Pilihan Terlaris"
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* 3. Produk Terbaru */}
+                  <label
+                    className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
+                      isNewArrival
+                        ? 'bg-blue-50/70 border-blue-300 ring-1 ring-blue-300 shadow-xs'
+                        : 'bg-neutral-2/40 border-hairline hover:bg-neutral-2/70'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isNewArrival}
+                      onChange={(e) => setIsNewArrival(e.target.checked)}
+                      className="mt-0.5 rounded border-hairline text-blue-600 focus:ring-blue-500 w-4 h-4"
+                    />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <Sparkles className={`w-3.5 h-3.5 ${isNewArrival ? 'text-blue-500' : 'text-body'}`} />
+                        <span className="font-bold text-xs text-[#101519]">Produk Terbaru</span>
+                      </div>
+                      <p className="text-[10px] text-body mt-0.5 leading-snug">
+                        Tampil di carousel "Rilisan Terbaru"
+                      </p>
+                    </div>
+                  </label>
+                </div>
               </div>
 
               <div className="pt-4 border-t border-hairline flex justify-end gap-3">

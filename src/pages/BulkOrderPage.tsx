@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   FileSpreadsheet,
   Upload,
   CheckCircle2,
-  AlertCircle,
-  FileText,
   Clock,
   ShieldCheck,
   Building,
@@ -14,7 +12,6 @@ import { useCustomOrderStore } from '@/store/customOrderStore';
 import { useAuthStore } from '@/store/authStore';
 
 export const BulkOrderPage: React.FC = () => {
-  const navigate = useNavigate();
   const { createRequest, requests } = useCustomOrderStore();
   const { user } = useAuthStore();
 
@@ -30,6 +27,7 @@ export const BulkOrderPage: React.FC = () => {
   const [targetDate, setTargetDate] = useState('');
   const [shippingAddress, setShippingAddress] = useState('');
   const [fileName, setFileName] = useState<string | null>(null);
+  const [fileDataUrl, setFileDataUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successReq, setSuccessReq] = useState<any | null>(null);
 
@@ -43,7 +41,7 @@ export const BulkOrderPage: React.FC = () => {
         ? [
             {
               name: fileName,
-              url: '#',
+              url: fileDataUrl || '#',
               file_type: fileName.endsWith('.pdf') ? 'application/pdf' : 'application/vnd.ms-excel',
             },
           ]
@@ -285,7 +283,13 @@ export const BulkOrderPage: React.FC = () => {
                   accept=".xlsx,.xls,.csv,.pdf,.png,.jpg,.zip"
                   onChange={(e) => {
                     if (e.target.files && e.target.files[0]) {
-                      setFileName(e.target.files[0].name);
+                      const file = e.target.files[0];
+                      setFileName(file.name);
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        setFileDataUrl(reader.result as string);
+                      };
+                      reader.readAsDataURL(file);
                     }
                   }}
                   className="text-xs text-body"

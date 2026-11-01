@@ -1,13 +1,16 @@
 import { create } from 'zustand';
 import { Profile, UserRole, Address } from '@/types';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 interface AuthState {
   user: Profile | null;
   isAuthenticated: boolean;
   addresses: Address[];
   staffList: Profile[];
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (data: { email: string; password: string; fullName: string; phone?: string }) => Promise<{ success: boolean; error?: string }>;
   loginAs: (role: UserRole) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   updateProfile: (data: Partial<Profile>) => void;
   addAddress: (address: Omit<Address, 'id' | 'user_id'>) => void;
   deleteAddress: (id: string) => void;
@@ -67,16 +70,43 @@ const defaultAddresses: Address[] = [
   },
 ];
 
+const AUTH_STORAGE_KEY = 'uski_auth_user_v1';
+
+const getInitialUserState = (): { user: Profile | null; isAuthenticated: boolean } => {
+  try {
+    const saved = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (saved) {
+      if (saved === 'logged_out') {
+        return { user: null, isAuthenticated: false };
+      }
+      const parsed = JSON.parse(saved);
+      if (parsed && parsed.id) {
+        return { user: parsed, isAuthenticated: true };
+      }
+    }
+  } catch {
+    // fallback
+  }
+
+  // Default active session for initial store showcase
+  return {
+    user: {
+      id: 'usr-1',
+      email: 'admin@uskistore.id',
+      full_name: 'Super Admin USKI',
+      role: 'super_admin',
+      avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+      created_at: '2026-01-01T00:00:00Z',
+    },
+    isAuthenticated: true,
+  };
+};
+
+const initialAuth = getInitialUserState();
+
 export const useAuthStore = create<AuthState>((set, get) => ({
-  user: {
-    id: 'usr-1',
-    email: 'admin@uskistore.id',
-    full_name: 'Super Admin USKI',
-    role: 'super_admin',
-    avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-    created_at: '2026-01-01T00:00:00Z',
-  },
-  isAuthenticated: true,
+  user: initialAuth.user,
+  isAuthenticated: initialAuth.isAuthenticated,
   addresses: defaultAddresses,
   staffList: initialStaff,
 
@@ -101,6 +131,200 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     });
   },
 
+  login: async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
+    if (!normalizedEmail || !cleanPassword) {
+      return { success: false, error: 'Email dan kata sandi wajib diisi.' };
+    }
+
+    // 1. Supabase Auth Verification (Real credentials)
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password: cleanPassword,
+        });
+
+        if (error || !data.user) {
+          // STRICT REJECTION: Do NOT fall through to mock login on invalid credentials!
+          const errorMsg =
+            error?.message === 'Invalid login credentials'
+              ? 'Email atau kata sandi salah. Silakan periksa kembali kredensial Anda.'
+              : error?.message || 'Gagal masuk. Periksa kembali email dan kata sandi Anda.';
+          return { success: false, error: errorMsg };
+        }
+
+        // Successfully authenticated against Supabase Auth
+        const userMeta = data.user.user_metadata || {};
+        const staffMatch = get().staffList.find(
+          (s) => s.email.toLowerCase() === normalizedEmail
+        );
+
+        const role: UserRole =
+          (userMeta.role as UserRole) ||
+          (staffMatch ? staffMatch.role : normalizedEmail.includes('admin') ? 'super_admin' : 'customer');
+
+        const authenticatedUser: Profile = {
+          id: data.user.id,
+          email: data.user.email || normalizedEmail,
+          full_name: userMeta.full_name || staffMatch?.full_name || normalizedEmail.split('@')[0],
+          phone_number: userMeta.phone || staffMatch?.phone_number || undefined,
+          role,
+          avatar_url:
+            staffMatch?.avatar_url ||
+            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+          created_at: data.user.created_at || new Date().toISOString(),
+        };
+
+        set({ user: authenticatedUser, isAuthenticated: true });
+        try {
+          localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authenticatedUser));
+        } catch {
+          // ignore
+        }
+        return { success: true };
+      } catch (err: any) {
+        return {
+          success: false,
+          error: err.message || 'Terjadi gangguan jaringan saat otentikasi ke server Supabase.',
+        };
+      }
+    }
+
+    // 2. Offline / Demo Mode fallback (ONLY if Supabase client is not configured)
+    const staffMatch = get().staffList.find(
+      (s) => s.email.toLowerCase() === normalizedEmail
+    );
+
+    if (staffMatch) {
+      if (cleanPassword !== 'password123') {
+        return { success: false, error: 'Kata sandi salah. (Kata sandi staf demo: password123)' };
+      }
+      set({ user: staffMatch, isAuthenticated: true });
+      try {
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(staffMatch));
+      } catch {
+        // ignore
+      }
+      return { success: true };
+    }
+
+    if (cleanPassword.length < 6) {
+      return { success: false, error: 'Kata sandi minimal 6 karakter.' };
+    }
+
+    const demoCustomer: Profile = {
+      id: `usr-${Date.now()}`,
+      email: normalizedEmail,
+      full_name: normalizedEmail.split('@')[0],
+      role: 'customer',
+      created_at: new Date().toISOString(),
+    };
+
+    set({ user: demoCustomer, isAuthenticated: true });
+    try {
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(demoCustomer));
+    } catch {
+      // ignore
+    }
+    return { success: true };
+  },
+
+  register: async ({
+    email,
+    password,
+    fullName,
+    phone,
+  }): Promise<{ success: boolean; error?: string }> => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+    const cleanName = fullName.trim();
+    const cleanPhone = phone?.trim();
+
+    if (!normalizedEmail || !cleanPassword || !cleanName) {
+      return { success: false, error: 'Harap lengkapi semua bidang wajib.' };
+    }
+
+    if (cleanPassword.length < 6) {
+      return { success: false, error: 'Kata sandi minimal 6 karakter.' };
+    }
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email: normalizedEmail,
+          password: cleanPassword,
+          options: {
+            data: {
+              full_name: cleanName,
+              phone: cleanPhone,
+              role: 'customer',
+            },
+          },
+        });
+
+        if (error) {
+          return { success: false, error: error.message };
+        }
+
+        const userId = data.user?.id || `usr-${Date.now()}`;
+        const newUser: Profile = {
+          id: userId,
+          email: normalizedEmail,
+          full_name: cleanName,
+          phone_number: cleanPhone || undefined,
+          role: 'customer',
+          created_at: data.user?.created_at || new Date().toISOString(),
+        };
+
+        set({ user: newUser, isAuthenticated: true });
+        try {
+          localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newUser));
+        } catch {
+          // ignore
+        }
+        return { success: true };
+      } catch (err: any) {
+        return { success: false, error: err.message || 'Gagal mendaftar akun ke Supabase.' };
+      }
+    }
+
+    const localUser: Profile = {
+      id: `usr-${Date.now()}`,
+      email: normalizedEmail,
+      full_name: cleanName,
+      phone_number: cleanPhone || undefined,
+      role: 'customer',
+      created_at: new Date().toISOString(),
+    };
+
+    set({ user: localUser, isAuthenticated: true });
+    try {
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(localUser));
+    } catch {
+      // ignore
+    }
+    return { success: true };
+  },
+
+  logout: async () => {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.auth.signOut();
+      } catch (err) {
+        console.warn('Supabase signOut error:', err);
+      }
+    }
+    try {
+      localStorage.setItem(AUTH_STORAGE_KEY, 'logged_out');
+    } catch {
+      // ignore
+    }
+    set({ user: null, isAuthenticated: false });
+  },
+
   loginAs: (role: UserRole) => {
     let name = 'Pelanggan USKI';
     let email = 'customer@example.com';
@@ -119,21 +343,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       email = 'gudang@uskistore.id';
     }
 
+    const switchedUser: Profile = {
+      id: `usr-${role}`,
+      email,
+      full_name: name,
+      role,
+      avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+      created_at: '2026-01-01T00:00:00Z',
+    };
+
     set({
-      user: {
-        id: `usr-${role}`,
-        email,
-        full_name: name,
-        role,
-        avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-        created_at: '2026-01-01T00:00:00Z',
-      },
+      user: switchedUser,
       isAuthenticated: true,
     });
-  },
-
-  logout: () => {
-    set({ user: null, isAuthenticated: false });
+    try {
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(switchedUser));
+    } catch {
+      // ignore
+    }
   },
 
   updateProfile: (data) => {

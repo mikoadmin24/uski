@@ -102,7 +102,7 @@ export const CheckoutPage: React.FC = () => {
         price: item.selected_price,
         quantity: item.quantity,
         subtotal: item.selected_price * item.quantity,
-        image_url: item.product.images[0],
+        image_url: item.product.images?.[0] || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=400',
       }));
 
       // 2. Shipping Address Object
@@ -133,13 +133,15 @@ export const CheckoutPage: React.FC = () => {
         );
       });
 
-      // 4. Create authoritative order in store
+      // 4. Create authoritative order in store with safe guest email fallback
+      const finalCustomerEmail = customerEmail.trim() || (user?.email ? user.email.trim() : 'pembeli@uskistore.id');
+
       const newOrder = createOrder({
         order_number: orderNumber,
         customer_id: user?.id,
-        customer_name: customerName,
-        customer_email: customerEmail,
-        customer_phone: customerPhone,
+        customer_name: customerName.trim(),
+        customer_email: finalCustomerEmail,
+        customer_phone: customerPhone.trim(),
         items: orderItems,
         subtotal,
         discount_amount: discount,
@@ -503,7 +505,7 @@ Mohon segera diproses ya kak. Terima kasih!`;
               {items.map((it) => (
                 <div key={it.id} className="flex gap-2.5 items-center text-xs">
                   <img
-                    src={it.product.images[0]}
+                    src={it.product.images?.[0] || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=400'}
                     alt={it.product.name}
                     className="w-10 h-12 object-cover rounded-lg border border-hairline shrink-0"
                   />

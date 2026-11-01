@@ -1,66 +1,84 @@
-# Project: USKI STORE Audit & Overhaul
+# Project: USKI STORE Online Store Perfection & Error-Free Production Readiness
 
 ## Architecture
-USKI STORE is a full-stack e-commerce web application with a public retail storefront, courier delivery portal, and an administrative back-office.
-- Frontend: React 18, TypeScript, Vite, Tailwind CSS, Lucide icons, Zustand (8 stores), React Router.
-- Backend & Database: Supabase (PostgreSQL 15), Supabase Storage, PostgREST APIs, Supabase Auth.
-- Public Storefront: Home, Catalog, Product Detail, Cart, Checkout, Order Tracking, Payment Confirmation, Custom Bulk Orders.
-- Courier Portal: `/courier` (mobile-first UI for store couriers with live delivery task, Geolocation, camera proof upload, and digital signature canvas).
-- Admin Back-Office: Dashboard, Orders (`/admin/orders`), Products, Categories, Couriers (`/admin/couriers`), Promo Vouchers, Bulk Orders, Reports & Financials (`/admin/reports`), Settings.
+- **Framework & Bundler**: React 18.3.1 with Vite 6.4.5 and TypeScript 5.6.3
+- **Styling**: Tailwind CSS 3.4.14 with PostCSS and Autoprefixer
+- **Routing**: React Router DOM 6.27.0 with layout routing (`StorefrontLayout` and `AdminLayout`)
+- **State Management**: Zustand 5.0.0 stores with localStorage persistence:
+  - `useProductStore`: products, categories, inventoryMovements
+  - `useCartStore`: shopping cart items, voucher, subtotal, discount, shipping fee, total
+  - `useOrderStore`: orders history, order creation, Supabase sync
+  - `useAuthStore`: current user session, role-based access control
+- **Backend & Database**: Supabase PostgreSQL 15 (`https://kxbdoqviqzseymjofsjg.supabase.co`) with PostgREST client, Realtime channel (`public:live_sync`), and Supabase Storage (`product-images`).
+- **Data Flow**:
+  1. Client loads cached data from `localStorage` on boot.
+  2. `useSupabaseSync` connects to Supabase Cloud, revalidates cache, and subscribes to realtime updates.
+  3. Store owner manages products and stock via `/admin/products`.
+  4. Customer browses catalog, adds to cart, and checks out.
+  5. Checkout decrements inventory, creates order in Supabase and localStorage, and formats WhatsApp direct order dispatch.
 
 ## Feature Inventory
 | # | Feature | Description | Milestone | Source |
 |---|---------|-------------|-----------|--------|
-| F1 | Supabase Master Schema & Constraint Alignment | Update PostgreSQL schema with missing tables (`order_items`, `bulk_orders`, `payment_confirmations`, `delivery_proofs`), add missing columns (`orders.courier_id`, `orders.delivery_proof_url`, `orders.delivery_signature_url`, `orders.voucher_code`, `vouchers.target_audience`, `products.specifications`), relax courier status constraint to accept `'available'`, set permissive RLS policies. | M1 | Spec Miner |
-| F2 | Storage Bucket 'delivery-proofs' Setup | Ensure bucket `delivery-proofs` exists on Supabase Storage with public read and authenticated/anon upload policies. | M1 | Spec Miner & Explorer 2 |
-| F3 | Active Database Live Ping Diagnostics | Replace static env string check in `isSupabaseConfigured` with active `dbService.ping()` returning live connection state to UI badges. | M1 | Explorer 1 |
-| F4 | Zustand Order Store Live Integration | Connect `orderStore` directly to `orders` and `order_items`, remove `mockOrders` fallback and `missingMocks` re-injection loop. | M2 | Explorer 1 |
-| F5 | Zustand Product & Category Store Live Integration | Connect `productStore` and `categoryStore` directly to Supabase, remove `mockProducts` fallback and mock movements. | M2 | Explorer 1 |
-| F6 | Zustand Promo Store Live Integration | Connect `promoStore` directly to `vouchers`, remove `mockVouchers` fallback and `missingMocks` loop. | M2 | Explorer 1 |
-| F7 | Zustand Custom Bulk Order Store Live Integration | Connect `customOrderStore` directly to Supabase table `bulk_orders`, remove `mockCustomRequests` local fallback. | M2 | Explorer 1 |
-| F8 | Zero Dummy Data Store-level Cleanup | Remove static dummy imports and fallbacks in `src/data/mockData.ts` across operational stores. | M2 | Explorer 1 |
-| F9 | Real-Time Courier Assignment Sync | Update `assignDelivery` and `reassignDelivery` in `courierStore` to persist changes to `couriers` and `orders` in Supabase; update `AdminOrders` and `AdminCouriers` to read and write live data. | M3 | Explorer 2 |
-| F10 | Eliminate Fake GPS & Telemetry Code | Remove `advanceSimulation`, hardcoded depot coordinates, simulated battery/breadcrumbs, and satellite telemetry wording from `courierStore`, `OrderTrackingPage`, `AdminOrders`, and `CourierPortalPage`. | M3 | Explorer 2 |
-| F11 | Proof Photos & Signatures Storage & Persistence | Convert digital signature canvas DataURL to file, upload proof photo and signature to Supabase Storage bucket `delivery-proofs`, save URLs to `orders` and `delivery_proofs` table in `completeDelivery`. | M3 | Explorer 2 |
-| F12 | Live Delivery Audit History | Replace hardcoded `allDeliveryRecords` in `AdminCouriers.tsx` with dynamic delivery records queried from Supabase. | M3 | Explorer 2 |
-| F13 | Admin Reports & Analytics Live Aggregation | Replace hardcoded `chartDatasets` in `AdminReports.tsx` with live aggregations from Supabase `orders`. | M4 | Explorer 1 |
-| F14 | Single Modal Popups Responsiveness | Audit and verify all modal dialogs (Order Details, Payment Verification, Courier Assignment, Courier Proof, Voucher Form) for smooth single-modal behavior on desktop and mobile. | M4 | ORIGINAL_REQUEST R3 |
-| F15 | Mobile Storefront & Admin Responsiveness | Ensure full responsiveness on mobile screens (including `http://192.168.18.11:3000/`) with no layout overflow or broken controls. | M4 | ORIGINAL_REQUEST R3 |
-| F16 | Production Build Integrity | Ensure `npm run build` completes with exit code 0 and zero TypeScript or linting errors. | M4 | ORIGINAL_REQUEST R3 |
-| F17 | End-to-End Verification (Tiers 1-4) | Validate complete system against opaque-box test suite across all user and operational flows. | M5 | E2E Testing Track |
-| F18 | Adversarial Coverage Hardening (Tier 5) | Stress-test edge cases, broken foreign keys, concurrent assignments, and offline fallback integrity. | M5 | Challenger Track |
+| 1 | Production Build & Typecheck Zero-Error | Ensure `npm run build` and `npm run typecheck` pass cleanly with exit code 0 | M1 | survey (R1) |
+| 2 | Runtime Crash Hazard Protection | Guard nullable ratings (`toFixed(1)`) and nullable images (`images[0]`, `.length`) against null-pointer exceptions | M1 | survey (R1) |
+| 3 | Safe User Header & Navbar Display | Guard `user.full_name` against undefined split errors in navbar | M1 | survey (R1) |
+| 4 | Complete Policy Pages & Link Integrity | Add `privacy` and `terms` handling to `StaticPolicyPage.tsx` and eliminate broken links | M1 | survey (R1) |
+| 5 | Clean Dead Code & Unused Imports | Remove ~94 unused imports and variables across UI pages and components | M1 | survey (R1) |
+| 6 | Code Splitting & Vendor Chunk Optimization | Configure `manualChunks` in `vite.config.ts` to eliminate >500kB monolithic chunk warning | M1 | survey (R1) |
+| 7 | Account & Courier Route Fix | Resolve courier redirect loop in `AccountPage.tsx` and dead links in bulk order views | M1 | survey (R1) |
+| 8 | Case-Insensitive Product Slug Lookup | Normalize product slug lookup with `.toLowerCase()` in `productStore.ts` | M1 | survey (R1) |
+| 9 | Store LocalStorage Hydration Fix | Eliminate artificial `mockIds` filter in `productStore.ts` and `categoryStore.ts` to prevent flash of empty state | M2 | survey (R2) |
+| 10 | Homepage Badges & Admin Integration | Add `is_featured`, `is_best_seller`, and `is_new_arrival` toggles to `AdminProducts.tsx` and connect to `HomePage.tsx` carousels | M2 | survey (R2) |
+| 11 | Dynamic Brand Filtering in Catalog | Replace static `mockBrands` in `CatalogPage.tsx` with dynamic brands extracted from active real products | M2 | survey (R2) |
+| 12 | Complete Dummy Data Removal | Remove unreferenced mock data arrays (`mockPublishers`, `mockBrands`) and ensure only real products display | M2 | survey (R2) |
+| 13 | Store Owner Real Product CRUD Interface | Verify and harden the existing `/admin/products` interface for real product creation, editing, WebP image upload, and stock tracking | M2 | survey (R2) |
+| 14 | Cart Voucher Persistence & Threshold Invalidation | Persist `appliedVoucher` in localStorage and automatically invalidate voucher if cart subtotal drops below `min_spend` | M3 | survey (R3) |
+| 15 | Checkout Guest Email Fallback | Provide safe fallback for `customer_email` in checkout payload to prevent Supabase NOT NULL constraint errors | M3 | survey (R3) |
+| 16 | Direct Order Flow & Transaction Readiness | Ensure end-to-end purchasing journey (cart -> shipping calculation -> payment selection -> WhatsApp dispatch -> Supabase order record) is robust and ready for live sales | M3 | survey (R3) |
+| 17 | Comprehensive E2E Test Suite Validation | Run and pass 100% of all 51 automated E2E tests across Tiers 1-4 | M3 | survey (R1, R3) |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| M1 | Database Schema Alignment & Supabase Client Validation | Apply master SQL migration (tables `order_items`, `bulk_orders`, `payment_confirmations`, `delivery_proofs`, missing columns, constraint fix, storage bucket `delivery-proofs`, active ping diagnostics). | none | DONE |
-| M2 | Zustand Stores Real Supabase Integration & Zero Dummy Removal | Eliminate mock data in `orderStore`, `productStore`, `categoryStore`, `promoStore`, `customOrderStore`; bind to Supabase live tables. | M1 | DONE |
-| M3 | Courier Flow, Storage Bucket & Fake Telemetry Cleanup | Real-time courier assignment sync, remove `advanceSimulation` & fake coordinates, upload proof photos & signatures to `delivery-proofs`, live delivery audit history. | M1, M2 | DONE |
-| M5 | Final E2E Test Suite Pass & Adversarial Hardening | Pass 100% of Tiers 1-4 E2E test cases, run Tier 5 adversarial stress testing. | M1, M2, M3, M4, TEST_READY | DONE |
+| M1 | Technical Audit, Error Hardening & Build Optimization | Fix runtime crash vectors (.toFixed(1), images array lookups, user.full_name), add missing policy page handlers (privacy, terms), fix courier redirect loop, clean unused imports, optimize Vite chunks | none | DONE |
+| M2 | Real Product Management & Dummy Data Elimination | Fix mockIds cache purge bug in productStore/categoryStore, add badge controls (featured, best seller, new arrival) to AdminProducts, connect carousels on HomePage, replace mockBrands with dynamic product brands, remove remaining dummy arrays | M1 | IN_PROGRESS |
+| M3 | Direct Sales Checkout Flow & End-to-End Validation | Persist applied voucher in cartStore with min_spend revalidation, safe customer_email fallback on checkout, verify full transaction and order lifecycle, execute full E2E test suite (51/51 tests) | M2 | PLANNED |
 
 ## Interface Contracts
-### Courier Store ↔ Supabase
-- `assignDelivery(courierId: string, orderId: string)`:
-  - Updates `couriers` table: `status = 'delivering'`, `active_delivery = orderId`.
-  - Updates `orders` table: `courier_id = courierId`, `order_status = 'shipped'`.
-- `completeDelivery(courierId: string, orderId: string, proofPhotoUrl: string, proofSignatureUrl: string, recipientName: string, notes: string)`:
-  - Updates `couriers` table: `status = 'available'`, `active_delivery = null`.
-  - Updates `orders` table: `order_status = 'delivered'`, `delivery_proof_url = proofPhotoUrl`, `delivery_signature_url = proofSignatureUrl`, `delivery_recipient_name = recipientName`, `delivered_at = NOW()`.
-  - Inserts row into `delivery_proofs` table.
+### `productStore` ↔ `AdminProducts` & `HomePage`
+- `Product` fields:
+  ```typescript
+  is_featured: boolean;
+  is_best_seller?: boolean;
+  is_new_arrival?: boolean;
+  ```
+- `AdminProducts` modal must support toggling these fields and persisting them via `upsertProduct`.
+- `HomePage` must filter products by these flags or fall back to recent products if none are tagged.
 
-### Public Storefront ↔ Supabase
-- Checkout submits order directly to `orders` (with `order_items`).
-- Public order tracking queries `orders` by `id` or `order_number` and reads assigned `courier_id` without dummy fallback.
+### `cartStore` ↔ `CheckoutPage`
+- `appliedVoucher`: `Voucher | null` (persisted to localStorage).
+- `getDiscount()`: calculated based on subtotal and voucher rules.
+- `updateQuantity(id, qty)` / `removeItem(id)`: if `subtotal < appliedVoucher.min_spend`, automatically clear `appliedVoucher`.
 
-### Storage Bucket: `delivery-proofs`
-- Path convention: `proofs/${orderId}_photo_${Date.now()}.${ext}`
-- Path convention: `signatures/${orderId}_sig_${Date.now()}.png`
+### `CheckoutPage` ↔ `dbService.orders.create`
+- Mandatory fields sent to Supabase `orders` table:
+  ```typescript
+  customer_name: string;
+  customer_phone: string;
+  customer_email: string; // must NOT be empty or undefined (defaults to 'pembeli@uskistore.id' if omitted)
+  shipping_address: Address;
+  items: OrderItem[];
+  payment_method: string;
+  total_amount: number;
+  status: 'pending';
+  payment_status: 'unpaid' | 'paid';
+  ```
 
 ## Code Layout
-- `src/lib/supabase.ts`: Supabase client initialization, configuration checks, active ping.
-- `src/services/dbService.ts`: Centralized PostgREST API wrapper functions for all entities.
-- `src/store/`: Zustand stores (`orderStore.ts`, `productStore.ts`, `courierStore.ts`, `promoStore.ts`, `categoryStore.ts`, `customOrderStore.ts`).
-- `src/pages/admin/`: Admin views (`AdminOrders.tsx`, `AdminCouriers.tsx`, `AdminReports.tsx`, `AdminProducts.tsx`, etc.).
-- `src/pages/`: Public pages (`CourierPortalPage.tsx`, `OrderTrackingPage.tsx`, `OrderConfirmationPage.tsx`, etc.).
-- `supabase/`: SQL migration files (`supabase_master_migration.sql`).
-- `tests/e2e/`: Opaque-box E2E test suites (Tiers 1-4).
+- `src/components/common/`: Shared UI components (`Navbar.tsx`, `Footer.tsx`, `ProductCard.tsx`, `ProductSection.tsx`)
+- `src/pages/`: Public storefront pages (`HomePage.tsx`, `CatalogPage.tsx`, `ProductDetailPage.tsx`, `CartPage.tsx`, `CheckoutPage.tsx`, `OrderConfirmationPage.tsx`, `StaticPolicyPage.tsx`, `AccountPage.tsx`)
+- `src/pages/admin/`: Store owner back-office interfaces (`AdminProducts.tsx`, `AdminOrders.tsx`, `AdminCategories.tsx`, `AdminDashboard.tsx`, etc.)
+- `src/store/`: Zustand state management stores (`productStore.ts`, `cartStore.ts`, `orderStore.ts`, `categoryStore.ts`, `authStore.ts`)
+- `src/services/`: Database and Supabase service clients (`dbService.ts`, `supabase.ts`)
+- `tests/e2e/`: Automated test suite (`runner.js`, `tier1-feature-coverage.js`, `tier2-boundaries.js`, `tier3-combinations.js`, `tier4-real-world.js`)

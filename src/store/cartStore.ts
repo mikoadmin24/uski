@@ -18,6 +18,7 @@ interface CartState {
 }
 
 const STORAGE_KEY = 'uski_cart_storage_v1';
+const VOUCHER_STORAGE_KEY = 'uski_cart_voucher_v1';
 
 const getInitialItems = (): CartItem[] => {
   try {
@@ -28,9 +29,30 @@ const getInitialItems = (): CartItem[] => {
   }
 };
 
+const getInitialVoucher = (items: CartItem[]): Voucher | null => {
+  try {
+    const saved = localStorage.getItem(VOUCHER_STORAGE_KEY);
+    if (!saved) return null;
+    const voucher: Voucher = JSON.parse(saved);
+    if (!voucher || typeof voucher !== 'object') return null;
+
+    const subtotal = items.reduce((total, item) => total + item.selected_price * item.quantity, 0);
+    if (voucher.min_spend && subtotal < voucher.min_spend) {
+      localStorage.removeItem(VOUCHER_STORAGE_KEY);
+      return null;
+    }
+    return voucher;
+  } catch {
+    return null;
+  }
+};
+
+const initialItems = getInitialItems();
+const initialVoucher = getInitialVoucher(initialItems);
+
 export const useCartStore = create<CartState>((set, get) => ({
-  items: getInitialItems(),
-  appliedVoucher: null,
+  items: initialItems,
+  appliedVoucher: initialVoucher,
 
   addToCart: (product, quantity = 1, variant) => {
     const currentItems = get().items;
@@ -92,7 +114,20 @@ export const useCartStore = create<CartState>((set, get) => ({
       // ignore
     }
 
-    set({ items: updated });
+    // Automatic Voucher Revalidation
+    const newSubtotal = updated.reduce((total, item) => total + item.selected_price * item.quantity, 0);
+    let nextVoucher = get().appliedVoucher;
+
+    if (nextVoucher && newSubtotal < nextVoucher.min_spend) {
+      nextVoucher = null;
+      try {
+        localStorage.removeItem(VOUCHER_STORAGE_KEY);
+      } catch {
+        // ignore
+      }
+    }
+
+    set({ items: updated, appliedVoucher: nextVoucher });
   },
 
   removeItem: (itemId) => {
@@ -102,12 +137,27 @@ export const useCartStore = create<CartState>((set, get) => ({
     } catch {
       // ignore
     }
-    set({ items: updated });
+
+    // Automatic Voucher Revalidation
+    const newSubtotal = updated.reduce((total, item) => total + item.selected_price * item.quantity, 0);
+    let nextVoucher = get().appliedVoucher;
+
+    if (nextVoucher && (updated.length === 0 || newSubtotal < nextVoucher.min_spend)) {
+      nextVoucher = null;
+      try {
+        localStorage.removeItem(VOUCHER_STORAGE_KEY);
+      } catch {
+        // ignore
+      }
+    }
+
+    set({ items: updated, appliedVoucher: nextVoucher });
   },
 
   clearCart: () => {
     try {
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(VOUCHER_STORAGE_KEY);
     } catch {
       // ignore
     }
@@ -131,11 +181,22 @@ export const useCartStore = create<CartState>((set, get) => ({
       };
     }
 
+    try {
+      localStorage.setItem(VOUCHER_STORAGE_KEY, JSON.stringify(voucher));
+    } catch {
+      // ignore
+    }
+
     set({ appliedVoucher: voucher });
     return { success: true, message: `Voucher ${voucher.code} berhasil digunakan!` };
   },
 
   removeVoucher: () => {
+    try {
+      localStorage.removeItem(VOUCHER_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
     set({ appliedVoucher: null });
   },
 

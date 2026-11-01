@@ -33,8 +33,7 @@ const getInitialProducts = (): Product[] => {
     if (!saved) return [];
     const parsed = JSON.parse(saved);
     if (!Array.isArray(parsed)) return [];
-    const mockIds = new Set(['prod-1', 'prod-2', 'prod-3', 'prod-4', 'prod-5', 'prod-6', 'prod-7', 'prod-8', 'prod-9', 'prod-10', 'prod-11', 'prod-12']);
-    return parsed.filter((p) => !mockIds.has(p.id));
+    return parsed;
   } catch {
     return [];
   }
@@ -46,7 +45,7 @@ const getInitialMovements = (): InventoryMovement[] => {
     if (!saved) return [];
     const parsed = JSON.parse(saved);
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter((m) => m.id !== 'mov-1' && m.id !== 'mov-2');
+    return parsed;
   } catch {
     return [];
   }
@@ -58,12 +57,23 @@ export const useProductStore = create<ProductState>((set, get) => ({
 
   setProductsFromSupabase: (cloudProducts) => {
     if (!cloudProducts) return;
+    const current = get().products;
+    const currentMap = new Map(current.map((p) => [p.id, p]));
+    const merged = cloudProducts.map((cp) => {
+      const existing = currentMap.get(cp.id);
+      return {
+        ...cp,
+        is_featured: cp.is_featured ?? existing?.is_featured ?? false,
+        is_best_seller: cp.is_best_seller ?? existing?.is_best_seller ?? false,
+        is_new_arrival: cp.is_new_arrival ?? existing?.is_new_arrival ?? false,
+      };
+    });
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudProducts));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
     } catch {
       // ignore
     }
-    set({ products: cloudProducts });
+    set({ products: merged });
   },
 
   setInventoryMovementsFromSupabase: (movements) => {
@@ -77,7 +87,15 @@ export const useProductStore = create<ProductState>((set, get) => ({
   },
 
   getProductBySlug: (slug) => {
-    return get().products.find((p) => p.slug === slug);
+    if (!slug) return undefined;
+    let cleanSlug = slug.trim().toLowerCase();
+    try {
+      cleanSlug = decodeURIComponent(slug).trim().toLowerCase();
+    } catch {
+      // Keep trimmed lowercase fallback if URL decoding throws URIError
+    }
+    if (!cleanSlug) return undefined;
+    return get().products.find((p) => p.slug?.trim().toLowerCase() === cleanSlug);
   },
 
   getProductById: (id) => {
@@ -135,7 +153,13 @@ export const useProductStore = create<ProductState>((set, get) => ({
     set({ products: updated });
 
     if (isSupabaseConfigured) {
-      await dbService.products.upsert({ id, ...updates });
+      const mergedProduct = updated.find((p) => p.id === id);
+      if (mergedProduct) {
+        const updateRes = await dbService.products.update(id, updates);
+        if (!updateRes) {
+          await dbService.products.upsert(mergedProduct);
+        }
+      }
     }
   },
 
@@ -163,7 +187,13 @@ export const useProductStore = create<ProductState>((set, get) => ({
     set({ products: updated });
 
     if (isSupabaseConfigured) {
-      await dbService.products.upsert({ id: productId, stock_quantity: newStock });
+      const updateRes = await dbService.products.update(productId, { stock_quantity: newStock });
+      if (!updateRes) {
+        const fullProduct = updated.find((p) => p.id === productId);
+        if (fullProduct) {
+          await dbService.products.upsert(fullProduct);
+        }
+      }
     }
   },
 
@@ -223,9 +253,15 @@ export const useProductStore = create<ProductState>((set, get) => ({
       dbService.inventoryMovements.insert(newMovement).catch((err) =>
         console.error('Failed to sync inventory movement to Supabase:', err)
       );
-      dbService.products.upsert({ id: productId, stock_quantity: newStock }).catch((err) =>
-        console.error('Failed to sync adjusted stock to Supabase:', err)
-      );
+      dbService.products.update(productId, { stock_quantity: newStock }).catch(async (err) => {
+        console.warn('dbService.products.update failed, falling back to full upsert:', err);
+        const fullProduct = updatedProducts.find((p) => p.id === productId);
+        if (fullProduct) {
+          await dbService.products.upsert(fullProduct).catch((e) =>
+            console.error('Failed to upsert full product to Supabase:', e)
+          );
+        }
+      });
     }
   },
 }));

@@ -8,7 +8,6 @@ import {
   TrendingDown,
   Package,
   FileSpreadsheet,
-  ArrowUpRight,
   ShieldCheck,
   CheckCircle2,
   Clock,
@@ -18,23 +17,14 @@ import {
   Wallet,
   Printer,
   Award,
-  ShoppingBag,
   CreditCard,
-  ChevronRight,
-  Filter,
   LineChart as LineChartIcon,
-  HelpCircle,
-  FileText,
   X,
-  Building,
-  Check,
-  ArrowDownRight,
-  PieChart as PieChartIcon,
 } from 'lucide-react';
 import { useOrderStore } from '@/store/orderStore';
 import { useProductStore } from '@/store/productStore';
 import { useCategoryStore } from '@/store/categoryStore';
-import { formatRupiah, formatDate } from '@/lib/utils';
+import { formatRupiah } from '@/lib/utils';
 import { dbService, isSupabaseConfigured } from '@/lib/supabase';
 
 export const AdminReports: React.FC = () => {
@@ -92,7 +82,6 @@ export const AdminReports: React.FC = () => {
     : 0;
 
   const collectionRate = grossSales > 0 ? Math.round((confirmedSales / grossSales) * 100) : (orders.length === 0 ? 100 : 0);
-  const inventoryAssetValuation = products.reduce((sum, p) => sum + (Number(p.base_price) || 0) * (Number(p.stock_quantity) || 0), 0);
 
   // Genuine Delivery & Logistics Performance Metrics
   const deliveredOrders = orders.filter((o) => o.status === 'delivered');

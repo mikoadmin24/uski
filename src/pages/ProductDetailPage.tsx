@@ -62,10 +62,10 @@ export const ProductDetailPage: React.FC = () => {
 
   // Set initial image
   React.useEffect(() => {
-    if (product && product.images.length > 0) {
+    if (product?.images && product.images.length > 0) {
       setSelectedImage(product.images[0]);
     }
-    if (product && product.variants && product.variants.length > 0) {
+    if (product?.variants && product.variants.length > 0) {
       setSelectedVariantId(product.variants[0].id);
     }
   }, [product]);
@@ -90,6 +90,11 @@ export const ProductDetailPage: React.FC = () => {
   const currentPrice = selectedVariant?.price_override ?? (product.sale_price ?? product.base_price);
   const maxStock = selectedVariant ? selectedVariant.stock_quantity : product.stock_quantity;
   const hasDiscount = Boolean(product.sale_price && product.sale_price < product.base_price);
+  const discountPercentage = product.discount_percentage ?? (
+    hasDiscount && product.base_price > 0
+      ? Math.round(((product.base_price - (product.sale_price || product.base_price)) / product.base_price) * 100)
+      : undefined
+  );
 
   const handleAddToCart = () => {
     addToCart(product, quantity, selectedVariant);
@@ -123,19 +128,19 @@ export const ProductDetailPage: React.FC = () => {
         <div className="lg:col-span-5 space-y-4">
           <div className="aspect-[4/5] bg-neutral-2 rounded-2xl overflow-hidden border border-hairline relative">
             <img
-              src={selectedImage || product.images[0]}
+              src={selectedImage || product.images?.[0] || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=800'}
               alt={product.name}
               className="w-full h-full object-cover"
             />
-            {hasDiscount && product.discount_percentage && (
+            {hasDiscount && discountPercentage && (
               <span className="absolute top-3 left-3 bg-[#F8E7E9] text-[#B91126] text-xs font-extrabold px-2 py-0.5 rounded shadow-sm">
-                {product.discount_percentage}% OFF
+                {discountPercentage}% OFF
               </span>
             )}
           </div>
 
           {/* Thumbnails */}
-          {product.images.length > 1 && (
+          {Boolean(product?.images && product.images.length > 1) && (
             <div className="flex gap-2.5 overflow-x-auto pb-1">
               {product.images.map((img, idx) => (
                 <button
@@ -179,11 +184,11 @@ export const ProductDetailPage: React.FC = () => {
             <div className="flex flex-wrap items-center gap-3 text-xs text-body pt-1 border-b border-hairline pb-3">
               <div className="flex items-center gap-1 text-amber-500 font-bold">
                 <Star className="w-4 h-4 fill-amber-500" />
-                <span>{product.rating.toFixed(1)}</span>
-                <span className="text-body font-normal">({product.reviews_count} ulasan)</span>
+                <span>{(Number(product.rating) || 5.0).toFixed(1)}</span>
+                <span className="text-body font-normal">({product.reviews_count ?? 0} ulasan)</span>
               </div>
               <span>•</span>
-              <span>Terjual {product.sales_count}</span>
+              <span>Terjual {product.sales_count ?? 0}</span>
               <span>•</span>
               <span className="font-mono text-[11px]">SKU: {selectedVariant?.sku || product.sku_master}</span>
               {product.isbn && (
@@ -364,7 +369,7 @@ export const ProductDetailPage: React.FC = () => {
             <div className="max-w-xl">
               <table className="w-full text-xs sm:text-sm">
                 <tbody>
-                  {Object.entries(product.specifications).map(([key, value]) => (
+                  {Object.entries(product.specifications || {}).map(([key, value]) => (
                     <tr key={key} className="border-b border-hairline last:border-none">
                       <td className="py-2.5 font-bold text-body w-40">{key}</td>
                       <td className="py-2.5 text-[#101519]">{value}</td>
@@ -384,7 +389,7 @@ export const ProductDetailPage: React.FC = () => {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-neutral-2/60 rounded-2xl border border-hairline">
                 <div className="flex items-center gap-4">
                   <div className="text-3xl font-extrabold text-primary">
-                    {product.rating.toFixed(1)}
+                    {(Number(product.rating) || 5.0).toFixed(1)}
                   </div>
                   <div className="text-xs text-body">
                     <div className="flex gap-0.5 text-amber-500 mb-1">
@@ -392,7 +397,7 @@ export const ProductDetailPage: React.FC = () => {
                         <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                       ))}
                     </div>
-                    <span>Berdasarkan {product.reviews_count + customerReviews.length} ulasan terverifikasi pembeli</span>
+                    <span>Berdasarkan {(product.reviews_count ?? 0) + customerReviews.length} ulasan terverifikasi pembeli</span>
                   </div>
                 </div>
 

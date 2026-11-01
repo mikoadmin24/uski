@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import { Filter, X, SlidersHorizontal } from 'lucide-react';
 import { useProductStore } from '@/store/productStore';
 import { useCategoryStore } from '@/store/categoryStore';
-import { mockBrands } from '@/data/mockData';
 import { ProductCard } from '@/components/common/ProductCard';
 
 export const CatalogPage: React.FC = () => {
@@ -14,26 +13,58 @@ export const CatalogPage: React.FC = () => {
   const querySearch = searchParams.get('q') || '';
   const queryCategory = searchParams.get('category') || '';
   const queryFilter = searchParams.get('filter') || '';
+  const queryBrand = searchParams.get('brand') || '';
 
   const [selectedCategory, setSelectedCategory] = useState<string>(queryCategory);
-  const [selectedBrand, setSelectedBrand] = useState<string>('');
+  const [selectedBrand, setSelectedBrand] = useState<string>(queryBrand);
   const [subFilter, setSubFilter] = useState<string>('');
   const [inStockOnly, setInStockOnly] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<string>('popular');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 500000]);
   const [mobileFilterOpen, setMobileFilterOpen] = useState<boolean>(false);
 
-  // Sync category from URL
+  // Sync category and brand from URL
   React.useEffect(() => {
-    if (queryCategory) {
-      setSelectedCategory(queryCategory);
-    }
+    setSelectedCategory(queryCategory || '');
   }, [queryCategory]);
+
+  React.useEffect(() => {
+    setSelectedBrand(queryBrand || '');
+  }, [queryBrand]);
+
+  // Dynamically extract brands & authors from active products
+  const availableBrands = useMemo(() => {
+    const brandMap = new Map<string, string>(); // slug -> display name
+    products
+      .filter((p) => p.is_active !== false)
+      .forEach((p) => {
+        const brandOrAuthor = (p.author || p.brand?.name || '').trim();
+        if (!brandOrAuthor) return;
+        const slug = brandOrAuthor
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '');
+        if (slug && !brandMap.has(slug)) {
+          brandMap.set(slug, brandOrAuthor);
+        }
+      });
+
+    return Array.from(brandMap.entries())
+      .map(([slug, name]) => ({ slug, name }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'id'));
+  }, [products]);
 
   // Filter & Sort Logic
   const filteredProducts = useMemo(() => {
+    const hasExplicitBestSellers = products.some((p) => p.is_best_seller);
+    const hasExplicitFeatured = products.some((p) => p.is_featured);
+    const hasExplicitNewArrivals = products.some((p) => p.is_new_arrival);
+
     return products
       .filter((p) => {
+        // Exclude inactive products
+        if (p.is_active === false) return false;
+
         // Search query filter
         if (querySearch.trim()) {
           const q = querySearch.toLowerCase();
@@ -44,10 +75,11 @@ export const CatalogPage: React.FC = () => {
           if (!matchName && !matchAuthor && !matchSku && !matchIsbn) return false;
         }
 
-        // Category filter
-        if (selectedCategory) {
-          const cat = categories.find((c) => c.slug === selectedCategory);
-          if (cat && p.category_id !== cat.id) return false;
+        // Category filter (case-insensitive slug match, fail-closed)
+        if (selectedCategory.trim()) {
+          const targetSlug = selectedCategory.trim().toLowerCase();
+          const cat = categories.find((c) => c.slug?.trim().toLowerCase() === targetSlug);
+          if (!cat || p.category_id !== cat.id) return false;
         }
 
         // Sub-filter (Bidang Kitab / Jenjang Pendidikan)
@@ -55,15 +87,25 @@ export const CatalogPage: React.FC = () => {
           const qSub = subFilter.toLowerCase();
           const matchText =
             p.name.toLowerCase().includes(qSub) ||
-            p.description.toLowerCase().includes(qSub) ||
-            JSON.stringify(p.specifications).toLowerCase().includes(qSub);
+            p.description?.toLowerCase().includes(qSub) ||
+            (p.specifications ? JSON.stringify(p.specifications).toLowerCase().includes(qSub) : false);
           if (!matchText) return false;
         }
 
-        // Brand filter
-        if (selectedBrand) {
-          const brand = mockBrands.find((b) => b.slug === selectedBrand);
-          if (brand && p.brand_id !== brand.id) return false;
+        // Dynamic Brand / Author filter
+        if (selectedBrand.trim()) {
+          const targetSlug = selectedBrand.trim().toLowerCase();
+          const prodBrandText = (p.author || p.brand?.name || '').trim();
+          const prodSlug = prodBrandText
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, '');
+
+          const matchesSlug = prodSlug === targetSlug;
+          const matchesName = prodBrandText.toLowerCase() === targetSlug;
+          const matchesBrandId = p.brand_id === selectedBrand;
+
+          if (!matchesSlug && !matchesName && !matchesBrandId) return false;
         }
 
         // Stock filter
@@ -73,11 +115,19 @@ export const CatalogPage: React.FC = () => {
         const price = p.sale_price ?? p.base_price;
         if (price < priceRange[0] || price > priceRange[1]) return false;
 
-        // Preset query filter
-        if (queryFilter === 'best-seller' && !p.is_best_seller) return false;
-        if (queryFilter === 'new' && !p.is_new_arrival) return false;
-        if (queryFilter === 'discount' && !(p.sale_price && p.sale_price < p.base_price)) return false;
-        if (queryFilter === 'featured' && !p.is_featured) return false;
+        // Preset query filter with intelligent fallback when badges are unassigned
+        if (queryFilter === 'best-seller') {
+          if (hasExplicitBestSellers && !p.is_best_seller) return false;
+        }
+        if (queryFilter === 'new') {
+          if (hasExplicitNewArrivals && !p.is_new_arrival) return false;
+        }
+        if (queryFilter === 'discount') {
+          if (!(p.sale_price && p.sale_price < p.base_price)) return false;
+        }
+        if (queryFilter === 'featured') {
+          if (hasExplicitFeatured && !p.is_featured) return false;
+        }
 
         return true;
       })
@@ -87,7 +137,9 @@ export const CatalogPage: React.FC = () => {
 
         if (sortBy === 'price-low') return priceA - priceB;
         if (sortBy === 'price-high') return priceB - priceA;
-        if (sortBy === 'newest') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        if (sortBy === 'newest' || (queryFilter === 'new' && sortBy === 'popular')) {
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        }
         // default: popular (sales count)
         return b.sales_count - a.sales_count;
       });
@@ -101,6 +153,7 @@ export const CatalogPage: React.FC = () => {
     queryFilter,
     sortBy,
     subFilter,
+    categories,
   ]);
 
   const handleResetFilters = () => {
@@ -120,8 +173,10 @@ export const CatalogPage: React.FC = () => {
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#101519]">
             {querySearch
               ? `Hasil Pencarian: "${querySearch}"`
-              : selectedCategory
-              ? categories.find((c) => c.slug === selectedCategory)?.name || 'Katalog Produk'
+              : selectedCategory.trim()
+              ? categories.find(
+                  (c) => c.slug?.trim().toLowerCase() === selectedCategory.trim().toLowerCase()
+                )?.name || 'Katalog Produk'
               : 'Semua Produk'}
           </h1>
           <p className="text-xs sm:text-sm text-body mt-1">
@@ -181,31 +236,36 @@ export const CatalogPage: React.FC = () => {
                 <button
                   onClick={() => setSelectedCategory('')}
                   className={`w-full text-left text-xs py-1.5 px-2 rounded-lg transition-colors ${
-                    selectedCategory === ''
+                    !selectedCategory.trim()
                       ? 'bg-primary text-white font-bold'
                       : 'text-[#2D3033] hover:bg-neutral-2'
                   }`}
                 >
                   Semua Kategori
                 </button>
-                {categories.map((cat) => (
-                  <button
-                    key={cat.id}
-                    onClick={() => setSelectedCategory(cat.slug)}
-                    className={`w-full text-left text-xs py-1.5 px-2 rounded-lg transition-colors truncate ${
-                      selectedCategory === cat.slug
-                        ? 'bg-primary text-white font-bold'
-                        : 'text-[#2D3033] hover:bg-neutral-2'
-                    }`}
-                  >
-                    {cat.name}
-                  </button>
-                ))}
+                {categories.map((cat) => {
+                  const isActive =
+                    Boolean(selectedCategory.trim()) &&
+                    selectedCategory.trim().toLowerCase() === cat.slug?.trim().toLowerCase();
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => setSelectedCategory(cat.slug)}
+                      className={`w-full text-left text-xs py-1.5 px-2 rounded-lg transition-colors truncate ${
+                        isActive
+                          ? 'bg-primary text-white font-bold'
+                          : 'text-[#2D3033] hover:bg-neutral-2'
+                      }`}
+                    >
+                      {cat.name}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {/* Sub-filter for Kitab */}
-            {selectedCategory === 'kitab' && (
+            {(selectedCategory.trim().toLowerCase() === 'kitab' || selectedCategory.trim().toLowerCase() === 'kitab-kuning') && (
               <div className="border-t border-hairline pt-4">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-body mb-2.5">
                   Bidang Keilmuan Kitab
@@ -229,7 +289,7 @@ export const CatalogPage: React.FC = () => {
             )}
 
             {/* Sub-filter for Pelajaran */}
-            {selectedCategory === 'buku-pelajaran' && (
+            {selectedCategory.trim().toLowerCase() === 'buku-pelajaran' && (
               <div className="border-t border-hairline pt-4">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-body mb-2.5">
                   Jenjang Pendidikan
@@ -252,37 +312,39 @@ export const CatalogPage: React.FC = () => {
               </div>
             )}
 
-            {/* Brand Filter */}
-            <div className="border-t border-hairline pt-4">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-body mb-2.5">
-                Merek ATK
-              </h4>
-              <div className="space-y-1.5">
-                <button
-                  onClick={() => setSelectedBrand('')}
-                  className={`w-full text-left text-xs py-1.5 px-2 rounded-lg transition-colors ${
-                    selectedBrand === ''
-                      ? 'bg-primary text-white font-bold'
-                      : 'text-[#2D3033] hover:bg-neutral-2'
-                  }`}
-                >
-                  Semua Merek
-                </button>
-                {mockBrands.map((b) => (
+            {/* Dynamic Brand & Author Filter */}
+            {availableBrands.length > 0 && (
+              <div className="border-t border-hairline pt-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-body mb-2.5">
+                  Merek & Penulis
+                </h4>
+                <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
                   <button
-                    key={b.id}
-                    onClick={() => setSelectedBrand(b.slug)}
+                    onClick={() => setSelectedBrand('')}
                     className={`w-full text-left text-xs py-1.5 px-2 rounded-lg transition-colors ${
-                      selectedBrand === b.slug
+                      !selectedBrand.trim()
                         ? 'bg-primary text-white font-bold'
                         : 'text-[#2D3033] hover:bg-neutral-2'
                     }`}
                   >
-                    {b.name}
+                    Semua Merek & Penulis
                   </button>
-                ))}
+                  {availableBrands.map((b) => (
+                    <button
+                      key={b.slug}
+                      onClick={() => setSelectedBrand(b.slug)}
+                      className={`w-full text-left text-xs py-1.5 px-2 rounded-lg transition-colors truncate ${
+                        selectedBrand.trim().toLowerCase() === b.slug.toLowerCase()
+                          ? 'bg-primary text-white font-bold'
+                          : 'text-[#2D3033] hover:bg-neutral-2'
+                      }`}
+                    >
+                      {b.name}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Stock Availability */}
             <div className="border-t border-hairline pt-4">
@@ -354,24 +416,75 @@ export const CatalogPage: React.FC = () => {
                     setSelectedCategory('');
                     setMobileFilterOpen(false);
                   }}
-                  className="w-full text-left text-xs py-1.5"
+                  className={`w-full text-left text-xs py-1.5 px-2 rounded-lg transition-colors ${
+                    !selectedCategory.trim()
+                      ? 'bg-primary text-white font-bold'
+                      : 'text-[#2D3033] hover:bg-neutral-2'
+                  }`}
                 >
                   Semua Kategori
                 </button>
-                {categories.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => {
-                      setSelectedCategory(c.slug);
-                      setMobileFilterOpen(false);
-                    }}
-                    className="w-full text-left text-xs py-1.5 truncate"
-                  >
-                    {c.name}
-                  </button>
-                ))}
+                {categories.map((c) => {
+                  const isActive =
+                    Boolean(selectedCategory.trim()) &&
+                    selectedCategory.trim().toLowerCase() === c.slug?.trim().toLowerCase();
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => {
+                        setSelectedCategory(c.slug);
+                        setMobileFilterOpen(false);
+                      }}
+                      className={`w-full text-left text-xs py-1.5 px-2 rounded-lg transition-colors truncate ${
+                        isActive
+                          ? 'bg-primary text-white font-bold'
+                          : 'text-[#2D3033] hover:bg-neutral-2'
+                      }`}
+                    >
+                      {c.name}
+                    </button>
+                  );
+                })}
               </div>
             </div>
+
+            {/* Mobile Brand & Author */}
+            {availableBrands.length > 0 && (
+              <div className="pt-4 border-t border-hairline">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-body mb-2">Merek & Penulis</h4>
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  <button
+                    onClick={() => {
+                      setSelectedBrand('');
+                      setMobileFilterOpen(false);
+                    }}
+                    className={`w-full text-left text-xs py-1.5 px-2 rounded-lg transition-colors ${
+                      !selectedBrand.trim()
+                        ? 'bg-primary text-white font-bold'
+                        : 'text-[#2D3033] hover:bg-neutral-2'
+                    }`}
+                  >
+                    Semua Merek & Penulis
+                  </button>
+                  {availableBrands.map((b) => (
+                    <button
+                      key={b.slug}
+                      onClick={() => {
+                        setSelectedBrand(b.slug);
+                        setMobileFilterOpen(false);
+                      }}
+                      className={`w-full text-left text-xs py-1.5 px-2 rounded-lg transition-colors truncate ${
+                        selectedBrand.trim().toLowerCase() === b.slug.toLowerCase()
+                          ? 'bg-primary text-white font-bold'
+                          : 'text-[#2D3033] hover:bg-neutral-2'
+                      }`}
+                    >
+                      {b.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Clear button */}
             <div className="pt-4 border-t border-hairline">

@@ -14,6 +14,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
   const displayPrice = product.sale_price ?? product.base_price;
   const hasDiscount = Boolean(product.sale_price && product.sale_price < product.base_price);
+  const discountPercentage = product.discount_percentage ?? (
+    hasDiscount && product.base_price > 0
+      ? Math.round(((product.base_price - (product.sale_price || product.base_price)) / product.base_price) * 100)
+      : undefined
+  );
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -27,16 +32,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         {/* Product Image (Edge to Edge) */}
         <div className="relative w-full h-[160px] sm:h-[180px] bg-neutral-2 overflow-hidden shrink-0">
           <img
-            src={product.images[0] || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=400'}
+            src={product.images?.[0] || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=400'}
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
           />
 
           {/* Discount Badge */}
-          {hasDiscount && product.discount_percentage && (
+          {hasDiscount && discountPercentage && (
             <div className="absolute top-2 left-2 bg-[#F8E7E9] text-[#B91126] text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">
-              {product.discount_percentage}% OFF
+              {discountPercentage}% OFF
             </div>
           )}
 
@@ -85,9 +90,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             <div className="flex items-center justify-between mt-1.5 text-[10px] text-body">
               <div className="flex items-center gap-0.5 text-amber-500 font-semibold">
                 <Star className="w-3 h-3 fill-amber-500" />
-                <span>{product.rating.toFixed(1)}</span>
+                <span>{(Number(product.rating) || 5.0).toFixed(1)}</span>
               </div>
-              <span>Terjual {product.sales_count}</span>
+              <span>Terjual {product.sales_count ?? 0}</span>
             </div>
           </div>
         </div>

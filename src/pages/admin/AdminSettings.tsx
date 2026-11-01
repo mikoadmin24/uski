@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Save, CheckCircle2, Building, QrCode, Truck, Phone, Mail, Database, AlertCircle, Copy, ExternalLink } from 'lucide-react';
+import { Save, CheckCircle2, Building, QrCode, Database } from 'lucide-react';
 import { isSupabaseConfigured } from '@/lib/supabase';
 
 export const AdminSettings: React.FC = () => {
@@ -11,7 +11,6 @@ export const AdminSettings: React.FC = () => {
   const [bsiAccount, setBsiAccount] = useState('7190023412');
   const [qrisUrl, setQrisUrl] = useState('https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=USKI_STORE_QRIS');
   const [savedSuccess, setSavedSuccess] = useState(false);
-  const [copiedSql, setCopiedSql] = useState(false);
 
   const rawSupabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 

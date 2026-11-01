@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useOrderStore } from '@/store/orderStore';
 import { useCourierStore } from '@/store/courierStore';
 import { formatRupiah, formatDate } from '@/lib/utils';
@@ -11,12 +11,8 @@ import {
   CheckCircle2,
   Clock,
   MapPin,
-  Building,
-  ArrowRight,
   AlertCircle,
-  Navigation,
   Phone,
-  ExternalLink,
 } from 'lucide-react';
 
 export const OrderTrackingPage: React.FC = () => {

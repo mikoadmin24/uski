@@ -157,12 +157,71 @@ export const dbService = {
       return data as Product;
     },
 
+    async update(id: string, updates: Partial<Product>): Promise<Product | null> {
+      if (!supabase) return null;
+      await ensureAuthSession();
+
+      const ALLOWED_COLUMNS = new Set([
+        'sku_master', 'isbn', 'name', 'slug', 'description',
+        'author', 'category_id', 'base_price', 'sale_price',
+        'stock_quantity', 'min_stock_alert', 'weight_grams',
+        'images', 'is_active', 'rating', 'reviews_count',
+        'sales_count', 'variants'
+      ]);
+
+      const sanitized: Record<string, any> = {};
+      for (const [key, value] of Object.entries(updates)) {
+        if (ALLOWED_COLUMNS.has(key)) {
+          sanitized[key] = value;
+        }
+      }
+
+      if (Object.keys(sanitized).length === 0) return null;
+
+      const { data, error } = await supabase
+        .from('products')
+        .update(sanitized)
+        .eq('id', id)
+        .select()
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error updating product in Supabase:', error);
+        return null;
+      }
+      return data as Product;
+    },
+
     async upsert(product: Partial<Product>): Promise<Product | null> {
       if (!supabase) return null;
       await ensureAuthSession();
+
+      // Sanitize payload to only valid PostgreSQL table columns
+      const ALLOWED_COLUMNS = new Set([
+        'id', 'sku_master', 'isbn', 'name', 'slug', 'description',
+        'author', 'category_id', 'base_price', 'sale_price',
+        'stock_quantity', 'min_stock_alert', 'weight_grams',
+        'images', 'is_active', 'rating', 'reviews_count',
+        'sales_count', 'variants'
+      ]);
+
+      const sanitized: Record<string, any> = {};
+      for (const [key, value] of Object.entries(product)) {
+        if (ALLOWED_COLUMNS.has(key)) {
+          sanitized[key] = value;
+        }
+      }
+
+      // If payload has an id but lacks required insert columns (sku_master, name),
+      // divert to update() to avoid PostgreSQL 23502 NOT NULL violation
+      if (sanitized.id && (!sanitized.sku_master || !sanitized.name)) {
+        const { id, ...fieldUpdates } = sanitized;
+        return this.update(id, fieldUpdates);
+      }
+
       const { data, error } = await supabase
         .from('products')
-        .upsert(product)
+        .upsert(sanitized)
         .select()
         .single();
 
@@ -232,6 +291,7 @@ export const dbService = {
       const payload = {
         ...order,
         customer_id: isUuid(order.customer_id) ? order.customer_id : null,
+        customer_email: order.customer_email?.trim() || 'pembeli@uskistore.id',
       };
 
       const { data, error } = await supabase

@@ -4,12 +4,8 @@ import {
   User,
   Package,
   MapPin,
-  Heart,
   Plus,
   Trash2,
-  CheckCircle2,
-  Clock,
-  ArrowRight,
   Shield,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
@@ -19,15 +15,43 @@ import { formatRupiah, formatDate } from '@/lib/utils';
 export const AccountPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, addresses, addAddress, deleteAddress, setPrimaryAddress } = useAuthStore();
-  const { orders } = useOrderStore();
+  const { orders, getUserOrders } = useOrderStore();
 
-  // Redirect admin directly to /admin dashboard, courier to /courier
-  // Only regular buyers (customers) use the storefront account page
+  const userPhone = user?.phone_number || (user as any)?.phone;
+
+  // Strict per-account order isolation:
+  // Customers only see their own orders (matched by customer_id, email, or phone).
+  // Unauthenticated guests or newly registered users see 0 orders.
+  const userOrders = React.useMemo(() => {
+    if (!user) return [];
+    if (getUserOrders) {
+      return getUserOrders(user.id, user.email, userPhone);
+    }
+    const userEmail = user.email ? user.email.trim().toLowerCase() : '';
+    const cleanUserPhone = userPhone ? userPhone.replace(/\D/g, '') : '';
+
+    return orders.filter((o) => {
+      // 1. Authoritative customer_id match
+      if (o.customer_id && user.id && o.customer_id === user.id) return true;
+      // 2. Email match (case-insensitive)
+      if (userEmail && o.customer_email && o.customer_email.trim().toLowerCase() === userEmail) return true;
+      // 3. Phone match (exact or normalized digits)
+      if (userPhone && o.customer_phone) {
+        if (o.customer_phone.trim() === userPhone.trim()) return true;
+        const cleanOrderPhone = o.customer_phone.replace(/\D/g, '');
+        if (cleanUserPhone.length >= 8 && cleanOrderPhone.length >= 8 && cleanUserPhone === cleanOrderPhone) {
+          return true;
+        }
+      }
+      return false;
+    });
+  }, [orders, user, userPhone, getUserOrders]);
+
+  // Redirect backoffice admin/staff directly to /admin dashboard
+  // Customers and couriers can access the account profile and order tracking page
   useEffect(() => {
     if (user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'manager' || user?.role === 'staff') {
       navigate('/admin', { replace: true });
-    } else if (user?.role === 'courier') {
-      navigate('/courier', { replace: true });
     }
   }, [user, navigate]);
 
@@ -74,16 +98,16 @@ export const AccountPage: React.FC = () => {
       <div className="bg-white border border-hairline rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-extrabold text-2xl">
-            {user?.full_name ? user.full_name[0] : 'U'}
+            {user?.full_name ? user.full_name[0] : (user?.email ? user.email[0].toUpperCase() : 'U')}
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-extrabold text-[#101519]">{user?.full_name}</h1>
+              <h1 className="text-xl sm:text-2xl font-extrabold text-[#101519]">{user?.full_name || user?.email || 'Akun Tamu'}</h1>
               <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-extrabold uppercase rounded">
-                {user?.role.replace('_', ' ')}
+                {user?.role ? user.role.replace('_', ' ') : 'Pelanggan'}
               </span>
             </div>
-            <p className="text-xs text-body mt-0.5">{user?.email}</p>
+            <p className="text-xs text-body mt-0.5">{user?.email || 'Belum masuk ke akun'}</p>
           </div>
         </div>
 
@@ -111,7 +135,7 @@ export const AccountPage: React.FC = () => {
               }`}
             >
               <Package className="w-4 h-4" />
-              <span>Riwayat Pesanan ({orders.length})</span>
+              <span>Riwayat Pesanan ({userOrders.length})</span>
             </button>
 
             <button
@@ -143,12 +167,23 @@ export const AccountPage: React.FC = () => {
             <div className="space-y-4">
               <h2 className="text-lg font-extrabold text-[#101519]">Riwayat Pesanan Belanja</h2>
 
-              {orders.length === 0 ? (
-                <div className="bg-white border border-hairline rounded-2xl p-12 text-center text-xs text-body">
-                  Belum ada transaksi pesanan.
+              {userOrders.length === 0 ? (
+                <div className="bg-white border border-hairline rounded-2xl p-12 text-center text-xs text-body space-y-2">
+                  <p className="font-semibold text-[#101519]">Belum ada transaksi pesanan.</p>
+                  <p className="text-[11px] text-body">
+                    Pesanan yang Anda buat menggunakan akun ini akan tampil di sini secara otomatis.
+                  </p>
+                  <div className="pt-2">
+                    <Link
+                      to="/products"
+                      className="inline-flex px-4 py-2 bg-primary text-white font-bold rounded-xl text-xs hover:bg-primary-dark transition-colors"
+                    >
+                      Mulai Belanja
+                    </Link>
+                  </div>
                 </div>
               ) : (
-                orders.map((ord) => (
+                userOrders.map((ord) => (
                   <div key={ord.id} className="bg-white border border-hairline rounded-2xl p-5 space-y-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-hairline text-xs gap-2">
                       <div className="flex items-center gap-2">

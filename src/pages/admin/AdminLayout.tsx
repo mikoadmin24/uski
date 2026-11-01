@@ -1,13 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation } from 'react-router-dom';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { useAuthStore } from '@/store/authStore';
-import { ShieldAlert, Bell, Eye, Menu, UserCheck } from 'lucide-react';
-import { UserRole } from '@/types';
+import { ShieldAlert, Eye, Menu } from 'lucide-react';
 
 export const AdminLayout: React.FC = () => {
-  const { user, loginAs } = useAuthStore();
-  const navigate = useNavigate();
+  const { user } = useAuthStore();
   const location = useLocation();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const mainScrollRef = useRef<HTMLElement | null>(null);

@@ -1,25 +1,16 @@
 import React, { useState } from 'react';
 import {
-  Tag,
   Plus,
   Edit,
   Trash2,
-  CheckCircle2,
-  XCircle,
-  Percent,
-  DollarSign,
-  Calendar,
   X,
   Ticket,
   Users,
   UserCheck,
   Shield,
   BookOpen,
-  Layers,
-  Check,
   Eye,
   Phone,
-  HelpCircle,
 } from 'lucide-react';
 import { usePromoStore } from '@/store/promoStore';
 import { formatRupiah } from '@/lib/utils';

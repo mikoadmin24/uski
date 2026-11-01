@@ -24,15 +24,12 @@ const getInitialVouchers = (): Voucher[] => {
     if (!saved) return [];
     const parsed: Voucher[] = JSON.parse(saved);
     if (!Array.isArray(parsed)) return [];
-    const mockIds = new Set(['vouch-1', 'vouch-2', 'vouch-3', 'vouch-4']);
-    return parsed
-      .filter((v) => !mockIds.has(v.id))
-      .map((v) => ({
-        ...v,
-        target_audience: v.target_audience || 'all',
-        target_audience_label: v.target_audience_label || 'Semua Pelanggan (Publik)',
-        usage_per_user: v.usage_per_user || 1,
-      }));
+    return parsed.map((v) => ({
+      ...v,
+      target_audience: v.target_audience || 'all',
+      target_audience_label: v.target_audience_label || 'Semua Pelanggan (Publik)',
+      usage_per_user: v.usage_per_user || 1,
+    }));
   } catch {
     return [];
   }

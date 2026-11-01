@@ -5,19 +5,13 @@ import {
   Trash2,
   Send,
   Eye,
-  CheckCircle2,
-  Clock,
   Building,
   Shield,
   FileText,
   X,
   MessageSquare,
-  MapPin,
-  Calendar,
-  AlertCircle,
   ExternalLink,
   DollarSign,
-  Download,
 } from 'lucide-react';
 import { useCustomOrderStore } from '@/store/customOrderStore';
 import { formatRupiah, formatDate } from '@/lib/utils';
@@ -392,21 +386,38 @@ export const AdminBulkOrders: React.FC = () => {
                       <div className="pt-2 border-t border-hairline">
                         <span className="text-[10px] text-body block font-bold mb-1">Dokumen Lampiran Pengadaan:</span>
                         <div className="flex flex-col gap-1.5">
-                          {liveSelectedReq.attachments.map((att, i) => (
-                            <a
-                              key={i}
-                              href={att.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="p-2 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-between text-primary font-bold transition-colors"
-                            >
-                              <span className="flex items-center gap-1.5 truncate">
-                                <FileText className="w-3.5 h-3.5 shrink-0" />
-                                <span className="truncate">{att.name}</span>
-                              </span>
-                              <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-                            </a>
-                          ))}
+                          {liveSelectedReq.attachments.map((att, i) => {
+                            const hasValidUrl = att.url && att.url !== '#' && !att.url.startsWith('#');
+                            return hasValidUrl ? (
+                              <a
+                                key={i}
+                                href={att.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                download={att.name}
+                                className="p-2 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-between text-primary font-bold transition-colors"
+                              >
+                                <span className="flex items-center gap-1.5 truncate">
+                                  <FileText className="w-3.5 h-3.5 shrink-0" />
+                                  <span className="truncate">{att.name}</span>
+                                </span>
+                                <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                              </a>
+                            ) : (
+                              <div
+                                key={i}
+                                className="p-2 bg-neutral-100 border border-hairline rounded-xl flex items-center justify-between text-body font-semibold"
+                              >
+                                <span className="flex items-center gap-1.5 truncate">
+                                  <FileText className="w-3.5 h-3.5 shrink-0" />
+                                  <span className="truncate">{att.name}</span>
+                                </span>
+                                <span className="text-[10px] bg-neutral-200 text-body px-2 py-0.5 rounded font-bold shrink-0">
+                                  Dokumen Terlampir
+                                </span>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}

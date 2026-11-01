@@ -5,13 +5,8 @@ import {
   Plus,
   Edit,
   Trash2,
-  CheckCircle2,
-  XCircle,
-  ExternalLink,
   UploadCloud,
   X,
-  Eye,
-  Sliders,
 } from 'lucide-react';
 import { useCategoryStore } from '@/store/categoryStore';
 import { useProductStore } from '@/store/productStore';

@@ -10,11 +10,8 @@ import {
   FileSpreadsheet,
   ChevronDown,
   Shield,
-  Navigation,
   LogOut,
-  KeyRound,
   ChevronRight,
-  CheckCircle2,
   Lock,
   Package,
 } from 'lucide-react';
@@ -168,7 +165,7 @@ export const Navbar: React.FC = () => {
                   className="flex items-center gap-3 p-2 hover:bg-neutral-2 rounded-xl transition-colors"
                 >
                   <img
-                    src={p.images[0]}
+                    src={p.images?.[0] || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=400'}
                     alt={p.name}
                     className="w-10 h-14 object-cover rounded border border-hairline shrink-0"
                   />
@@ -301,7 +298,7 @@ export const Navbar: React.FC = () => {
                       Akun Saya
                     </span>
                     <span className="block text-[11px] sm:text-xs font-extrabold text-primary truncate max-w-[110px]">
-                      {user.full_name.split(' ')[0]}
+                      {user.full_name?.trim().split(' ')[0] || user.email?.split('@')[0] || 'Pengguna'}
                     </span>
                   </div>
                   <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-body shrink-0" />
@@ -330,7 +327,7 @@ export const Navbar: React.FC = () => {
                       {user.full_name ? user.full_name[0] : 'U'}
                     </div>
                     <div className="min-w-0">
-                      <p className="font-extrabold text-xs text-[#101519] truncate">{user.full_name}</p>
+                      <p className="font-extrabold text-xs text-[#101519] truncate">{user.full_name || user.email || 'Pengguna'}</p>
                       <span className="inline-block px-2 py-0.5 text-[9px] font-extrabold uppercase rounded bg-primary/15 text-primary">
                         {user.role === 'courier'
                           ? 'Kurir Toko'
@@ -366,7 +363,7 @@ export const Navbar: React.FC = () => {
                     </Link>
                   )}
 
-                  {user.role === 'customer' && (
+                  {(user.role === 'customer' || user.role === 'courier') && (
                     <>
                       <Link
                         to="/account"
@@ -524,12 +521,12 @@ export const Navbar: React.FC = () => {
               </button>
             ) : (
               <Link
-                to={user.role === 'customer' ? '/account' : '/admin'}
+                to={user.role === 'customer' || user.role === 'courier' ? '/account' : '/admin'}
                 onClick={() => setMobileMenuOpen(false)}
                 className="block py-2 text-sm font-bold text-primary hover:underline flex items-center gap-1.5"
               >
                 <User className="w-4 h-4" />
-                <span>{user.role === 'customer' ? 'Buka Akun Saya' : 'Buka Dashboard'} ({user.full_name})</span>
+                <span>{user.role === 'customer' || user.role === 'courier' ? 'Buka Akun Saya' : 'Buka Dashboard'} ({user.full_name || user.email || 'Pengguna'})</span>
               </Link>
             )}
           </div>
@@ -623,103 +620,52 @@ export const Navbar: React.FC = () => {
                 setAuthLoading(true);
 
                 const em = manualEmail.trim().toLowerCase();
+                const pw = manualPassword;
 
                 try {
                   if (authMode === 'register') {
-                    if (!regName.trim() || !manualEmail.trim() || !manualPassword.trim()) {
-                      setAuthError('Harap lengkapi semua bidang.');
+                    const res = await useAuthStore.getState().register({
+                      email: em,
+                      password: pw,
+                      fullName: regName,
+                      phone: regPhone,
+                    });
+
+                    if (!res.success) {
+                      setAuthError(res.error || 'Pendaftaran akun gagal.');
                       setAuthLoading(false);
                       return;
                     }
 
-                    if (isSupabaseConfigured && supabase) {
-                      const { data, error } = await supabase.auth.signUp({
-                        email: em,
-                        password: manualPassword,
-                        options: {
-                          data: {
-                            full_name: regName.trim(),
-                            phone: regPhone.trim(),
-                          },
-                        },
-                      });
-                      if (error) {
-                        setAuthError(error.message);
-                        setAuthLoading(false);
-                        return;
-                      }
-                    }
-
-                    // Register into client store
-                    useAuthStore.setState({
-                      user: {
-                        id: `usr-${Date.now()}`,
-                        email: em,
-                        full_name: regName.trim(),
-                        phone_number: regPhone.trim() || undefined,
-                        role: 'customer',
-                        created_at: new Date().toISOString(),
-                      },
-                      isAuthenticated: true,
-                    });
-
                     setShowManualLoginModal(false);
+                    setManualEmail('');
+                    setManualPassword('');
+                    setRegName('');
+                    setRegPhone('');
                     navigate('/account');
                   } else {
                     // Login Mode
-                    if (isSupabaseConfigured && supabase) {
-                      const { data, error } = await supabase.auth.signInWithPassword({
-                        email: em,
-                        password: manualPassword,
-                      });
-                      if (!error && data.user) {
-                        const role = (data.user.user_metadata?.role as any) || (em.includes('admin') ? 'super_admin' : 'customer');
-                        useAuthStore.setState({
-                          user: {
-                            id: data.user.id,
-                            email: data.user.email || em,
-                            full_name: data.user.user_metadata?.full_name || em.split('@')[0],
-                            role,
-                            created_at: data.user.created_at,
-                          },
-                          isAuthenticated: true,
-                        });
-                        setShowManualLoginModal(false);
-                        if (role === 'super_admin' || role === 'admin' || role === 'manager' || role === 'staff') navigate('/admin');
-                        else navigate('/account');
-                        setAuthLoading(false);
-                        return;
-                      }
+                    const res = await useAuthStore.getState().login(em, pw);
+
+                    if (!res.success) {
+                      // STRICT REJECTION: Display verbatim error and keep modal open
+                      setAuthError(res.error || 'Email atau kata sandi tidak valid.');
+                      setAuthLoading(false);
+                      return;
                     }
 
-                    // Standard credential verification fallback
-                    const staffMatch = useAuthStore.getState().staffList.find(
-                      (s) => s.email.toLowerCase() === em
-                    );
-
-                    if (staffMatch) {
-                      useAuthStore.setState({
-                        user: staffMatch,
-                        isAuthenticated: true,
-                      });
-                      setShowManualLoginModal(false);
-                      navigate('/admin');
-                    } else if (em.includes('admin')) {
-                      loginAs('super_admin');
-                      setShowManualLoginModal(false);
+                    setShowManualLoginModal(false);
+                    setManualEmail('');
+                    setManualPassword('');
+                    const currentUser = useAuthStore.getState().user;
+                    if (
+                      currentUser?.role === 'super_admin' ||
+                      currentUser?.role === 'admin' ||
+                      currentUser?.role === 'manager' ||
+                      currentUser?.role === 'staff'
+                    ) {
                       navigate('/admin');
                     } else {
-                      useAuthStore.setState({
-                        user: {
-                          id: `usr-${Date.now()}`,
-                          email: em,
-                          full_name: em.split('@')[0],
-                          role: 'customer',
-                          created_at: new Date().toISOString(),
-                        },
-                        isAuthenticated: true,
-                      });
-                      setShowManualLoginModal(false);
                       navigate('/account');
                     }
                   }

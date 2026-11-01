@@ -7,14 +7,11 @@ import {
   FileSpreadsheet,
   AlertTriangle,
   ArrowUpRight,
-  Clock,
   CheckCircle2,
   Package,
   Barcode,
   Truck,
   ArrowRight,
-  Shield,
-  Layers,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useOrderStore } from '@/store/orderStore';
@@ -38,7 +35,6 @@ export const AdminDashboard: React.FC = () => {
     .filter((o) => o.payment_status === 'verified')
     .reduce((sum, o) => sum + o.total_amount, 0);
 
-  const pendingPayments = orders.filter((o) => o.status === 'awaiting_payment').length;
   const awaitingVerification = orders.filter((o) => o.status === 'awaiting_verification').length;
   const processingOrders = orders.filter((o) => o.status === 'processing');
   const pendingCustomRequests = requests.filter((r) => r.status === 'pending_review' || r.status === 'checking_supplier').length;

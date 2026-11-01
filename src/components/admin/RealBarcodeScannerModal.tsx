@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
-import { Camera, X, Flashlight, RefreshCw, Barcode, CheckCircle2, AlertCircle, Image as ImageIcon, UploadCloud } from 'lucide-react';
+import { Camera, X, Flashlight, RefreshCw, Barcode, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useProductStore } from '@/store/productStore';
 
 interface RealBarcodeScannerModalProps {

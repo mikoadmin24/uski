@@ -65,15 +65,11 @@ const getInitialCouriers = (): Courier[] => {
     if (!saved) return [];
     const parsed: Courier[] = JSON.parse(saved);
     if (!Array.isArray(parsed)) return [];
-    // Ensure no old dummy mock couriers are injected
-    const mockIds = new Set(['cour-1', 'cour-2', 'cour-3']);
-    return parsed
-      .filter((c: any) => !mockIds.has(c.id))
-      .map((c: any) => ({
-        ...c,
-        trip_history: c.trip_history || [],
-        stationary_alert: c.stationary_alert || { is_stationary: false, duration_minutes: 0, alert_type: null },
-      }));
+    return parsed.map((c: any) => ({
+      ...c,
+      trip_history: c.trip_history || [],
+      stationary_alert: c.stationary_alert || { is_stationary: false, duration_minutes: 0, alert_type: null },
+    }));
   } catch {
     return [];
   }
