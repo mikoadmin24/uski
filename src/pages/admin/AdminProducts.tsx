@@ -15,7 +15,6 @@ import {
   Link as LinkIcon,
   Image as ImageIcon,
   AlertTriangle,
-  Sparkles,
   Barcode,
   Camera,
   Printer,
@@ -614,7 +613,7 @@ export const AdminProducts: React.FC = () => {
                   : 'bg-white text-green-700 border border-green-200 hover:bg-green-50'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Tag className="w-3.5 h-3.5" />
               <span>Sedang Diskon ({discountCount})</span>
             </button>
 

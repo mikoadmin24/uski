@@ -30,7 +30,7 @@ export const mockCategories: Category[] = [
     name: 'Buku Anak & Bergambar',
     slug: 'buku-anak',
     description: 'Buku cerita, dongeng edukatif, dan buku mewarnai',
-    icon: 'Sparkles',
+    icon: 'Smile',
     sort_order: 4,
   },
   {

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
-import { Camera, X, Flashlight, RefreshCw, Barcode, CheckCircle2, AlertCircle, Image as ImageIcon, Sparkles, UploadCloud } from 'lucide-react';
+import { Camera, X, Flashlight, RefreshCw, Barcode, CheckCircle2, AlertCircle, Image as ImageIcon, UploadCloud } from 'lucide-react';
 import { useProductStore } from '@/store/productStore';
 
 interface RealBarcodeScannerModalProps {
@@ -105,11 +105,11 @@ export const RealBarcodeScannerModal: React.FC<RealBarcodeScannerModalProps> = (
     };
   }, [isOpen]);
 
-  const startCamera = async (cameraSource: string | MediaTrackConstraints) => {
+  const startCamera = async (cameraSource: string | { facingMode: string }) => {
     try {
       await stopScanner();
 
-      // Configure multi-format scanner with hardware acceleration enabled
+      // Configure multi-format scanner with retail & book barcode formats
       const scanner = new Html5Qrcode(scannerContainerId, {
         formatsToSupport: [
           Html5QrcodeSupportedFormats.EAN_13,
@@ -122,24 +122,16 @@ export const RealBarcodeScannerModal: React.FC<RealBarcodeScannerModalProps> = (
           Html5QrcodeSupportedFormats.UPC_E,
           Html5QrcodeSupportedFormats.QR_CODE,
           Html5QrcodeSupportedFormats.ITF,
-          Html5QrcodeSupportedFormats.DATA_MATRIX,
         ],
-        experimentalFeatures: {
-          useBarCodeDetectorIfSupported: true,
-        },
         verbose: false,
       });
 
       scannerRef.current = scanner;
 
-      // Dynamic wide scanning box for book ISBN and retail barcodes
+      // 10 FPS optimal for ZXing barcode processing across mobile and desktop
       const config = {
-        fps: 20,
-        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => ({
-          width: Math.floor(viewfinderWidth * 0.92),
-          height: Math.floor(Math.max(160, viewfinderHeight * 0.72)),
-        }),
-        aspectRatio: 1.333,
+        fps: 10,
+        aspectRatio: 1.333333,
       };
 
       await scanner.start(
@@ -149,18 +141,33 @@ export const RealBarcodeScannerModal: React.FC<RealBarcodeScannerModalProps> = (
           handleScanSuccess(decodedText);
         },
         () => {
-          // Frame evaluation
+          // Scan cycle frame
         }
       );
 
       setIsScanning(true);
       setErrorMessage(null);
     } catch (err: any) {
-      console.error('Camera barcode scan error:', err);
+      console.warn('Camera barcode scan start attempt failed:', err);
+      // Fallback: If camera ID failed, attempt general environment or user facing mode
+      if (typeof cameraSource === 'string') {
+        try {
+          await scannerRef.current?.start(
+            { facingMode: 'environment' },
+            { fps: 10 },
+            (decodedText) => handleScanSuccess(decodedText),
+            () => {}
+          );
+          setIsScanning(true);
+          setErrorMessage(null);
+          return;
+        } catch (fbErr) {
+          console.warn('Fallback camera failed:', fbErr);
+        }
+      }
       setIsScanning(false);
       setErrorMessage(
-        err?.message ||
-        'Kamera tidak dapat diakses langsung. Anda dapat gunakan tombol "Foto Barcode" atau ketik manual di bawah.'
+        'Kamera belum dapat dibuka. Pastikan izin kamera aktif pada browser atau gunakan tombol "Foto Barcode" / ketik manual di bawah.'
       );
     }
   };
@@ -209,13 +216,20 @@ export const RealBarcodeScannerModal: React.FC<RealBarcodeScannerModalProps> = (
 
     setIsProcessingPhoto(true);
     try {
-      const scanner = scannerRef.current || new Html5Qrcode(scannerContainerId, { verbose: false });
-      const decodedText = await scanner.scanFile(file, true);
+      // Must safely stop active camera stream before scanning a static image
+      await stopScanner();
+
+      const fileScanner = new Html5Qrcode(scannerContainerId, { verbose: false });
+      const decodedText = await fileScanner.scanFile(file, true);
       if (decodedText) {
         handleScanSuccess(decodedText);
+      } else {
+        throw new Error('Barcode tidak terdeteksi');
       }
     } catch (err: any) {
       alert('Barcode tidak terbaca dari foto tersebut. Harap pastikan garis barcode tajam, fokus, dan tidak terpotong.');
+      // Restart camera stream
+      startCamera(selectedCameraId || { facingMode: 'environment' });
     } finally {
       setIsProcessingPhoto(false);
       e.target.value = '';
@@ -381,7 +395,7 @@ export const RealBarcodeScannerModal: React.FC<RealBarcodeScannerModalProps> = (
               onClick={() => setShowHelperList(!showHelperList)}
               className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1"
             >
-              <Sparkles className="w-3 h-3" />
+              <Barcode className="w-3 h-3" />
               <span>{showHelperList ? 'Tutup Daftar' : 'Lihat Produk Toko'}</span>
             </button>
           </div>
@@ -407,7 +421,7 @@ export const RealBarcodeScannerModal: React.FC<RealBarcodeScannerModalProps> = (
           {showHelperList && (
             <div className="p-2.5 bg-neutral-2/60 rounded-xl border border-hairline space-y-1.5 max-h-40 overflow-y-auto text-xs">
               <span className="text-[10px] font-bold text-body block uppercase">
-                Klik salah satu untuk simulasi tes scan:
+                Pilih langsung dari produk toko:
               </span>
               {products.map((p) => (
                 <button

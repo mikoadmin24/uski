@@ -17,7 +17,7 @@ import {
   Percent,
   Wallet,
   Printer,
-  Sparkles,
+  Award,
   ShoppingBag,
   CreditCard,
   ChevronRight,
@@ -861,7 +861,7 @@ interface ChartPoint {
       {/* Empty Database State Notice */}
       {orders.length === 0 && (
         <div className="p-4 sm:p-5 bg-blue-50/80 border border-blue-200/80 rounded-2xl flex items-center gap-3.5 text-xs text-primary shadow-xs">
-          <Sparkles className="w-5 h-5 shrink-0" />
+          <CheckCircle2 className="w-5 h-5 shrink-0" />
           <div className="space-y-0.5">
             <p className="font-extrabold text-sm">Database Pesanan Bersih (Live Supabase)</p>
             <p className="text-body text-[11px]">
@@ -1411,7 +1411,7 @@ interface ChartPoint {
           </div>
 
           <div className="p-3 bg-blue-50/70 border border-blue-200/60 rounded-xl text-xs text-primary flex items-center gap-2.5 mt-2">
-            <Sparkles className="w-4 h-4 text-primary shrink-0" />
+            <TrendingUp className="w-4 h-4 text-primary shrink-0" />
             <span>
               <strong>Insight Kategori:</strong> {categoryBreakdown[0]?.omset > 0 ? `Kategori ${categoryBreakdown[0].name} memberikan kontribusi omset tertinggi (${categoryBreakdown[0].sharePercent}%) dengan margin laba yang sehat.` : 'Belum ada transaksi kategori tercatat pada periode ini.'}
             </span>
@@ -1422,7 +1422,7 @@ interface ChartPoint {
         <div className="bg-white border border-hairline rounded-2xl p-6 space-y-4 shadow-xs">
           <div className="flex items-center justify-between border-b border-hairline pb-3">
             <h3 className="font-extrabold text-sm text-[#101519] flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-500" />
+              <Award className="w-4 h-4 text-amber-500" />
               <span>Top 5 Produk Penyumbang Laba Terbesar (Profit Drivers)</span>
             </h3>
             <span className="text-xs text-body">Volume &amp; Margin</span>

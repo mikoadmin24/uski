@@ -11,7 +11,8 @@ import {
   Plus,
   ShoppingCart,
   ChevronRight,
-  Sparkles,
+  Package,
+  X,
 } from 'lucide-react';
 import { useProductStore } from '@/store/productStore';
 import { useCartStore } from '@/store/cartStore';
@@ -386,8 +387,10 @@ export const ProductDetailPage: React.FC = () => {
                     {product.rating.toFixed(1)}
                   </div>
                   <div className="text-xs text-body">
-                    <div className="flex text-amber-500 mb-1">
-                      {'★'.repeat(5)}
+                    <div className="flex gap-0.5 text-amber-500 mb-1">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      ))}
                     </div>
                     <span>Berdasarkan {product.reviews_count + customerReviews.length} ulasan terverifikasi pembeli</span>
                   </div>
@@ -409,7 +412,11 @@ export const ProductDetailPage: React.FC = () => {
                       <span className="font-bold text-[#101519]">{rev.name} (Pembeli Terverifikasi)</span>
                       <span className="text-body text-[11px]">{rev.date}</span>
                     </div>
-                    <div className="flex text-amber-500 text-xs">{'★'.repeat(rev.rating)}</div>
+                    <div className="flex gap-0.5 text-amber-500 text-xs">
+                      {Array.from({ length: rev.rating }).map((_, i) => (
+                        <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      ))}
+                    </div>
                     <p className="text-xs text-[#2D3033] leading-relaxed">{rev.comment}</p>
                   </div>
                 ))}
@@ -419,7 +426,11 @@ export const ProductDetailPage: React.FC = () => {
                     <span className="font-bold text-[#101519]">M. Rizky (Pembeli Terverifikasi)</span>
                     <span className="text-body text-[11px]">2 hari yang lalu</span>
                   </div>
-                  <div className="flex text-amber-500 text-xs">{'★'.repeat(5)}</div>
+                  <div className="flex gap-0.5 text-amber-500 text-xs">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                    ))}
+                  </div>
                   <p className="text-xs text-[#2D3033]">
                     Kualitas barang sangat bagus, original, packing rapi menggunakan bubble wrap tebal. Pengiriman cepat sampai.
                   </p>
@@ -432,8 +443,8 @@ export const ProductDetailPage: React.FC = () => {
                   <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4">
                     <div className="flex items-center justify-between border-b border-hairline pb-3">
                       <h3 className="font-extrabold text-sm text-[#101519]">Tulis Ulasan untuk {product.name}</h3>
-                      <button onClick={() => setShowReviewModal(false)}>
-                        ✕
+                      <button onClick={() => setShowReviewModal(false)} className="p-1 rounded-lg hover:bg-neutral-2 text-body">
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
 
@@ -446,9 +457,9 @@ export const ProductDetailPage: React.FC = () => {
                               type="button"
                               key={star}
                               onClick={() => setNewRating(star)}
-                              className={`text-2xl transition-transform ${star <= newRating ? 'text-amber-500 scale-110' : 'text-neutral-1'}`}
+                              className="p-1 transition-transform"
                             >
-                              ★
+                              <Star className={`w-6 h-6 ${star <= newRating ? 'fill-amber-400 text-amber-400 scale-110' : 'text-neutral-300'}`} />
                             </button>
                           ))}
                         </div>
@@ -506,7 +517,7 @@ export const ProductDetailPage: React.FC = () => {
       {relatedProducts.length > 0 && (
         <div className="mt-12">
           <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="w-5 h-5 text-primary" />
+            <Package className="w-5 h-5 text-primary" />
             <h2 className="text-xl font-extrabold text-[#101519]">Produk Terkait Lainnya</h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">

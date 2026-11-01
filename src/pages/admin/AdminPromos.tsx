@@ -14,7 +14,6 @@ import {
   Users,
   UserCheck,
   Shield,
-  Sparkles,
   BookOpen,
   Layers,
   Check,
@@ -125,7 +124,7 @@ export const AdminPromos: React.FC = () => {
       case 'new_customer':
         return (
           <span className="px-2 py-0.5 bg-blue-100 text-blue-800 border border-blue-200 rounded font-bold text-[10px] inline-flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-blue-600" />
+            <UserCheck className="w-3 h-3 text-blue-600" />
             <span>Pelanggan Baru (1st Order)</span>
           </span>
         );
