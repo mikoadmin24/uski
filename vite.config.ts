@@ -14,6 +14,9 @@ export default defineConfig({
     host: true,
     port: 3000,
     open: false,
+    watch: {
+      ignored: ['**/.agents/**', '**/.git/**', '**/dist/**', '**/*.log'],
+    },
   },
   preview: {
     host: true,
