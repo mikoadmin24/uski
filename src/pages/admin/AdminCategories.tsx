@@ -46,6 +46,10 @@ export const AdminCategories: React.FC = () => {
   const [bannerImageUrl, setBannerImageUrl] = useState('');
   const [bannerImagePreview, setBannerImagePreview] = useState<string | null>(null);
 
+  // Delete Confirmation Popup States
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [bannerToDelete, setBannerToDelete] = useState<PromoBanner | null>(null);
+
   // Category Handlers
   const openAddCategory = () => {
     setEditingCategory(null);
@@ -261,11 +265,7 @@ export const AdminCategories: React.FC = () => {
                           </button>
                           <button
                             title="Hapus Kategori"
-                            onClick={() => {
-                              if (confirm(`Hapus kategori "${cat.name}"?`)) {
-                                deleteCategory(cat.id);
-                              }
-                            }}
+                            onClick={() => setCategoryToDelete(cat)}
                             className="p-1.5 hover:text-badge-text text-body hover:bg-red-50 rounded-lg transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -335,12 +335,8 @@ export const AdminCategories: React.FC = () => {
                   <span>Edit Banner</span>
                 </button>
                 <button
-                  onClick={() => {
-                    if (confirm(`Hapus banner "${b.title}"?`)) {
-                      deleteBanner(b.id);
-                    }
-                  }}
-                  className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-badge-text font-bold text-xs rounded-xl flex items-center gap-1.5"
+                  onClick={() => setBannerToDelete(b)}
+                  className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-badge-text font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Hapus</span>
@@ -543,6 +539,85 @@ export const AdminCategories: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Category Confirmation Popup Modal */}
+      {categoryToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-sm sm:max-w-md w-full p-6 space-y-4 shadow-2xl text-center border border-hairline animate-in fade-in zoom-in-95">
+            <div className="w-14 h-14 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+              <Trash2 className="w-7 h-7" />
+            </div>
+            <div>
+              <h3 className="text-lg font-extrabold text-[#101519]">Hapus Kategori?</h3>
+              <p className="text-xs text-body mt-1">
+                Kategori <strong className="text-[#101519]">"{categoryToDelete.name}"</strong> akan dihapus dari sistem.
+              </p>
+              <p className="text-[11px] text-rose-600 font-semibold mt-2">
+                Produk yang memakai kategori ini tidak akan terhapus namun perlu dipetakan ke kategori lain.
+              </p>
+            </div>
+
+            <div className="pt-2 flex justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setCategoryToDelete(null)}
+                className="px-5 py-2.5 bg-neutral-2 hover:bg-neutral-1/40 text-body font-bold text-xs rounded-xl transition-all"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteCategory(categoryToDelete.id);
+                  setCategoryToDelete(null);
+                }}
+                className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-sm flex items-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Ya, Hapus Kategori</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Banner Confirmation Popup Modal */}
+      {bannerToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-sm sm:max-w-md w-full p-6 space-y-4 shadow-2xl text-center border border-hairline animate-in fade-in zoom-in-95">
+            <div className="w-14 h-14 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+              <Trash2 className="w-7 h-7" />
+            </div>
+            <div>
+              <h3 className="text-lg font-extrabold text-[#101519]">Hapus Banner Promo?</h3>
+              <p className="text-xs text-body mt-1">
+                Banner <strong className="text-[#101519]">"{bannerToDelete.title}"</strong> akan dihapus dari carousel beranda utama.
+              </p>
+            </div>
+
+            <div className="pt-2 flex justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setBannerToDelete(null)}
+                className="px-5 py-2.5 bg-neutral-2 hover:bg-neutral-1/40 text-body font-bold text-xs rounded-xl transition-all"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteBanner(bannerToDelete.id);
+                  setBannerToDelete(null);
+                }}
+                className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-sm flex items-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Ya, Hapus Banner</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

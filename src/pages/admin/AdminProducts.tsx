@@ -1121,7 +1121,7 @@ export const AdminProducts: React.FC = () => {
               {/* Quick Actions Bar */}
               <div className="pt-2 border-t border-hairline">
                 <span className="font-bold text-body block mb-2">Aksi Cepat untuk Produk Ini:</span>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <button
                     type="button"
                     onClick={() => {
@@ -1159,6 +1159,19 @@ export const AdminProducts: React.FC = () => {
                   >
                     <Edit className="w-3.5 h-3.5" />
                     <span>Edit Produk</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const p = selectedProductDetail;
+                      setSelectedProductDetail(null);
+                      setProductToDelete({ id: p.id, name: p.name });
+                    }}
+                    className="py-2.5 px-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Hapus Produk</span>
                   </button>
                 </div>
               </div>

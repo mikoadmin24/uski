@@ -210,6 +210,38 @@ export const CatalogPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Quick Category Chips for Mobile & Tablet */}
+      <div className="lg:hidden flex items-center gap-2 overflow-x-auto py-3 -mx-4 px-4 border-b border-hairline touch-scroll no-scrollbar">
+        <button
+          onClick={() => setSelectedCategory('')}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+            !selectedCategory.trim()
+              ? 'bg-primary text-white shadow-xs'
+              : 'bg-white text-body border border-hairline hover:bg-neutral-2'
+          }`}
+        >
+          Semua
+        </button>
+        {categories.map((c) => {
+          const isActive =
+            Boolean(selectedCategory.trim()) &&
+            selectedCategory.trim().toLowerCase() === c.slug?.trim().toLowerCase();
+          return (
+            <button
+              key={c.id}
+              onClick={() => setSelectedCategory(c.slug)}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+                isActive
+                  ? 'bg-primary text-white shadow-xs'
+                  : 'bg-white text-body border border-hairline hover:bg-neutral-2'
+              }`}
+            >
+              {c.name}
+            </button>
+          );
+        })}
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 pt-6">
         {/* Filter Sidebar (Desktop) */}
         <aside className="hidden lg:block space-y-6">
@@ -387,7 +419,7 @@ export const CatalogPage: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
               {filteredProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}

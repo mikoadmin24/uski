@@ -139,9 +139,9 @@ export const StaticPolicyPage: React.FC = () => {
                   <Mail className="w-4 h-4 text-primary" />
                   Email: cs@uskistore.id
                 </p>
-                <p className="flex items-center gap-2 text-body">
-                  <MapPin className="w-4 h-4 text-primary" />
-                  Jl. Margonda Raya No. 102, Depok, Jawa Barat, Indonesia
+                <p className="flex items-start gap-2 text-body">
+                  <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                  <span>Jl. Kemerdekaan Timur, Kesugihan Kidul, Kec. Kesugihan, Kab. Cilacap, Komplek PP. Al Ihya Ulumaddin, Indonesia</span>
                 </p>
               </div>
             </div>

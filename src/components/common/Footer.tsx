@@ -69,9 +69,9 @@ export const Footer: React.FC = () => {
               Toko buku, alat tulis kantor (ATK), Al-Qur'an & kitab, serta perlengkapan edukasi dan umum. Melayani belanja retail satuan dan pengadaan skala besar untuk sekolah, universitas, pesantren, dan kantor.
             </p>
             <div className="space-y-1.5 text-xs text-body">
-              <p className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-primary shrink-0" />
-                Jl. Pendidikan No. 45, Komplek Perkantoran & Sentra Edukasi, Indonesia
+              <p className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                <span>Jl. Kemerdekaan Timur, Kesugihan Kidul, Kec. Kesugihan, Kab. Cilacap, Komplek PP. Al Ihya Ulumaddin</span>
               </p>
               <p className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-primary shrink-0" />

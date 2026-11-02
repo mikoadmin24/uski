@@ -11,6 +11,7 @@ import {
   BookOpen,
   Eye,
   Phone,
+  AlertTriangle,
 } from 'lucide-react';
 import { usePromoStore } from '@/store/promoStore';
 import { formatRupiah } from '@/lib/utils';
@@ -22,6 +23,7 @@ export const AdminPromos: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingVoucher, setEditingVoucher] = useState<Voucher | null>(null);
   const [selectedVoucherDetail, setSelectedVoucherDetail] = useState<Voucher | null>(null);
+  const [voucherToDelete, setVoucherToDelete] = useState<Voucher | null>(null);
 
   // Form states (String states to prevent stuck zeroes)
   const [code, setCode] = useState('');
@@ -397,11 +399,7 @@ export const AdminPromos: React.FC = () => {
 
                       <button
                         title="Hapus Voucher"
-                        onClick={() => {
-                          if (confirm(`Hapus voucher "${v.code}"?`)) {
-                            deleteVoucher(v.id);
-                          }
-                        }}
+                        onClick={() => setVoucherToDelete(v)}
                         className="p-1.5 hover:text-badge-text text-body hover:bg-red-50 rounded-lg transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -520,7 +518,19 @@ export const AdminPromos: React.FC = () => {
               </div>
             </div>
 
-            <div className="pt-2 border-t border-hairline flex justify-end gap-2 text-xs">
+            <div className="pt-2 border-t border-hairline flex flex-wrap justify-end gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  const v = selectedVoucherDetail;
+                  setSelectedVoucherDetail(null);
+                  setVoucherToDelete(v);
+                }}
+                className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 font-bold rounded-xl flex items-center gap-1.5 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Hapus Voucher</span>
+              </button>
               <button
                 type="button"
                 onClick={() => {
@@ -763,6 +773,45 @@ export const AdminPromos: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* DELETE VOUCHER CONFIRMATION POPUP MODAL                                    */}
+      {/* ========================================================================= */}
+      {voucherToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-hairline space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <div className="text-center space-y-1">
+              <h3 className="text-base font-extrabold text-[#101519]">Hapus Voucher Promo?</h3>
+              <p className="text-xs text-body leading-relaxed">
+                Anda yakin ingin menghapus voucher <span className="font-mono font-bold text-[#101519]">"{voucherToDelete.code}"</span>? Pelanggan tidak akan dapat lagi menggunakan voucher ini pada saat checkout.
+              </p>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setVoucherToDelete(null)}
+                className="flex-1 py-2.5 rounded-xl border border-hairline text-xs font-bold text-body hover:bg-neutral-2 transition-colors touch-manipulation"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteVoucher(voucherToDelete.id);
+                  setVoucherToDelete(null);
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors shadow-xs touch-manipulation flex items-center justify-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Ya, Hapus</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

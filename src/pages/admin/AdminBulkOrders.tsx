@@ -18,11 +18,13 @@ import { formatRupiah, formatDate } from '@/lib/utils';
 import { CustomRequest, CustomQuoteItem, CustomRequestStatus } from '@/types';
 
 export const AdminBulkOrders: React.FC = () => {
-  const { requests, createOrUpdateQuote, updateStatus } = useCustomOrderStore();
+  const { requests, createOrUpdateQuote, updateStatus, deleteRequest } = useCustomOrderStore();
 
   // Modals
   const [selectedDetailReq, setSelectedDetailReq] = useState<CustomRequest | null>(null);
   const [selectedReqForQuote, setSelectedReqForQuote] = useState<CustomRequest | null>(null);
+  const [requestToDelete, setRequestToDelete] = useState<CustomRequest | null>(null);
+  const [isDeletingRequest, setIsDeletingRequest] = useState(false);
 
   // Quote items form state
   const [quoteItems, setQuoteItems] = useState<
@@ -222,6 +224,13 @@ export const AdminBulkOrders: React.FC = () => {
                         className="px-3.5 py-1 bg-primary hover:bg-primary-hover text-white rounded-lg font-bold text-xs transition-all shadow-xs"
                       >
                         {r.quote ? 'Edit Penawaran' : '+ Buat Penawaran'}
+                      </button>
+                      <button
+                        onClick={() => setRequestToDelete(r)}
+                        title="Hapus Permintaan RFQ"
+                        className="p-1 hover:text-rose-600 text-rose-500 hover:bg-rose-50 rounded-lg border border-hairline transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </td>
@@ -533,9 +542,17 @@ export const AdminBulkOrders: React.FC = () => {
 
             {/* Footer */}
             <div className="sticky bottom-0 bg-white/95 backdrop-blur-md px-6 py-4 border-t border-hairline flex items-center justify-between text-xs">
-              <span className="text-body font-mono">
-                Tiket ID: {liveSelectedReq.id}
-              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setRequestToDelete(liveSelectedReq);
+                  setSelectedDetailReq(null);
+                }}
+                className="px-4 py-2 text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl font-bold transition-colors flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Hapus Tiket RFQ</span>
+              </button>
               <button
                 type="button"
                 onClick={() => setSelectedDetailReq(null)}
@@ -775,6 +792,64 @@ export const AdminBulkOrders: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Popup Modal */}
+      {requestToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-sm sm:max-w-md w-full p-6 space-y-4 shadow-2xl text-center border border-hairline animate-in fade-in zoom-in-95">
+            <div className="w-14 h-14 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+              <Trash2 className="w-7 h-7" />
+            </div>
+            <div>
+              <h3 className="text-lg font-extrabold text-[#101519]">Hapus Permintaan RFQ?</h3>
+              <p className="text-xs text-body mt-1">
+                Tiket <strong className="text-primary font-mono">{requestToDelete.reference_number}</strong> atas nama <strong className="text-[#101519]">{requestToDelete.customer_name}</strong> akan dihapus permanen.
+              </p>
+              <div className="mt-3 p-3 bg-neutral-2/70 rounded-xl text-left text-[11px] space-y-1">
+                <p className="font-bold text-[#101519] truncate">{requestToDelete.title}</p>
+                <div className="flex justify-between text-body">
+                  <span>Instansi:</span>
+                  <span className="font-semibold text-[#101519]">{requestToDelete.institution_name || '-'}</span>
+                </div>
+                <div className="flex justify-between text-body">
+                  <span>Status:</span>
+                  <span className="font-semibold text-[#101519] uppercase">{requestToDelete.status.replace(/_/g, ' ')}</span>
+                </div>
+              </div>
+              <p className="text-[11px] text-rose-600 font-semibold mt-2">
+                Tindakan ini tidak dapat dibatalkan.
+              </p>
+            </div>
+
+            <div className="pt-2 flex justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setRequestToDelete(null)}
+                className="px-5 py-2.5 bg-neutral-2 hover:bg-neutral-1/40 text-body font-bold text-xs rounded-xl transition-all"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingRequest}
+                onClick={async () => {
+                  setIsDeletingRequest(true);
+                  try {
+                    await deleteRequest(requestToDelete.id);
+                    setRequestToDelete(null);
+                  } finally {
+                    setIsDeletingRequest(false);
+                  }
+                }}
+                className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-sm disabled:opacity-50 flex items-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{isDeletingRequest ? 'Menghapus...' : 'Ya, Hapus Permintaan'}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

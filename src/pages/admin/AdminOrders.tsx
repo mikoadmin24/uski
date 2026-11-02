@@ -12,17 +12,21 @@ import {
   Package,
   Store,
   Check,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { useOrderStore } from '@/store/orderStore';
 import { formatRupiah, formatDate } from '@/lib/utils';
 import { OrderStatus, Order } from '@/types';
 
 export const AdminOrders: React.FC = () => {
-  const { orders, updateOrderStatus, updatePaymentStatus, updateShipmentTracking } = useOrderStore();
+  const { orders, updateOrderStatus, updatePaymentStatus, updateShipmentTracking, deleteOrder } = useOrderStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedOrderDetail, setSelectedOrderDetail] = useState<Order | null>(null);
+  const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
+  const [isDeletingOrder, setIsDeletingOrder] = useState(false);
 
   // Simple tracking/delivery note inside detail modal
   const [trackingNote, setTrackingNote] = useState('');
@@ -149,7 +153,7 @@ export const AdminOrders: React.FC = () => {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs touch-scroll no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
         {[
           { id: 'all', label: `Semua Pesanan (${totalOrders})` },
           { id: 'awaiting_payment', label: `Menunggu Bayar (${orders.filter((o) => o.status === 'awaiting_payment').length})` },
@@ -192,6 +196,9 @@ export const AdminOrders: React.FC = () => {
 
       {/* Clean Orders Table */}
       <div className="bg-white border border-hairline rounded-2xl overflow-hidden shadow-xs">
+        <div className="md:hidden px-4 py-2 bg-neutral-2/60 border-b border-hairline text-[11px] text-body flex items-center justify-between font-semibold">
+          <span>Geser tabel ke samping untuk melihat detail & aksi</span>
+        </div>
         <div className="overflow-x-auto touch-scroll">
           <table className="w-full text-xs text-left min-w-[760px]">
             <thead className="bg-neutral-2/60 border-b border-hairline text-body font-bold uppercase tracking-wider">
@@ -332,6 +339,13 @@ export const AdminOrders: React.FC = () => {
                             className="p-1.5 hover:text-emerald-700 text-body hover:bg-neutral-2 rounded-xl border border-hairline transition-colors"
                           >
                             <Truck className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setOrderToDelete(ord)}
+                            title="Hapus Pesanan"
+                            className="p-1.5 hover:text-rose-600 text-rose-500 hover:bg-rose-50 rounded-xl border border-hairline transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
@@ -584,9 +598,17 @@ export const AdminOrders: React.FC = () => {
 
             {/* Modal Footer */}
             <div className="sticky bottom-0 bg-white px-5 py-3.5 border-t border-hairline flex items-center justify-between gap-3">
-              <span className="text-[11px] text-body">
-                Order ID: <span className="font-mono">{liveSelectedOrder.id}</span>
-              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setOrderToDelete(liveSelectedOrder);
+                  setSelectedOrderDetail(null);
+                }}
+                className="px-3.5 py-2 text-rose-600 hover:bg-rose-50 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors border border-rose-200"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Hapus Pesanan Ini</span>
+              </button>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -798,6 +820,65 @@ export const AdminOrders: React.FC = () => {
                   <p className="italic text-gray-700"><strong>Catatan:</strong> {printShippingLabelOrder.notes}</p>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* POPUP MODAL KONFIRMASI HAPUS PESANAN                                      */}
+      {/* ========================================================================= */}
+      {orderToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-sm sm:max-w-md w-full p-6 space-y-4 shadow-2xl text-center border border-hairline animate-in fade-in zoom-in-95">
+            <div className="w-14 h-14 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+              <Trash2 className="w-7 h-7" />
+            </div>
+            <div>
+              <h3 className="text-lg font-extrabold text-[#101519]">Hapus Data Pesanan?</h3>
+              <p className="text-xs text-body mt-1">
+                Anda akan menghapus pesanan <strong className="text-primary font-mono">{orderToDelete.order_number}</strong> atas nama <strong className="text-[#101519]">{orderToDelete.customer_name}</strong>.
+              </p>
+              <div className="mt-3 p-3 bg-neutral-2/70 rounded-xl text-left text-[11px] space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-body">Total Pembayaran:</span>
+                  <span className="font-bold text-primary">{formatRupiah(orderToDelete.total_amount)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-body">Status Pesanan:</span>
+                  <span className="font-bold text-[#101519] uppercase">{orderToDelete.status.replace(/_/g, ' ')}</span>
+                </div>
+              </div>
+              <p className="text-[11px] text-rose-600 font-semibold mt-2">
+                Tindakan ini permanen dan pesanan akan dihapus dari sistem & database.
+              </p>
+            </div>
+
+            <div className="pt-2 flex justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setOrderToDelete(null)}
+                className="px-5 py-2.5 bg-neutral-2 hover:bg-neutral-1/40 text-body font-bold text-xs rounded-xl transition-all"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingOrder}
+                onClick={async () => {
+                  setIsDeletingOrder(true);
+                  try {
+                    await deleteOrder(orderToDelete.id);
+                    setOrderToDelete(null);
+                  } finally {
+                    setIsDeletingOrder(false);
+                  }
+                }}
+                className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-sm disabled:opacity-50 flex items-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{isDeletingOrder ? 'Menghapus...' : 'Ya, Hapus Pesanan'}</span>
+              </button>
             </div>
           </div>
         </div>

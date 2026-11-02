@@ -13,6 +13,7 @@ interface OrderState {
   updatePaymentStatus: (orderId: string, status: PaymentStatus, verifierName?: string, rejectionReason?: string) => void;
   uploadPaymentProof: (orderId: string, proofUrl: string) => void;
   updateShipmentTracking: (orderId: string, trackingNumber: string, courierName?: string) => void;
+  deleteOrder: (orderId: string) => Promise<void>;
 }
 
 const STORAGE_KEY = 'uski_orders_v1';
@@ -281,6 +282,24 @@ export const useOrderStore = create<OrderState>((set, get) => ({
           .then(({ error }) => {
             if (error) console.error('Failed to sync tracking fields to Supabase:', error);
           });
+      }
+    }
+  },
+
+  deleteOrder: async (orderId: string) => {
+    const updated = get().orders.filter((o) => o.id !== orderId);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+    set({ orders: updated });
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('orders').delete().eq('id', orderId);
+      } catch (err) {
+        console.warn('Failed to delete order from Supabase:', err);
       }
     }
   },

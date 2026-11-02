@@ -112,9 +112,9 @@ export const ProductDetailPage: React.FC = () => {
     .slice(0, 4);
 
   return (
-    <div className="max-w-site mx-auto px-4 py-6">
+    <div className="max-w-site mx-auto px-4 py-6 pb-24 lg:pb-6">
       {/* Breadcrumbs */}
-      <nav className="flex items-center gap-1.5 text-xs text-body mb-6 overflow-x-auto whitespace-nowrap">
+      <nav className="flex items-center gap-1.5 text-xs text-body mb-4 sm:mb-6 overflow-x-auto whitespace-nowrap touch-scroll no-scrollbar">
         <Link to="/" className="hover:text-primary">Beranda</Link>
         <ChevronRight className="w-3.5 h-3.5 shrink-0" />
         <Link to="/products" className="hover:text-primary">Katalog</Link>
@@ -123,7 +123,7 @@ export const ProductDetailPage: React.FC = () => {
       </nav>
 
       {/* Main PDP Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 bg-white border border-hairline rounded-3xl p-6 sm:p-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 bg-white border border-hairline rounded-2xl sm:rounded-3xl p-4 sm:p-8">
         {/* Left: Gallery (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
           <div className="aspect-[4/5] bg-neutral-2 rounded-2xl overflow-hidden border border-hairline relative">
@@ -525,7 +525,7 @@ export const ProductDetailPage: React.FC = () => {
             <Package className="w-5 h-5 text-primary" />
             <h2 className="text-xl font-extrabold text-[#101519]">Produk Terkait Lainnya</h2>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
             {relatedProducts.map((rel) => (
               <ProductCard key={rel.id} product={rel} />
             ))}

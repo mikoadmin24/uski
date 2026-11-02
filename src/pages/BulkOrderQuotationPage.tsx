@@ -249,7 +249,7 @@ export const BulkOrderQuotationPage: React.FC = () => {
                   PUSAT DISTRIBUSI BUKU UMUM, PELAJARAN, AL-QUR'AN, KITAB & ATK INSTANSI
                 </p>
                 <p className="text-[11px] text-body">
-                  Jl. Margonda Raya No. 102, Depok, Jawa Barat | WhatsApp: 0859-6724-9718 | Email: cs@uskistore.id
+                  Jl. Kemerdekaan Timur, Kesugihan Kidul, Kesugihan, Cilacap, Komplek PP. Al Ihya Ulumaddin | WhatsApp: 0859-6724-9718 | Email: cs@uskistore.id
                 </p>
               </div>
             </div>
@@ -333,7 +333,7 @@ export const BulkOrderQuotationPage: React.FC = () => {
               </div>
 
               <div className="text-center space-y-12">
-                <p>Depok, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br /><strong>USKI STORE OFFICIAL</strong></p>
+                <p>Cilacap, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br /><strong>USKI STORE OFFICIAL</strong></p>
                 <div className="border-b border-black w-40 mx-auto" />
                 <p className="text-[11px] text-body -mt-10">(Divisi Pengadaan & Penjualan)</p>
               </div>

@@ -124,38 +124,38 @@ export const AccountPage: React.FC = () => {
       </div>
 
       {/* Tabs Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
         {/* Navigation Sidebar (3 cols) */}
         <aside className="lg:col-span-3">
-          <div className="bg-white border border-hairline rounded-2xl p-2 space-y-1">
+          <div className="bg-white border border-hairline rounded-2xl p-1.5 sm:p-2 flex lg:flex-col overflow-x-auto gap-1 sm:gap-1.5 touch-scroll no-scrollbar">
             <button
               onClick={() => setActiveTab('orders')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-colors ${
-                activeTab === 'orders' ? 'bg-primary text-white' : 'text-[#2D3033] hover:bg-neutral-2'
+              className={`flex-1 lg:w-full flex items-center justify-center lg:justify-start gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-xs font-bold whitespace-nowrap transition-colors shrink-0 ${
+                activeTab === 'orders' ? 'bg-primary text-white shadow-xs' : 'text-[#2D3033] hover:bg-neutral-2'
               }`}
             >
-              <Package className="w-4 h-4" />
-              <span>Riwayat Pesanan ({userOrders.length})</span>
+              <Package className="w-4 h-4 shrink-0" />
+              <span>Riwayat ({userOrders.length})</span>
             </button>
 
             <button
               onClick={() => setActiveTab('addresses')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-colors ${
-                activeTab === 'addresses' ? 'bg-primary text-white' : 'text-[#2D3033] hover:bg-neutral-2'
+              className={`flex-1 lg:w-full flex items-center justify-center lg:justify-start gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-xs font-bold whitespace-nowrap transition-colors shrink-0 ${
+                activeTab === 'addresses' ? 'bg-primary text-white shadow-xs' : 'text-[#2D3033] hover:bg-neutral-2'
               }`}
             >
-              <MapPin className="w-4 h-4" />
-              <span>Daftar Alamat ({addresses.length})</span>
+              <MapPin className="w-4 h-4 shrink-0" />
+              <span>Alamat ({addresses.length})</span>
             </button>
 
             <button
               onClick={() => setActiveTab('profile')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-colors ${
-                activeTab === 'profile' ? 'bg-primary text-white' : 'text-[#2D3033] hover:bg-neutral-2'
+              className={`flex-1 lg:w-full flex items-center justify-center lg:justify-start gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-xs font-bold whitespace-nowrap transition-colors shrink-0 ${
+                activeTab === 'profile' ? 'bg-primary text-white shadow-xs' : 'text-[#2D3033] hover:bg-neutral-2'
               }`}
             >
-              <User className="w-4 h-4" />
-              <span>Detail Profil</span>
+              <User className="w-4 h-4 shrink-0" />
+              <span>Profil</span>
             </button>
           </div>
         </aside>

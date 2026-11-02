@@ -18,6 +18,8 @@ interface AuthState {
   addStaff: (staff: Omit<Profile, 'id' | 'created_at'>) => void;
   updateStaffRole: (id: string, role: UserRole) => void;
   deleteStaff: (id: string) => void;
+  updatePassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>;
+  updateStaffPassword: (staffId: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const initialStaff: Profile[] = [
@@ -395,5 +397,51 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         is_primary: a.id === id,
       })),
     });
+  },
+
+  updatePassword: async (newPassword: string): Promise<{ success: boolean; error?: string }> => {
+    const cleanPassword = newPassword.trim();
+    if (cleanPassword.length < 6) {
+      return { success: false, error: 'Kata sandi baru minimal 6 karakter.' };
+    }
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.auth.updateUser({
+          password: cleanPassword,
+        });
+        if (error) {
+          return { success: false, error: error.message };
+        }
+        return { success: true };
+      } catch (err: any) {
+        return { success: false, error: err.message || 'Gagal mengubah kata sandi di Supabase.' };
+      }
+    }
+
+    return { success: true };
+  },
+
+  updateStaffPassword: async (staffId: string, newPassword: string): Promise<{ success: boolean; error?: string }> => {
+    const cleanPassword = newPassword.trim();
+    if (cleanPassword.length < 6) {
+      return { success: false, error: 'Kata sandi baru minimal 6 karakter.' };
+    }
+
+    const currentUser = get().user;
+    if (currentUser && currentUser.id === staffId && isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.auth.updateUser({
+          password: cleanPassword,
+        });
+        if (error) {
+          return { success: false, error: error.message };
+        }
+      } catch (err: any) {
+        return { success: false, error: err.message || 'Gagal memperbarui kata sandi di server.' };
+      }
+    }
+
+    return { success: true };
   },
 }));

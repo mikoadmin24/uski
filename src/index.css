@@ -24,14 +24,12 @@
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
-    scroll-behavior: smooth;
   }
 
   body {
     @apply font-urbanist bg-[#F9FBFD] text-[#101519] antialiased;
     color: #101519;
     overflow-x: hidden;
-    touch-action: manipulation;
   }
 
   /* Prevent iOS Safari 16px Auto-Zoom Glitch on Input Focus */
@@ -65,7 +63,16 @@
 /* Touch Momentum Scrolling for iOS & Android */
 .touch-scroll {
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
+  overscroll-behavior-y: auto;
+}
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Custom Utilities matching Gramedia DesignMD spec */

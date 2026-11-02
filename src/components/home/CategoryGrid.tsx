@@ -59,10 +59,10 @@ export const CategoryGrid: React.FC = () => {
             <Link
               key={cat.id}
               to={`/products?category=${cat.slug}`}
-              className="bg-white border border-hairline rounded-2xl p-4 flex flex-col items-center text-center group hover:border-primary hover:shadow-sm transition-all duration-200"
+              className="bg-white border border-hairline rounded-2xl p-3 sm:p-4 flex flex-col items-center text-center group hover:border-primary hover:shadow-sm transition-all duration-200"
             >
-              <div className="w-12 h-12 rounded-xl bg-neutral-2 group-hover:bg-primary/10 group-hover:text-primary flex items-center justify-center text-[#2D3033] transition-colors mb-2.5">
-                <Icon className="w-6 h-6" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-neutral-2 group-hover:bg-primary/10 group-hover:text-primary flex items-center justify-center text-[#2D3033] transition-colors mb-2">
+                <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <h3 className="text-xs sm:text-sm font-bold text-[#101519] group-hover:text-primary line-clamp-1 transition-colors">
                 {cat.name}

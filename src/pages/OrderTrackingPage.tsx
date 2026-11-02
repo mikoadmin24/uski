@@ -126,40 +126,58 @@ export const OrderTrackingPage: React.FC = () => {
           </div>
 
           {/* Stepper Timeline */}
-          <div className="py-4">
-            <div className="relative flex items-center justify-between">
-              {/* Stepper background line */}
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-neutral-2 z-0" />
-              <div
-                className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-primary z-0 transition-all duration-500"
-                style={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
-              />
+          <div className="py-2 sm:py-4">
+            {/* Mobile View: Compact Progress Bar & Step Badge */}
+            <div className="sm:hidden bg-neutral-2/60 p-4 rounded-2xl space-y-2 border border-hairline">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-primary">Langkah {currentStep} dari {steps.length}</span>
+                <span className="font-extrabold text-[#101519]">{steps[currentStep - 1]?.label}</span>
+              </div>
+              <div className="w-full bg-neutral-1/40 h-2 rounded-full overflow-hidden">
+                <div
+                  className="bg-primary h-full rounded-full transition-all duration-500"
+                  style={{ width: `${(currentStep / steps.length) * 100}%` }}
+                />
+              </div>
+              <p className="text-[11px] text-body">{steps[currentStep - 1]?.desc}</p>
+            </div>
 
-              {steps.map((st) => {
-                const isCompleted = st.step <= currentStep;
-                const isCurrent = st.step === currentStep;
+            {/* Tablet & Desktop View: Full Node Stepper */}
+            <div className="hidden sm:block relative">
+              <div className="relative flex items-center justify-between">
+                {/* Stepper background line */}
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-neutral-2 z-0" />
+                <div
+                  className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-primary z-0 transition-all duration-500"
+                  style={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
+                />
 
-                return (
-                  <div key={st.step} className="relative z-10 flex flex-col items-center">
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                        isCompleted
-                          ? 'bg-primary text-white ring-4 ring-primary/20'
-                          : 'bg-white border-2 border-hairline text-body'
-                      }`}
-                    >
-                      {st.step < currentStep ? <CheckCircle2 className="w-4 h-4" /> : st.step}
+                {steps.map((st) => {
+                  const isCompleted = st.step <= currentStep;
+                  const isCurrent = st.step === currentStep;
+
+                  return (
+                    <div key={st.step} className="relative z-10 flex flex-col items-center">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                          isCompleted
+                            ? 'bg-primary text-white ring-4 ring-primary/20'
+                            : 'bg-white border-2 border-hairline text-body'
+                        }`}
+                      >
+                        {st.step < currentStep ? <CheckCircle2 className="w-4 h-4" /> : st.step}
+                      </div>
+                      <span
+                        className={`text-[10px] sm:text-xs font-bold mt-2 text-center max-w-[80px] leading-tight ${
+                          isCurrent ? 'text-primary' : 'text-body'
+                        }`}
+                      >
+                        {st.label}
+                      </span>
                     </div>
-                    <span
-                      className={`text-[10px] sm:text-xs font-bold mt-2 text-center max-w-[80px] leading-tight ${
-                        isCurrent ? 'text-primary' : 'text-body'
-                      }`}
-                    >
-                      {st.label}
-                    </span>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
 

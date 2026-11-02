@@ -7,9 +7,10 @@ import { useCartStore } from '@/store/cartStore';
 
 interface ProductCardProps {
   product: Product;
+  className?: string;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+export const ProductCard: React.FC<ProductCardProps> = ({ product, className }) => {
   const addToCart = useCartStore((state) => state.addToCart);
 
   const displayPrice = product.sale_price ?? product.base_price;
@@ -27,10 +28,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   };
 
   return (
-    <div className="w-[160px] sm:w-[190px] h-[310px] sm:h-[330px] bg-white border border-hairline rounded-2xl overflow-hidden flex flex-col justify-between group hover:border-primary transition-all duration-200 shrink-0 relative">
+    <div
+      className={`w-full h-[305px] sm:h-[330px] bg-white border border-hairline rounded-2xl overflow-hidden flex flex-col justify-between group hover:border-primary transition-all duration-200 relative ${
+        className || ''
+      }`}
+    >
       <Link to={`/products/${product.slug}`} className="flex flex-col h-full">
         {/* Product Image (Edge to Edge) */}
-        <div className="relative w-full h-[160px] sm:h-[180px] bg-neutral-2 overflow-hidden shrink-0">
+        <div className="relative w-full h-[155px] sm:h-[180px] bg-neutral-2 overflow-hidden shrink-0">
           <img
             src={product.images?.[0] || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=400'}
             alt={product.name}

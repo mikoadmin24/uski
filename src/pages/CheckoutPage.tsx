@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   ShieldCheck,
@@ -12,6 +12,10 @@ import {
   ShoppingBag,
   MapPin,
   Scale,
+  Lock,
+  Eye,
+  EyeOff,
+  User,
 } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
@@ -23,23 +27,53 @@ import { formatRupiah, generateOrderNumber } from '@/lib/utils';
 export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
   const { items, getSubtotal, getDiscount, clearCart, appliedVoucher } = useCartStore();
-  const { user, addresses } = useAuthStore();
+  const { user, addresses, login, register } = useAuthStore();
   const { createOrder } = useOrderStore();
   const { adjustStock } = useProductStore();
+
+  // Mandatory login state for checkout
+  const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authShowPassword, setAuthShowPassword] = useState(false);
+  const [authFullName, setAuthFullName] = useState('');
+  const [authPhone, setAuthPhone] = useState('');
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(false);
 
   // Contact info
   const [customerName, setCustomerName] = useState(user?.full_name || '');
   const [customerEmail, setCustomerEmail] = useState(user?.email || '');
-  const [customerPhone, setCustomerPhone] = useState(user?.phone_number || '081298765432');
+  const [customerPhone, setCustomerPhone] = useState(user?.phone_number || '');
+
+  // Keep contact info synchronized when user signs in
+  useEffect(() => {
+    if (user) {
+      if (user.full_name) setCustomerName(user.full_name);
+      if (user.email) setCustomerEmail(user.email);
+      if (user.phone_number) setCustomerPhone(user.phone_number);
+    }
+  }, [user]);
 
   // Address
   const primaryAddress = addresses.find((a) => a.is_primary) || addresses[0];
-  const [streetAddress, setStreetAddress] = useState(primaryAddress?.street_address || 'Jl. Margonda Raya No. 102');
-  const [district, setDistrict] = useState(primaryAddress?.district || 'Beji');
-  const [city, setCity] = useState(primaryAddress?.city || 'Kota Depok');
-  const [province, setProvince] = useState(primaryAddress?.province || 'Jawa Barat');
-  const [postalCode, setPostalCode] = useState(primaryAddress?.postal_code || '16424');
+  const [streetAddress, setStreetAddress] = useState(primaryAddress?.street_address || '');
+  const [district, setDistrict] = useState(primaryAddress?.district || '');
+  const [city, setCity] = useState(primaryAddress?.city || '');
+  const [province, setProvince] = useState(primaryAddress?.province || '');
+  const [postalCode, setPostalCode] = useState(primaryAddress?.postal_code || '');
   const [notes, setNotes] = useState('');
+
+  // Keep address synchronized if address list has items
+  useEffect(() => {
+    if (primaryAddress) {
+      setStreetAddress(primaryAddress.street_address || '');
+      setDistrict(primaryAddress.district || '');
+      setCity(primaryAddress.city || '');
+      setProvince(primaryAddress.province || '');
+      setPostalCode(primaryAddress.postal_code || '');
+    }
+  }, [primaryAddress]);
 
   // 1. Logika Berat & Ongkos Kirim Otomatis (Rp 10.000 per 1 kg)
   const totalWeightGrams = items.reduce((acc, it) => acc + (it.product.weight_grams || 350) * it.quantity, 0);
@@ -74,6 +108,178 @@ export const CheckoutPage: React.FC = () => {
         <Link to="/products" className="inline-block px-6 py-2.5 bg-primary text-white font-bold text-xs rounded-xl shadow-sm">
           Kembali ke Katalog
         </Link>
+      </div>
+    );
+  }
+
+  const handleAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setAuthLoading(true);
+
+    try {
+      if (authTab === 'login') {
+        const res = await login(authEmail, authPassword);
+        if (!res.success) {
+          setAuthError(res.error || 'Gagal masuk. Periksa kembali email dan kata sandi Anda.');
+        }
+      } else {
+        if (!authFullName.trim() || !authPhone.trim()) {
+          setAuthError('Nama lengkap dan nomor WhatsApp wajib diisi.');
+          setAuthLoading(false);
+          return;
+        }
+        const res = await register({
+          email: authEmail,
+          password: authPassword,
+          fullName: authFullName.trim(),
+          phone: authPhone.trim(),
+        });
+        if (!res.success) {
+          setAuthError(res.error || 'Gagal mendaftar akun.');
+        }
+      }
+    } catch (err: any) {
+      setAuthError(err.message || 'Terjadi kesalahan otentikasi.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // Mandatory Authentication Barrier for Checkout
+  if (!user) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-10 sm:py-16">
+        <div className="bg-white border border-hairline rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
+          <div className="text-center space-y-2">
+            <div className="w-14 h-14 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto">
+              <Lock className="w-7 h-7" />
+            </div>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-[#101519]">
+              Wajib Masuk Akun untuk Checkout
+            </h1>
+            <p className="text-xs text-body leading-relaxed">
+              Untuk merapihkan data pesanan, penerbitan invoice resmi, dan pelacakan kurir, silakan masuk ke akun atau buat akun baru.
+            </p>
+          </div>
+
+          {/* Tab Selector */}
+          <div className="flex bg-neutral-2 p-1 rounded-2xl">
+            <button
+              type="button"
+              onClick={() => {
+                setAuthTab('login');
+                setAuthError(null);
+              }}
+              className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${
+                authTab === 'login'
+                  ? 'bg-white text-primary shadow-xs'
+                  : 'text-body hover:text-[#101519]'
+              }`}
+            >
+              Masuk ke Akun
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAuthTab('register');
+                setAuthError(null);
+              }}
+              className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${
+                authTab === 'register'
+                  ? 'bg-white text-primary shadow-xs'
+                  : 'text-body hover:text-[#101519]'
+              }`}
+            >
+              Daftar Akun Baru
+            </button>
+          </div>
+
+          {authError && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{authError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleAuthSubmit} className="space-y-4 text-xs">
+            {authTab === 'register' && (
+              <>
+                <div>
+                  <label className="font-bold text-body block mb-1">Nama Lengkap *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Contoh: Muhammad Ilham"
+                    value={authFullName}
+                    onChange={(e) => setAuthFullName(e.target.value)}
+                    className="w-full h-11 px-3.5 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary focus:bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-body block mb-1">Nomor WhatsApp Aktif *</label>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="081234567890"
+                    value={authPhone}
+                    onChange={(e) => setAuthPhone(e.target.value)}
+                    className="w-full h-11 px-3.5 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary focus:bg-white"
+                  />
+                </div>
+              </>
+            )}
+
+            <div>
+              <label className="font-bold text-body block mb-1">Alamat Email *</label>
+              <input
+                type="email"
+                required
+                placeholder="nama@email.com"
+                value={authEmail}
+                onChange={(e) => setAuthEmail(e.target.value)}
+                className="w-full h-11 px-3.5 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary focus:bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="font-bold text-body block mb-1">Kata Sandi *</label>
+              <div className="relative">
+                <input
+                  type={authShowPassword ? 'text' : 'password'}
+                  required
+                  placeholder="Minimal 6 karakter"
+                  value={authPassword}
+                  onChange={(e) => setAuthPassword(e.target.value)}
+                  className="w-full h-11 pl-3.5 pr-10 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary focus:bg-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => setAuthShowPassword(!authShowPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-body hover:text-primary"
+                  tabIndex={-1}
+                >
+                  {authShowPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={authLoading}
+              className="w-full h-11 bg-primary hover:bg-primary-dark text-white font-extrabold rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+            >
+              <User className="w-4 h-4" />
+              <span>{authLoading ? 'Memproses...' : authTab === 'login' ? 'Masuk & Lanjut Checkout' : 'Daftar & Lanjut Checkout'}</span>
+            </button>
+          </form>
+
+          <div className="pt-2 border-t border-hairline text-center">
+            <Link to="/cart" className="text-xs font-bold text-body hover:text-primary">
+              ← Kembali ke Keranjang Belanja ({items.length} Item Tersimpan)
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
@@ -238,6 +444,25 @@ Mohon segera diproses ya kak. Terima kasih!`;
               <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">1</span>
               Informasi Pemesan
             </h3>
+
+            {user && (
+              <div className="p-3 bg-primary/5 border border-primary/20 rounded-2xl flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-full bg-primary text-white font-bold flex items-center justify-center shrink-0">
+                    {user.full_name ? user.full_name[0] : 'U'}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-extrabold text-[#101519] truncate">
+                      {user.full_name || 'Pelanggan'} <span className="text-[10px] text-primary font-bold">(Akun Terverifikasi)</span>
+                    </p>
+                    <p className="text-[11px] text-body truncate">{user.email}</p>
+                  </div>
+                </div>
+                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md shrink-0">
+                  Data Rapi
+                </span>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
               <div>
@@ -573,7 +798,7 @@ Mohon segera diproses ya kak. Terima kasih!`;
         </div>
 
         {/* Mobile Sticky Bottom Floating Action Bar */}
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-hairline p-3 z-40 shadow-xl">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-hairline p-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] z-40 shadow-xl">
           <div className="flex items-center justify-between gap-3 max-w-site mx-auto">
             <div>
               <span className="text-[10px] text-body block">Total Bayar:</span>

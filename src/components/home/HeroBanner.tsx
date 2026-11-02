@@ -24,7 +24,7 @@ export const HeroBanner: React.FC = () => {
   if (activeBanners.length === 0) return null;
 
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden bg-canvas aspect-[21/9] min-h-[220px] max-h-[460px] shadow-sm">
+    <div className="relative w-full rounded-2xl overflow-hidden bg-canvas aspect-[4/3] sm:aspect-[16/9] lg:aspect-[21/9] min-h-[250px] sm:min-h-[280px] max-h-[460px] shadow-sm">
       {activeBanners.map((banner, index) => (
         <div
           key={banner.id}
@@ -40,28 +40,28 @@ export const HeroBanner: React.FC = () => {
           />
 
           {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6 md:p-12">
-            <div className="max-w-xl text-white space-y-2">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent flex flex-col justify-end p-4 sm:p-6 md:p-12">
+            <div className="max-w-xl text-white space-y-1.5 sm:space-y-2">
               {banner.badge_text && (
-                <span className="inline-block px-2.5 py-1 bg-primary text-white text-[11px] font-extrabold uppercase tracking-wider rounded-md">
+                <span className="inline-block px-2.5 py-0.5 sm:py-1 bg-primary text-white text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider rounded-md">
                   {banner.badge_text}
                 </span>
               )}
-              <h2 className="text-xl md:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-tight">
+              <h2 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-tight">
                 {banner.title}
               </h2>
               {banner.subtitle && (
-                <p className="text-xs md:text-sm text-neutral-2 line-clamp-2 max-w-lg">
+                <p className="text-[11px] sm:text-xs md:text-sm text-neutral-2 line-clamp-2 max-w-lg">
                   {banner.subtitle}
                 </p>
               )}
-              <div className="pt-2">
+              <div className="pt-1.5 sm:pt-2">
                 <Link
                   to={banner.link_url}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white text-xs md:text-sm font-extrabold rounded-xl transition-all"
+                  className="inline-flex items-center gap-1.5 sm:gap-2 px-4 py-2 sm:px-5 sm:py-2.5 bg-primary hover:bg-primary-dark text-white text-xs sm:text-sm font-extrabold rounded-xl transition-all shadow-sm"
                 >
                   <span>Lihat Promo & Produk</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </Link>
               </div>
             </div>
@@ -69,19 +69,19 @@ export const HeroBanner: React.FC = () => {
         </div>
       ))}
 
-      {/* Prev / Next Controls */}
+      {/* Prev / Next Controls (Desktop/Tablet) */}
       {activeBanners.length > 1 && (
         <>
           <button
             onClick={prevSlide}
-            className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-canvas flex items-center justify-center transition-all shadow-md backdrop-blur-sm"
+            className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-canvas items-center justify-center transition-all shadow-md backdrop-blur-sm"
             aria-label="Previous Slide"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
             onClick={nextSlide}
-            className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-canvas flex items-center justify-center transition-all shadow-md backdrop-blur-sm"
+            className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-canvas items-center justify-center transition-all shadow-md backdrop-blur-sm"
             aria-label="Next Slide"
           >
             <ChevronRight className="w-5 h-5" />

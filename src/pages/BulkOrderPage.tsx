@@ -71,13 +71,13 @@ export const BulkOrderPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+    <div className="max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-6 sm:space-y-8">
       {/* Header Banner */}
-      <div className="rounded-3xl bg-gradient-to-r from-[#0060AE] to-[#2D3033] text-white p-6 sm:p-10 space-y-3">
-        <span className="inline-block px-3 py-1 bg-white/20 text-white text-xs font-bold uppercase rounded-full backdrop-blur-sm">
+      <div className="rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#0060AE] to-[#2D3033] text-white p-5 sm:p-10 space-y-2 sm:space-y-3">
+        <span className="inline-block px-3 py-1 bg-white/20 text-white text-[11px] sm:text-xs font-bold uppercase rounded-full backdrop-blur-sm">
           Layanan Spesial USKI STORE
         </span>
-        <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
+        <h1 className="text-xl sm:text-3xl md:text-4xl font-extrabold tracking-tight">
           Layanan Pesan Request & Pengadaan Kustom
         </h1>
         <p className="text-xs sm:text-sm text-neutral-2 max-w-2xl leading-relaxed">
@@ -87,11 +87,11 @@ export const BulkOrderPage: React.FC = () => {
 
       {/* Success Notification if Submitted */}
       {successReq ? (
-        <div className="bg-white border border-hairline rounded-3xl p-8 text-center space-y-4 shadow-sm">
+        <div className="bg-white border border-hairline rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-sm">
           <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
             <CheckCircle2 className="w-10 h-10" />
           </div>
-          <h2 className="text-2xl font-extrabold text-[#101519]">
+          <h2 className="text-xl sm:text-2xl font-extrabold text-[#101519]">
             Pesan Request Berhasil Dikirim!
           </h2>
           <p className="text-sm text-body max-w-lg mx-auto">
@@ -101,7 +101,7 @@ export const BulkOrderPage: React.FC = () => {
             Admin kami akan segera meninjau daftar request barang Anda dan memvalidasi ketersediaan stok distributor resmi dalam waktu 1x24 jam.
           </p>
 
-          <div className="pt-4 flex flex-wrap justify-center gap-3">
+          <div className="pt-4 flex flex-col sm:flex-row justify-center gap-3">
             <Link
               to={`/bulk-order/${successReq.reference_number}`}
               className="px-6 py-3 bg-primary text-white font-extrabold text-xs sm:text-sm rounded-xl hover:bg-primary-dark transition-all"
@@ -117,7 +117,7 @@ export const BulkOrderPage: React.FC = () => {
           </div>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="bg-white border border-hairline rounded-3xl p-6 sm:p-8 space-y-8">
+        <form onSubmit={handleSubmit} className="bg-white border border-hairline rounded-2xl sm:rounded-3xl p-4 sm:p-8 space-y-6 sm:space-y-8">
           {/* Section 1: Customer & Institution */}
           <div className="space-y-4">
             <h3 className="text-sm font-extrabold uppercase tracking-wider text-[#101519] border-b border-hairline pb-2 flex items-center gap-2">

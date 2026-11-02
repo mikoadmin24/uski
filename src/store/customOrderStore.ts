@@ -17,6 +17,7 @@ interface CustomOrderState {
   approveQuotation: (requestId: string) => string;
   rejectQuote: (requestId: string, reason?: string) => void;
   rejectQuotation: (requestId: string, reason?: string) => void;
+  deleteRequest: (requestId: string) => Promise<void>;
 }
 
 const STORAGE_KEY = 'uski_custom_requests_v1';
@@ -295,4 +296,22 @@ export const useCustomOrderStore = create<CustomOrderState>((set, get) => ({
   },
 
   rejectQuotation: (requestId, reason) => get().rejectQuote(requestId, reason),
+
+  deleteRequest: async (requestId: string) => {
+    const updated = get().requests.filter((r) => r.id !== requestId);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+    set({ requests: updated });
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('bulk_orders').delete().eq('id', requestId);
+      } catch (err) {
+        console.warn('Failed to delete bulk order from Supabase:', err);
+      }
+    }
+  },
 }));

@@ -52,10 +52,10 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
         )}
       </div>
 
-      {/* Product Cards Row (Scrollable on mobile, grid on desktop) */}
-      <div className="flex gap-4 overflow-x-auto pb-4 pt-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 sm:overflow-visible">
+      {/* Product Cards Row (Scrollable on mobile, fluid grid on desktop) */}
+      <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 pt-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 sm:overflow-visible touch-scroll">
         {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
+          <ProductCard key={product.id} product={product} className="w-[155px] sm:w-auto shrink-0 sm:shrink" />
         ))}
       </div>
     </section>

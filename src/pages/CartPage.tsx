@@ -78,21 +78,21 @@ export const CartPage: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-6">
         {/* Cart Items List (8 cols) */}
-        <div className="lg:col-span-8 space-y-4">
+        <div className="lg:col-span-8 space-y-3 sm:space-y-4">
           {items.map((item) => (
             <div
               key={item.id}
-              className="bg-white border border-hairline rounded-2xl p-4 sm:p-5 flex gap-4 items-center justify-between"
+              className="bg-white border border-hairline rounded-2xl p-3.5 sm:p-5 flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center justify-between shadow-xs"
             >
               {/* Product Thumbnail & Details */}
-              <div className="flex gap-4 items-center flex-1 min-w-0">
+              <div className="flex gap-3 sm:gap-4 items-center flex-1 min-w-0">
                 <img
                   src={item.product.images?.[0] || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=400'}
                   alt={item.product.name}
-                  className="w-16 h-20 sm:w-20 sm:h-24 object-cover rounded-xl border border-hairline shrink-0"
+                  className="w-14 h-18 sm:w-20 sm:h-24 object-cover rounded-xl border border-hairline shrink-0"
                 />
-                <div className="min-w-0 space-y-1">
-                  <p className="text-[11px] font-semibold text-body truncate">
+                <div className="min-w-0 space-y-0.5 sm:space-y-1">
+                  <p className="text-[10px] sm:text-[11px] font-semibold text-body truncate">
                     {item.product.author || item.product.brand?.name || 'USKI Store'}
                   </p>
                   <Link
@@ -102,7 +102,7 @@ export const CartPage: React.FC = () => {
                     {item.product.name}
                   </Link>
                   {item.variant && (
-                    <span className="inline-block px-2 py-0.5 bg-neutral-2 text-[10px] font-bold text-body rounded">
+                    <span className="inline-block px-1.5 py-0.5 bg-neutral-2 text-[9px] sm:text-[10px] font-bold text-body rounded">
                       Varian: {item.variant.name}
                     </span>
                   )}
@@ -112,33 +112,35 @@ export const CartPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Quantity Controls & Total */}
-              <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3 sm:gap-6 shrink-0">
+              {/* Quantity Controls & Total (responsive layout on mobile) */}
+              <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-6 pt-2 sm:pt-0 border-t sm:border-t-0 border-hairline/60">
                 <div className="flex items-center border border-hairline rounded-xl overflow-hidden bg-white">
                   <button
                     onClick={() => updateQuantity(item.id, item.quantity - 1)}
                     className="w-8 h-8 flex items-center justify-center hover:bg-neutral-2 text-body"
+                    aria-label="Kurang kuantitas"
                   >
                     <Minus className="w-3 h-3" />
                   </button>
-                  <span className="w-9 text-center text-xs font-bold text-[#101519]">
+                  <span className="w-8 text-center text-xs font-bold text-[#101519]">
                     {item.quantity}
                   </span>
                   <button
                     onClick={() => updateQuantity(item.id, item.quantity + 1)}
                     className="w-8 h-8 flex items-center justify-center hover:bg-neutral-2 text-body"
+                    aria-label="Tambah kuantitas"
                   >
                     <Plus className="w-3 h-3" />
                   </button>
                 </div>
 
-                <div className="text-right">
+                <div className="flex items-center sm:flex-col sm:items-end gap-3 sm:gap-0 text-right">
                   <span className="text-xs sm:text-sm font-extrabold text-[#101519] block">
                     {formatRupiah(item.selected_price * item.quantity)}
                   </span>
                   <button
                     onClick={() => removeItem(item.id)}
-                    className="text-[11px] text-body hover:text-red-500 mt-1 inline-block"
+                    className="text-[11px] text-body hover:text-red-500 inline-block font-semibold"
                   >
                     Hapus
                   </button>
@@ -240,6 +242,23 @@ export const CartPage: React.FC = () => {
               Perhitungan harga final dan stok diverifikasi langsung secara aman di server.
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Mobile Sticky Checkout Bar */}
+      <div className="lg:hidden fixed bottom-[calc(3.75rem+env(safe-area-inset-bottom,0px))] left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-hairline px-4 py-2.5 shadow-[0_-4px_15px_rgba(0,0,0,0.05)]">
+        <div className="flex items-center justify-between gap-3 max-w-site mx-auto">
+          <div>
+            <span className="text-[10px] text-body block leading-tight">Total Belanja:</span>
+            <span className="text-base font-extrabold text-primary leading-tight">{formatRupiah(total)}</span>
+          </div>
+          <button
+            onClick={() => navigate('/checkout')}
+            className="flex-1 max-w-[200px] h-10 px-4 bg-primary hover:bg-primary-dark text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
+          >
+            <span>Checkout</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
     </div>

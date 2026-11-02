@@ -423,17 +423,66 @@ export const Navbar: React.FC = () => {
       </div>
 
       {/* Mobile Search Bar - Perfectly matches body padding px-4 */}
-      <div className="md:hidden px-4 pb-2.5 pt-0">
+      <div className="md:hidden px-4 pb-2.5 pt-0 relative">
         <form onSubmit={handleSearchSubmit} className="relative w-full">
           <input
             type="text"
             placeholder="Cari buku, novel, ATK, kitab..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setShowSuggestions(true);
+            }}
+            onFocus={() => setShowSuggestions(true)}
             className="w-full h-10 pl-10 pr-4 bg-neutral-2 border border-hairline rounded-xl text-xs font-semibold focus:outline-none focus:border-primary focus:bg-white transition-all shadow-xs"
           />
           <Search className="w-4 h-4 text-body absolute left-3.5 top-1/2 -translate-y-1/2" />
         </form>
+
+        {/* Mobile Live Auto-suggest Dropdown */}
+        {showSuggestions && suggestedProducts.length > 0 && (
+          <div className="absolute left-4 right-4 top-11 bg-white rounded-2xl shadow-xl border border-hairline p-2 z-50 max-h-[60vh] overflow-y-auto touch-scroll">
+            <div className="flex items-center justify-between text-xs font-semibold text-body px-3 py-1.5 border-b border-hairline">
+              <span>Produk Terkait</span>
+              <button
+                type="button"
+                onClick={() => setShowSuggestions(false)}
+                className="text-[11px] text-body hover:text-black font-bold p-1"
+              >
+                ✕
+              </button>
+            </div>
+            {suggestedProducts.map((p) => (
+              <Link
+                key={p.id}
+                to={`/products/${p.slug}`}
+                onClick={() => setShowSuggestions(false)}
+                className="flex items-center gap-3 p-2 hover:bg-neutral-2 rounded-xl transition-colors"
+              >
+                <img
+                  src={p.images?.[0] || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=400'}
+                  alt={p.name}
+                  className="w-10 h-14 object-cover rounded border border-hairline shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-[#101519] truncate">{p.name}</p>
+                  <p className="text-[11px] text-body truncate">{p.author || p.brand?.name || 'USKI Store'}</p>
+                  <p className="text-xs font-extrabold text-primary">
+                    {formatRupiah(p.sale_price ?? p.base_price)}
+                  </p>
+                </div>
+              </Link>
+            ))}
+            <div className="pt-1.5 border-t border-hairline text-center">
+              <button
+                onClick={handleSearchSubmit}
+                className="text-xs font-bold text-primary hover:underline py-1 w-full"
+              >
+                Lihat Semua Hasil Pencarian untuk "{searchQuery}"
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Mobile Drawer Menu */}

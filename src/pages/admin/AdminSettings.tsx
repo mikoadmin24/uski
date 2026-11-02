@@ -1,16 +1,40 @@
 import React, { useState } from 'react';
-import { Save, CheckCircle2, Building, QrCode, Database } from 'lucide-react';
+import {
+  Save,
+  CheckCircle2,
+  Building,
+  QrCode,
+  Database,
+  Key,
+  Lock,
+  Eye,
+  EyeOff,
+  X,
+  AlertCircle,
+  Shield,
+} from 'lucide-react';
 import { isSupabaseConfigured } from '@/lib/supabase';
+import { useAuthStore } from '@/store/authStore';
 
 export const AdminSettings: React.FC = () => {
+  const { user, updatePassword } = useAuthStore();
   const [storeName, setStoreName] = useState('USKI STORE');
   const [phone, setPhone] = useState('0859-6724-9718');
   const [email, setEmail] = useState('cs@uskistore.id');
-  const [address, setAddress] = useState('Jl. Margonda Raya No. 102, Depok, Jawa Barat');
+  const [address, setAddress] = useState('Jl. Kemerdekaan Timur, Kesugihan Kidul, Kesugihan, Cilacap, Komplek PP. Al Ihya Ulumaddin');
   const [bcaAccount, setBcaAccount] = useState('7120982311');
   const [bsiAccount, setBsiAccount] = useState('7190023412');
   const [qrisUrl, setQrisUrl] = useState('https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=USKI_STORE_QRIS');
   const [savedSuccess, setSavedSuccess] = useState(false);
+
+  // Password popup modal states
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   const rawSupabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 
@@ -20,6 +44,42 @@ export const AdminSettings: React.FC = () => {
     setTimeout(() => setSavedSuccess(false), 3000);
   };
 
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError(null);
+    setPasswordSuccess(null);
+
+    if (newPassword.length < 6) {
+      setPasswordError('Kata sandi baru minimal 6 karakter.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Konfirmasi kata sandi tidak cocok.');
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      const res = await updatePassword(newPassword);
+      if (res.success) {
+        setPasswordSuccess('Kata sandi admin berhasil diperbarui!');
+        setNewPassword('');
+        setConfirmPassword('');
+        setTimeout(() => {
+          setShowPasswordModal(false);
+          setPasswordSuccess(null);
+        }, 1800);
+      } else {
+        setPasswordError(res.error || 'Gagal mengubah kata sandi.');
+      }
+    } catch (err: any) {
+      setPasswordError(err.message || 'Terjadi kesalahan sistem.');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-3xl space-y-6">
       <div>
@@ -27,6 +87,38 @@ export const AdminSettings: React.FC = () => {
         <p className="text-xs text-body mt-1">
           Konfigurasi identitas toko, nomor rekening bank resmi, gambar QRIS, dan status database cloud
         </p>
+      </div>
+
+      {/* Account Security & Password Popup Trigger */}
+      <div className="bg-white border border-hairline rounded-3xl p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <Lock className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="font-extrabold text-sm text-[#101519]">
+              Keamanan Akun & Kredensial Administrator
+            </h3>
+            <p className="text-xs text-body">
+              Akun aktif: <strong className="text-[#101519]">{user?.email || 'admin@uskistore.id'}</strong> ({user?.role === 'super_admin' ? 'Super Admin' : user?.role === 'manager' ? 'Manajer' : 'Staf'})
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            setPasswordError(null);
+            setPasswordSuccess(null);
+            setNewPassword('');
+            setConfirmPassword('');
+            setShowPasswordModal(true);
+          }}
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary/10 hover:bg-primary/15 text-primary font-bold text-xs rounded-xl transition-all border border-primary/20 shrink-0"
+        >
+          <Key className="w-4 h-4" />
+          <span>Ubah Kata Sandi Admin</span>
+        </button>
       </div>
 
       {/* Supabase Cloud Connection Diagnostics Card */}
@@ -195,6 +287,100 @@ export const AdminSettings: React.FC = () => {
           </button>
         </div>
       </form>
+
+      {/* Password Change Popup Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl border border-hairline animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-hairline pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+                  <Key className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-[#101519]">Ubah Kata Sandi Admin</h3>
+                  <p className="text-[11px] text-body">{user?.email || 'admin@uskistore.id'}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPasswordModal(false)}
+                className="p-1 rounded-lg text-body hover:text-[#101519] hover:bg-neutral-2 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {passwordError && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{passwordError}</span>
+              </div>
+            )}
+
+            {passwordSuccess && (
+              <div className="p-3 bg-green-50 border border-green-200 text-green-800 text-xs font-semibold rounded-xl flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+                <span>{passwordSuccess}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleUpdatePassword} className="space-y-4 text-xs">
+              <div>
+                <label className="font-bold text-body block mb-1">Kata Sandi Baru *</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    placeholder="Minimal 6 karakter"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full h-11 pl-3.5 pr-10 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary focus:bg-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-body hover:text-primary"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-body block mb-1">Konfirmasi Kata Sandi Baru *</label>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  placeholder="Ulangi kata sandi baru"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full h-11 px-3.5 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary focus:bg-white"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordModal(false)}
+                  className="px-4 py-2.5 bg-neutral-2 hover:bg-neutral-1/40 text-body font-bold rounded-xl transition-all"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={passwordLoading}
+                  className="px-5 py-2.5 bg-primary hover:bg-primary-dark text-white font-extrabold rounded-xl transition-all shadow-sm disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  <Key className="w-4 h-4" />
+                  <span>{passwordLoading ? 'Menyimpan...' : 'Perbarui Kata Sandi'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
