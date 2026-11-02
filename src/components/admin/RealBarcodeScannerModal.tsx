@@ -22,6 +22,7 @@ export const RealBarcodeScannerModal: React.FC<RealBarcodeScannerModalProps> = (
   const [cameras, setCameras] = useState<Array<{ id: string; label: string }>>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>('');
   const [manualCode, setManualCode] = useState('');
+  const [usingFrontCamera, setUsingFrontCamera] = useState(false);
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
   const [showHelperList, setShowHelperList] = useState(false);
 
@@ -71,6 +72,22 @@ export const RealBarcodeScannerModal: React.FC<RealBarcodeScannerModalProps> = (
 
     async function initScanner() {
       try {
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        
+        // On mobile devices (especially iPhone/iOS Safari), camera labels are blank on first load,
+        // and availableCameras[0] often points to the front/selfie camera.
+        // Therefore, always start with facingMode: 'environment' to trigger the true autofocus rear camera.
+        if (isMobile) {
+          startCamera({ facingMode: 'environment' });
+          // Refresh camera list in background after permission is granted
+          setTimeout(async () => {
+            if (!isMounted) return;
+            const cams = await Html5Qrcode.getCameras().catch(() => []);
+            if (cams && cams.length > 0) setCameras(cams);
+          }, 1200);
+          return;
+        }
+
         const availableCameras = await Html5Qrcode.getCameras().catch(() => []);
         if (!isMounted) return;
 
@@ -124,13 +141,21 @@ export const RealBarcodeScannerModal: React.FC<RealBarcodeScannerModalProps> = (
           Html5QrcodeSupportedFormats.ITF,
         ],
         verbose: false,
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true,
+        },
       });
 
       scannerRef.current = scanner;
 
-      // 10 FPS optimal for ZXing barcode processing across mobile and desktop
+      // 15 FPS with optimized rectangular qrbox for fast 1D retail barcode detection
       const config = {
-        fps: 10,
+        fps: 15,
+        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+          const width = Math.floor(Math.min(viewfinderWidth * 0.9, 360));
+          const height = Math.floor(Math.min(viewfinderHeight * 0.5, 180));
+          return { width: Math.max(width, 240), height: Math.max(height, 120) };
+        },
         aspectRatio: 1.333333,
       };
 
@@ -189,12 +214,17 @@ export const RealBarcodeScannerModal: React.FC<RealBarcodeScannerModalProps> = (
   };
 
   const handleSwitchCamera = () => {
-    if (cameras.length <= 1) return;
-    const currentIndex = cameras.findIndex((c) => c.id === selectedCameraId);
-    const nextIndex = (currentIndex + 1) % cameras.length;
-    const nextCamId = cameras[nextIndex].id;
-    setSelectedCameraId(nextCamId);
-    startCamera(nextCamId);
+    if (cameras.length > 1) {
+      const currentIndex = cameras.findIndex((c) => c.id === selectedCameraId);
+      const nextIndex = (currentIndex + 1) % cameras.length;
+      const nextCamId = cameras[nextIndex].id;
+      setSelectedCameraId(nextCamId);
+      startCamera(nextCamId);
+    } else {
+      const nextMode = !usingFrontCamera;
+      setUsingFrontCamera(nextMode);
+      startCamera({ facingMode: nextMode ? 'user' : 'environment' });
+    }
   };
 
   const handleToggleTorch = async () => {
@@ -282,9 +312,14 @@ export const RealBarcodeScannerModal: React.FC<RealBarcodeScannerModalProps> = (
               <div className="relative w-[88%] h-44 border-2 border-emerald-400 rounded-2xl shadow-[0_0_0_9999px_rgba(0,0,0,0.45)] flex items-center justify-center overflow-hidden">
                 {/* Red Laser Sweep Line */}
                 <div className="absolute inset-x-0 h-0.5 bg-red-500 shadow-[0_0_10px_#ef4444] animate-pulse" />
-                <span className="text-[11px] font-bold text-white bg-black/60 px-3 py-1 rounded-full mt-auto mb-2 backdrop-blur-xs">
-                  Posisikan Barcode di Kotak Ini
-                </span>
+                <div className="mt-auto mb-2 flex flex-col items-center gap-1">
+                  <span className="text-[11px] font-bold text-white bg-black/60 px-3 py-0.5 rounded-full backdrop-blur-xs">
+                    Posisikan Barcode di Kotak Ini
+                  </span>
+                  <span className="text-[10px] text-emerald-200 bg-black/60 px-2.5 py-0.5 rounded-full backdrop-blur-xs">
+                    Beri jarak 15–20 cm agar kamera fokus tajam
+                  </span>
+                </div>
               </div>
             </div>
           )}
@@ -346,16 +381,14 @@ export const RealBarcodeScannerModal: React.FC<RealBarcodeScannerModalProps> = (
               </button>
 
               <div className="flex items-center gap-2">
-                {cameras.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={handleSwitchCamera}
-                    className="p-2 bg-black/60 hover:bg-black/80 text-white rounded-xl backdrop-blur-sm border border-white/20 transition-colors"
-                    title="Ganti Kamera Belakang / Depan"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={handleSwitchCamera}
+                  className="p-2 bg-black/60 hover:bg-black/80 text-white rounded-xl backdrop-blur-sm border border-white/20 transition-colors"
+                  title="Ganti Lensa / Kamera (Belakang/Depan)"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
                 <button
                   type="button"
                   onClick={handleToggleTorch}
