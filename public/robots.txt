@@ -1,0 +1,37 @@
+# ==============================================================================
+# USKI STORE Robots.txt Directive
+# Store: USKI STORE (CV USKI KREASI NUSANTARA)
+# Location: Kesugihan, Cilacap, Jawa Tengah
+# Canonical Domain: https://uskistore.com
+# Secondary Host: https://uskistore.jat.web.id
+# ==============================================================================
+
+User-agent: *
+
+# Allow Public Content & Catalogs
+Allow: /
+Allow: /products
+Allow: /products/*
+Allow: /kategori/*
+Allow: /bulk-order
+Allow: /track-order
+Allow: /policies/*
+Allow: /contact
+Allow: /about
+
+# Disallow Administrative & Backoffice
+Disallow: /admin/
+Disallow: /admin/*
+
+# Disallow Private Transactional & Checkout Stages
+Disallow: /cart
+Disallow: /checkout
+Disallow: /order-confirmation/*
+Disallow: /account
+Disallow: /account/*
+
+# Disallow Private Customer Quotation Lookup
+Disallow: /bulk-order/*
+
+# Sitemap Index
+Sitemap: https://uskistore.com/sitemap.xml
