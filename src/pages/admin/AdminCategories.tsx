@@ -45,6 +45,7 @@ export const AdminCategories: React.FC = () => {
   const [bannerLink, setBannerLink] = useState('/products');
   const [bannerImageUrl, setBannerImageUrl] = useState('');
   const [bannerImagePreview, setBannerImagePreview] = useState<string | null>(null);
+  const [showBannerOverlay, setShowBannerOverlay] = useState(true);
 
   // Delete Confirmation Popup States
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
@@ -107,6 +108,7 @@ export const AdminCategories: React.FC = () => {
     setBannerLink('/products');
     setBannerImageUrl('');
     setBannerImagePreview(null);
+    setShowBannerOverlay(true);
     setShowBannerModal(true);
   };
 
@@ -114,7 +116,9 @@ export const AdminCategories: React.FC = () => {
     setEditingBanner(b);
     setBannerTitle(b.title);
     setBannerSubtitle(b.subtitle || '');
-    setBannerBadge(b.badge_text || 'PROMO BULAN INI');
+    const isOverlayHidden = b.badge_text === '__NO_OVERLAY__';
+    setShowBannerOverlay(!isOverlayHidden);
+    setBannerBadge(isOverlayHidden ? '' : (b.badge_text || 'PROMO BULAN INI'));
     setBannerLink(b.link_url || '/products');
     setBannerImageUrl(b.image_url);
     setBannerImagePreview(b.image_url);
@@ -134,7 +138,8 @@ export const AdminCategories: React.FC = () => {
 
   const handleSaveBanner = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!bannerTitle.trim()) return;
+    const finalTitle = bannerTitle.trim() || 'Promo Banner';
+    const finalBadge = showBannerOverlay ? bannerBadge.trim() : '__NO_OVERLAY__';
 
     const finalImage =
       bannerImagePreview ||
@@ -143,17 +148,17 @@ export const AdminCategories: React.FC = () => {
 
     if (editingBanner) {
       updateBanner(editingBanner.id, {
-        title: bannerTitle.trim(),
-        subtitle: bannerSubtitle.trim(),
-        badge_text: bannerBadge.trim(),
+        title: finalTitle,
+        subtitle: showBannerOverlay ? bannerSubtitle.trim() : '',
+        badge_text: finalBadge,
         link_url: bannerLink.trim(),
         image_url: finalImage,
       });
     } else {
       addBanner({
-        title: bannerTitle.trim(),
-        subtitle: bannerSubtitle.trim(),
-        badge_text: bannerBadge.trim(),
+        title: finalTitle,
+        subtitle: showBannerOverlay ? bannerSubtitle.trim() : '',
+        badge_text: finalBadge,
         link_url: bannerLink.trim(),
         image_url: finalImage,
         is_active: true,
@@ -429,11 +434,26 @@ export const AdminCategories: React.FC = () => {
             </div>
 
             <form onSubmit={handleSaveBanner} className="space-y-3 text-xs">
+              <div className="p-3 bg-neutral-2/60 rounded-xl border border-hairline flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-[#101519] block text-xs">Tampilkan Teks di Atas Banner</span>
+                  <span className="text-[10px] text-body block">Aktifkan untuk foto biasa. Nonaktifkan jika gambar banner sudah memiliki desain teks poster mandiri.</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={showBannerOverlay}
+                  onChange={(e) => setShowBannerOverlay(e.target.checked)}
+                  className="w-4 h-4 text-primary rounded cursor-pointer"
+                />
+              </div>
+
               <div>
-                <label className="font-bold text-body block mb-1">Judul Banner *</label>
+                <label className="font-bold text-body block mb-1">
+                  Judul Banner {showBannerOverlay && '*'}
+                </label>
                 <input
                   type="text"
-                  required
+                  required={showBannerOverlay}
                   value={bannerTitle}
                   onChange={(e) => setBannerTitle(e.target.value)}
                   placeholder="Contoh: Diskon Kitab Kuning & Mushaf 25%"
@@ -441,39 +461,56 @@ export const AdminCategories: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label className="font-bold text-body block mb-1">Subjudul / Keterangan</label>
-                <input
-                  type="text"
-                  value={bannerSubtitle}
-                  onChange={(e) => setBannerSubtitle(e.target.value)}
-                  placeholder="Berlaku selama bulan Ramadhan untuk pesantren dan madrasah"
-                  className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
-                />
-              </div>
+              {showBannerOverlay && (
+                <>
+                  <div>
+                    <label className="font-bold text-body block mb-1">Subjudul / Keterangan</label>
+                    <input
+                      type="text"
+                      value={bannerSubtitle}
+                      onChange={(e) => setBannerSubtitle(e.target.value)}
+                      placeholder="Berlaku selama bulan Ramadhan untuk pesantren dan madrasah"
+                      className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
+                    />
+                  </div>
 
-              <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-bold text-body block mb-1">Label Badge</label>
+                      <input
+                        type="text"
+                        value={bannerBadge}
+                        onChange={(e) => setBannerBadge(e.target.value)}
+                        placeholder="PROMO SPESIAL"
+                        className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold text-body block mb-1">Tautan / URL Klik (Opsional)</label>
+                      <input
+                        type="text"
+                        value={bannerLink}
+                        onChange={(e) => setBannerLink(e.target.value)}
+                        placeholder="/products?category=kitab"
+                        className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-mono text-xs focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {!showBannerOverlay && (
                 <div>
-                  <label className="font-bold text-body block mb-1">Label Badge</label>
-                  <input
-                    type="text"
-                    value={bannerBadge}
-                    onChange={(e) => setBannerBadge(e.target.value)}
-                    placeholder="PROMO SPESIAL"
-                    className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
-                  />
-                </div>
-                <div>
-                  <label className="font-bold text-body block mb-1">Tautan / URL Klik</label>
+                  <label className="font-bold text-body block mb-1">Tautan / URL Klik (Opsional)</label>
                   <input
                     type="text"
                     value={bannerLink}
                     onChange={(e) => setBannerLink(e.target.value)}
-                    placeholder="/products?category=kitab"
+                    placeholder="/products atau kosongkan jika tidak ada tautan"
                     className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-mono text-xs focus:outline-none focus:border-primary"
                   />
                 </div>
-              </div>
+              )}
 
               {/* Banner Image Upload */}
               <div>

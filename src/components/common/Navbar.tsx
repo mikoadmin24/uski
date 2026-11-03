@@ -84,7 +84,7 @@ export const Navbar: React.FC = () => {
         {/* Brand Logo */}
         <Link to="/" className="flex items-center gap-2 sm:gap-2.5 group shrink-0 min-w-0">
           <img
-            src="/logo.jpg"
+            src="/logo.png"
             alt="USKI STORE"
             className="w-9 h-9 sm:w-10 sm:h-10 object-contain shrink-0 group-hover:scale-105 transition-transform"
           />

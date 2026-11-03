@@ -184,7 +184,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
         <div className="p-5 border-b border-white/10 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5" onClick={onClose}>
             <img
-              src="/logo.jpg"
+              src="/logo.png"
               alt="USKI BACKOFFICE Logo"
               className="w-9 h-9 object-contain shrink-0"
             />

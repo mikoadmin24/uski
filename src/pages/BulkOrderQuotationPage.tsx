@@ -239,7 +239,7 @@ export const BulkOrderQuotationPage: React.FC = () => {
             {/* Official Letterhead (Kop Surat) */}
             <div className="border-b-2 border-black pb-4 flex items-center justify-between gap-4">
               <img
-                src="/logo.jpg"
+                src="/logo.png"
                 alt="USKI STORE Logo"
                 className="w-14 h-14 object-contain shrink-0"
               />

@@ -57,7 +57,7 @@ export const Footer: React.FC = () => {
           <div className="lg:col-span-2 space-y-4">
             <Link to="/" className="flex items-center gap-2.5">
               <img
-                src="/logo.jpg"
+                src="/logo.png"
                 alt="USKI STORE Logo"
                 className="w-9 h-9 sm:w-10 sm:h-10 object-contain shrink-0"
               />
