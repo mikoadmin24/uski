@@ -477,7 +477,10 @@ export const AdminCategories: React.FC = () => {
 
               {/* Banner Image Upload */}
               <div>
-                <label className="font-bold text-body block mb-1">Gambar Banner</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-body">Gambar Banner</label>
+                  <span className="text-[10px] text-body font-semibold">Rekomendasi: 1600 × 600 px (Rasio 16:9 / 21:9)</span>
+                </div>
                 {bannerImagePreview ? (
                   <div className="relative border border-hairline rounded-2xl overflow-hidden mb-2">
                     <img
