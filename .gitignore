@@ -30,3 +30,6 @@ dist-ssr
 # Internal agent teamwork artifacts
 .agents/
 
+# Delivery archives
+*.zip
+

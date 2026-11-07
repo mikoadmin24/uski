@@ -86,5 +86,5 @@ erDiagram
 3. **Sinkronisasi Stok Otomatis (Audit Trail)**:
    - Setiap kali terjadi pesanan baru (checkout), sistem otomatis mengurangi `products.stock_quantity` dan mencatatnya ke tabel `inventory_movements` dengan tipe `sale_out` secara atomik.
 
-4. **Pembersihan Data Otomatis**:
-   - Skrip pemeliharaan database (`scripts/tidy_database.mjs`) disediakan untuk membersihkan data uji (*test fixtures*) dan menjaga konsistensi relasi foreign key secara berkala.
+4. **Skema Tunggal Terpusat (`supabase/schema.sql`)**:
+   - Seluruh definisi tabel, relasi foreign key, indeks, trigger, aturan keamanan RLS, publikasi Realtime, dan Storage Bucket dirangkum dalam satu file utama [`supabase/schema.sql`](./supabase/schema.sql) yang bersifat *idempotent* (aman dijalankan berulang kali).

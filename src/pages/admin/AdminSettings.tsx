@@ -171,7 +171,7 @@ export const AdminSettings: React.FC = () => {
             </p>
             <ol className="list-decimal list-inside space-y-1 text-[11px] leading-relaxed text-body">
               <li>
-                Buka project Anda di <strong>Supabase.com</strong> &gt; menu <strong>SQL Editor</strong> &gt; jalankan file master: <code className="bg-neutral-2 px-1.5 py-0.5 rounded text-[#101519] font-bold">supabase/complete_setup.sql</code>
+                Buka project Anda di <strong>Supabase.com</strong> &gt; menu <strong>SQL Editor</strong> &gt; jalankan file master: <code className="bg-neutral-2 px-1.5 py-0.5 rounded text-[#101519] font-bold">supabase/schema.sql</code>
               </li>
               <li>
                 Buka <strong>Project Settings</strong> &gt; <strong>API</strong> &gt; salin <strong>Project URL</strong> dan <strong>anon key</strong>.

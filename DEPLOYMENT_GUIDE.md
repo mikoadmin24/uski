@@ -30,20 +30,14 @@ Supabase bertindak sebagai backend cloud PostgreSQL yang menangani:
    - **Region**: Pilih **Singapore (ap-southeast-1)** agar respon server paling cepat dari Indonesia.
    - Klik **Create new project** dan tunggu 1-2 menit hingga database siap.
 
-3. **Jalankan Schema Database:**
+3. **Jalankan Schema & Data Awal Database:**
    - Di dashboard Supabase sebelah kiri, klik menu **SQL Editor**.
    - Klik **New query**.
    - Buka file [`supabase/schema.sql`](file:///d:/uski%20store/supabase/schema.sql) di laptop Anda, salin (**Copy**) seluruh isinya.
    - Tempel (**Paste**) ke SQL Editor Supabase, lalu klik tombol **Run** (Ctrl + Enter).
-   - *Status:* Seluruh 11 tabel, fungsi otomatis, aturan keamanan RLS, Realtime publication, dan Storage Bucket akan langsung terbuat secara otomatis.
+   - *Status:* Seluruh tabel, fungsi otomatis, aturan keamanan RLS, Realtime publication, Storage Bucket, serta data kategori awal langsung terbuat secara otomatis.
 
-4. **Jalankan Data Awal (Seed Data):**
-   - Buat query baru di SQL Editor Supabase.
-   - Buka file [`supabase/seed.sql`](file:///d:/uski%20store/supabase/seed.sql), salin (**Copy**) seluruh isinya.
-   - Tempel (**Paste**) ke SQL Editor, lalu klik tombol **Run**.
-   - *Status:* Data awal kategori (Buku, ATK, Al-Qur'an, Kitab), produk best seller, armada kurir GPS, banner hero, dan kupon voucher langsung aktif.
-
-5. **Salin API Keys Proyek:**
+4. **Salin API Keys Proyek:**
    - Buka menu **Project Settings** (ikon gerigi di kiri bawah) -> **API**.
    - Salin dua data berikut:
      1. **Project URL** (contoh: `https://xyzabcqwerty.supabase.co`)
