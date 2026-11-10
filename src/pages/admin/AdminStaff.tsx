@@ -24,7 +24,7 @@ export const AdminStaff: React.FC = () => {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [role, setRole] = useState<UserRole>('staff');
-  const [initialPassword, setInitialPassword] = useState('password123');
+  const [initialPassword, setInitialPassword] = useState('');
 
   // Staff password popup modal state
   const [selectedStaffForPassword, setSelectedStaffForPassword] = useState<Profile | null>(null);
@@ -52,7 +52,7 @@ export const AdminStaff: React.FC = () => {
     setEmail('');
     setPhone('');
     setRole('staff');
-    setInitialPassword('password123');
+    setInitialPassword('');
   };
 
   const handleUpdateStaffPassword = async (e: React.FormEvent) => {
@@ -367,7 +367,7 @@ export const AdminStaff: React.FC = () => {
                   required
                   value={initialPassword}
                   onChange={(e) => setInitialPassword(e.target.value)}
-                  placeholder="Minimal 6 karakter (default: password123)"
+                  placeholder="Minimal 6 karakter"
                   className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary"
                 />
               </div>

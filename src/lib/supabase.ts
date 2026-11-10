@@ -3,10 +3,8 @@ import { dbService, PingResult } from '@/services/dbService';
 
 export { dbService, type PingResult };
 
-const supabaseUrl =
-  import.meta.env.VITE_SUPABASE_URL || 'https://kxbdoqviqzseymjofsjg.supabase.co';
-const supabaseAnonKey =
-  import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_fhozwGC_3SgDnie_Z-10Lg_0C1n8M_v';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 export const isSupabaseConfigured = Boolean(
   supabaseUrl &&
@@ -33,12 +31,7 @@ export async function ensureAuthSession(): Promise<boolean> {
   if (!supabase) return false;
   try {
     const { data } = await supabase.auth.getSession();
-    if (data.session) return true;
-    const { data: loginData, error } = await supabase.auth.signInWithPassword({
-      email: 'admin@uskistore.id',
-      password: 'password123',
-    });
-    return Boolean(!error && loginData.session);
+    return Boolean(data?.session);
   } catch (err) {
     console.warn('ensureAuthSession error:', err);
     return false;

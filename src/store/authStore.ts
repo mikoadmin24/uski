@@ -199,8 +199,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     );
 
     if (staffMatch) {
-      if (cleanPassword !== 'password123') {
-        return { success: false, error: 'Kata sandi salah. (Kata sandi staf demo: password123)' };
+      if (cleanPassword.length < 6) {
+        return { success: false, error: 'Kata sandi minimal 6 karakter.' };
       }
       set({ user: staffMatch, isAuthenticated: true });
       try {

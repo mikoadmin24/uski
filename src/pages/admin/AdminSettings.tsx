@@ -100,7 +100,7 @@ export const AdminSettings: React.FC = () => {
               Keamanan Akun & Kredensial Administrator
             </h3>
             <p className="text-xs text-body">
-              Akun aktif: <strong className="text-[#101519]">{user?.email || 'admin@uskistore.id'}</strong> ({user?.role === 'super_admin' ? 'Super Admin' : user?.role === 'manager' ? 'Manajer' : 'Staf'})
+              Akun aktif: <strong className="text-[#101519]">{user?.email || 'admin@uskistore.com'}</strong> ({user?.role === 'super_admin' ? 'Super Admin' : user?.role === 'manager' ? 'Manajer' : 'Staf'})
             </p>
           </div>
         </div>
@@ -299,7 +299,7 @@ export const AdminSettings: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-base font-extrabold text-[#101519]">Ubah Kata Sandi Admin</h3>
-                  <p className="text-[11px] text-body">{user?.email || 'admin@uskistore.id'}</p>
+                  <p className="text-[11px] text-body">{user?.email || 'admin@uskistore.com'}</p>
                 </div>
               </div>
               <button

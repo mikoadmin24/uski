@@ -712,7 +712,7 @@ export const Navbar: React.FC = () => {
                 <input
                   type="email"
                   required
-                  placeholder="nama@email.com / admin@uskistore.id"
+                  placeholder="nama@email.com"
                   value={manualEmail}
                   onChange={(e) => setManualEmail(e.target.value)}
                   className="w-full h-10 px-3 bg-neutral-2 border border-hairline rounded-xl font-semibold focus:outline-none focus:border-primary text-xs"

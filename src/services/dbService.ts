@@ -69,7 +69,7 @@ export const dbService = {
    */
   async ping(): Promise<PingResult> {
     const timestamp = new Date().toISOString();
-    const endpoint = import.meta.env.VITE_SUPABASE_URL || 'https://kxbdoqviqzseymjofsjg.supabase.co';
+    const endpoint = import.meta.env.VITE_SUPABASE_URL || '';
 
     if (!supabase) {
       return {
